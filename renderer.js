@@ -28,21 +28,44 @@ async function browseFolder() {
   if (folder) document.getElementById('project-path').value = folder;
 }
 
+window.nexus.onProjectCloneLog(({ line }) => {
+  const el = document.getElementById('clone-progress');
+  if (el) el.innerText = line;
+});
+
 function persistProjects() {
   localStorage.setItem('nexus_projects', JSON.stringify(projects));
   localStorage.setItem('nexus_active', JSON.stringify(activeProjectId));
 }
 
-function addProject() {
+async function addProject(e) {
   const name = document.getElementById('project-name').value.trim();
-  const folder = document.getElementById('project-path').value.trim();
+  const rawInput = document.getElementById('project-path').value.trim();
   const command = document.getElementById('project-command').value.trim() || 'npm run dev';
   const port = document.getElementById('project-port').value.trim() || '3000';
+  const progressEl = document.getElementById('clone-progress');
 
-  if (!name || !folder) {
-    alert('Give the project a name and pick a real folder first.');
+  if (!name || !rawInput) {
+    alert('Give the project a name, then either pick a folder or paste a GitHub URL.');
     return;
   }
+
+  const saveBtn = e.target;
+  saveBtn.disabled = true;
+  progressEl.innerText = 'Checking path...';
+
+  const result = await window.nexus.resolveProjectPath(rawInput);
+
+  saveBtn.disabled = false;
+
+  if (!result.ok) {
+    progressEl.innerText = '';
+    alert('Could not use that path: ' + result.error);
+    return;
+  }
+
+  progressEl.innerText = '';
+  const folder = result.path;
 
   projects.push({ id: Date.now(), name, folder, command, port, running: false });
   document.getElementById('project-name').value = '';
@@ -61,6 +84,11 @@ function removeProject(id, e) {
   renderProjects();
 }
 
+function setPreviewVisible(visible) {
+  document.getElementById('preview-placeholder').style.display = visible ? 'none' : 'flex';
+  document.getElementById('preview-live').style.display = visible ? 'flex' : 'none';
+}
+
 async function toggleProject(id, e) {
   e.stopPropagation();
   const p = projects.find((x) => x.id === id);
@@ -69,6 +97,7 @@ async function toggleProject(id, e) {
   if (p.running) {
     await window.nexus.stopProject(id);
     p.running = false;
+    if (activeProjectId === id) setPreviewVisible(false);
   } else {
     const result = await window.nexus.launchProject(id, p.folder, p.command, p.port);
     if (!result.ok) {
@@ -80,6 +109,7 @@ async function toggleProject(id, e) {
     document.getElementById('preview-url').value = `http://localhost:${p.port}`;
     document.getElementById('log-project-name').innerText = p.name;
     document.getElementById('log-screen').innerText = '';
+    setPreviewVisible(true);
     switchTab('preview');
     // Give the dev server a moment to boot before we point the webview at it.
     setTimeout(loadPreview, 1500);
@@ -139,9 +169,13 @@ window.nexus.onProjectLog(({ id, text }) => {
 window.nexus.onProjectClosed(({ id }) => {
   const p = projects.find((x) => x.id === id);
   if (p) p.running = false;
+  if (id === activeProjectId) setPreviewVisible(false);
   persistProjects();
   renderProjects();
 });
+
+// Start hidden - nothing is running yet when Nexus first opens.
+setPreviewVisible(false);
 
 function clearLog() {
   document.getElementById('log-screen').innerText = '';

@@ -5,10 +5,14 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis",
+    "dist:publish": "electron-builder --win nsis --publish always"
   },
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
   "devDependencies": {
     "electron": "^31.3.1",
     "electron-builder": "^24.13.3"
@@ -25,8 +29,17 @@
       "renderer.js",
       "index.html",
       "styles.css",
-      "package.json"
+      "package.json",
+      "updater.js",
+      "projectCloner.js",
+      "projectSettings.js",
+      "projectRegistry.js"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "jonathanblunt1214-lgtm",
+      "repo": "Nexus-"
+    },
     "win": {
       "target": "nsis"
     },

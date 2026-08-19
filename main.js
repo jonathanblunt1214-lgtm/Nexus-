@@ -10,6 +10,8 @@ const fs = require('fs');
 const os = require('os');
 const { exec, spawn } = require('child_process');
 const crypto = require('crypto');
+const { resolveProjectPath } = require('./projectCloner');
+const { initUpdater, checkForUpdates, downloadUpdate, installUpdateAndRestart } = require('./updater');
 
 let mainWindow;
 
@@ -72,7 +74,13 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  initUpdater(mainWindow);
+  checkForUpdates().catch((err) => {
+    console.error('Update check failed:', err.message);
+  });
+});
 
 app.on('window-all-closed', () => {
   // Make sure we don't leave dev servers running as orphaned processes.
@@ -96,6 +104,28 @@ ipcMain.handle('pick-folder', async () => {
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
 });
+
+// --- Resolve whatever the user typed/pasted into the project path field:
+// a real local folder is returned as-is; a GitHub URL is cloned first into
+// the configured projects folder (default: Documents\Nexus Projects), with
+// live progress streamed to the renderer so the UI isn't just frozen.
+ipcMain.handle('resolve-project-path', async (_event, { input }) => {
+  try {
+    const resolvedPath = await resolveProjectPath(input, (line) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('project-clone-log', { line });
+      }
+    });
+    return { ok: true, path: resolvedPath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// --- Auto-updater: checks GitHub Releases for a newer Nexus build ---
+ipcMain.handle('updater:check', () => checkForUpdates());
+ipcMain.handle('updater:download', () => downloadUpdate());
+ipcMain.handle('updater:install', () => installUpdateAndRestart());
 
 // --- Terminal: run a real shell command in the tracked cwd ---
 ipcMain.handle('exec-command', async (_event, { cmd }) => {

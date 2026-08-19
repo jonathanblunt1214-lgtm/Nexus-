@@ -32,13 +32,14 @@
             <input type="text" id="project-name" placeholder="Display name (e.g. smoker-hours-tracker)">
           </div>
           <div class="form-row">
-            <input type="text" id="project-path" placeholder="Real folder path on your computer" readonly>
+            <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it">
             <button class="btn btn-secondary" onclick="browseFolder()">Browse…</button>
           </div>
+          <div class="muted small" id="clone-progress" style="min-height:16px;"></div>
           <div class="form-row">
             <input type="text" id="project-command" placeholder="Start command" value="npm run dev">
             <input type="text" id="project-port" placeholder="Port" value="3000" style="max-width:110px;">
-            <button class="btn" onclick="addProject()">Save Project</button>
+            <button class="btn" onclick="addProject(event)">Save Project</button>
           </div>
         </div>
       </div>
@@ -49,22 +50,27 @@
     <!-- PREVIEW -->
     <div id="view-preview" class="view-pane">
       <div id="preview-wrap">
+        <div id="preview-placeholder" class="muted small" style="flex:1; display:flex; align-items:center; justify-content:center; text-align:center;">
+          No project running. Launch a project from the Projects tab to see its live preview here.
+        </div>
+        <div id="preview-live" style="display:none; flex-direction:column; flex:1; min-height:0;">
         <div class="preview-bar">
           <div class="preview-bar-left">
             <span class="accent mono bold">LIVE VIEW:</span>
-            <input type="text" id="preview-url" value="http://localhost:3000">
+            <input type="text" id="preview-url" placeholder="Appears once a project is running">
             <button class="btn" onclick="loadPreview()">Go</button>
             <button class="btn btn-secondary" onclick="openInBrowser()">Open in Browser ↗</button>
           </div>
           <button class="btn btn-secondary" onclick="loadPreview()">↻ Refresh</button>
         </div>
-        <webview id="preview-frame" src="http://localhost:3000"></webview>
+        <webview id="preview-frame"></webview>
         <div id="log-panel">
           <div class="log-header">
             <span>Process Output — <span id="log-project-name">no project running</span></span>
             <button class="btn btn-secondary tiny" onclick="clearLog()">Clear</button>
           </div>
           <pre id="log-screen"></pre>
+        </div>
         </div>
       </div>
     </div>
