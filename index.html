@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NEXUS — Developer OS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="sidebar">
+    <div class="logo">NEXUS</div>
+    <button class="nav-btn active" id="tab-btn-projects" onclick="switchTab('projects')" title="Projects Dashboard">📁</button>
+    <button class="nav-btn" id="tab-btn-preview" onclick="switchTab('preview')" title="Live App Preview">🌐</button>
+    <button class="nav-btn" id="tab-btn-terminal" onclick="switchTab('terminal')" title="Real Terminal">💻</button>
+    <button class="nav-btn" id="tab-btn-cloud" onclick="switchTab('cloud')" title="Gemini / Cloud">☁️</button>
+    <button class="nav-btn" id="tab-btn-assist" onclick="switchTab('assist')" title="AI Code Assist">🩹</button>
+    <button class="nav-btn" id="tab-btn-ship" onclick="switchTab('ship')" title="Ship: Git, Feature Builder, Deploy">🚀</button>
+    <button class="nav-btn" id="tab-btn-config" onclick="switchTab('config')" title="Project Config: Secrets & Services">🔐</button>
+  </div>
+
+  <div id="main-container">
+    <header>
+      <h2>NEXUS <span class="muted">Active: <strong id="header-active-name" class="accent">None</strong></span></h2>
+      <div class="status-badge"><span class="status-dot"></span> ELECTRON — REAL BACKEND</div>
+    </header>
+
+    <!-- PROJECTS -->
+    <div id="view-projects" class="view-pane active">
+      <div class="card">
+        <label class="label">Add a Project</label>
+        <div class="form-grid">
+          <div class="form-row">
+            <input type="text" id="project-name" placeholder="Display name (e.g. smoker-hours-tracker)">
+          </div>
+          <div class="form-row">
+            <input type="text" id="project-path" placeholder="Real folder path on your computer" readonly>
+            <button class="btn btn-secondary" onclick="browseFolder()">Browse…</button>
+          </div>
+          <div class="form-row">
+            <input type="text" id="project-command" placeholder="Start command" value="npm run dev">
+            <input type="text" id="project-port" placeholder="Port" value="3000" style="max-width:110px;">
+            <button class="btn" onclick="addProject()">Save Project</button>
+          </div>
+        </div>
+      </div>
+      <h3 class="section-title">Workspace Projects</h3>
+      <div id="project-list" class="project-grid"></div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="view-preview" class="view-pane">
+      <div id="preview-wrap">
+        <div class="preview-bar">
+          <div class="preview-bar-left">
+            <span class="accent mono bold">LIVE VIEW:</span>
+            <input type="text" id="preview-url" value="http://localhost:3000">
+            <button class="btn" onclick="loadPreview()">Go</button>
+            <button class="btn btn-secondary" onclick="openInBrowser()">Open in Browser ↗</button>
+          </div>
+          <button class="btn btn-secondary" onclick="loadPreview()">↻ Refresh</button>
+        </div>
+        <webview id="preview-frame" src="http://localhost:3000"></webview>
+        <div id="log-panel">
+          <div class="log-header">
+            <span>Process Output — <span id="log-project-name">no project running</span></span>
+            <button class="btn btn-secondary tiny" onclick="clearLog()">Clear</button>
+          </div>
+          <pre id="log-screen"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMINAL -->
+    <div id="view-terminal" class="view-pane">
+      <div id="terminal-wrap">
+        <div id="terminal-screen">NEXUS real terminal — commands run for real on your machine.
+Type "help" for tips.
+
+</div>
+        <div class="terminal-bar">
+          <span class="accent bold mono" id="term-prompt">~$</span>
+          <input type="text" id="term-input" placeholder="Type a real shell command…" onkeydown="handleTermKey(event)">
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOUD / GEMINI -->
+    <div id="view-cloud" class="view-pane">
+      <div class="card">
+        <label class="label">Claude API Key — powers Bug Fix Assist & Feature Suggestions</label>
+        <div class="form-row">
+          <input type="password" id="claude-api-key" placeholder="Paste your Anthropic Claude API key">
+          <button class="btn" onclick="saveClaudeKey()">Save</button>
+          <button class="btn btn-secondary" onclick="clearClaudeKey()">Clear</button>
+        </div>
+        <p class="muted small" id="claude-status" style="margin-top:8px;">No key saved yet.</p>
+      </div>
+
+      <div class="card">
+        <label class="label">Gemini API Key — powers the "Ask Gemini" box below</label>
+        <div class="form-row">
+          <input type="password" id="gemini-api-key" placeholder="Paste your Gemini API key">
+          <button class="btn" onclick="saveGeminiKey()">Save</button>
+          <button class="btn btn-secondary" onclick="clearGeminiKey()">Clear</button>
+        </div>
+        <p class="muted small" id="gemini-status" style="margin-top:8px;">No key saved yet.</p>
+      </div>
+
+      <div class="card">
+        <label class="label">GCP / Firebase Project ID</label>
+        <div class="form-row">
+          <input type="text" id="gcp-project-id" placeholder="my-firebase-project">
+          <button class="btn" onclick="saveGcpProject()">Save</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+        <label class="label">Ask Gemini (real API call)</label>
+        <div class="form-row">
+          <input type="text" id="gemini-prompt" placeholder="Ask something…">
+          <button class="btn" onclick="askGemini()">Send</button>
+        </div>
+        <pre id="gemini-response" class="response-box"></pre>
+      </div>
+    </div>
+
+    <!-- AI CODE ASSIST -->
+    <div id="view-assist" class="view-pane">
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Bug Fix Assist (Claude) — every change requires your approval</label>
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="target-label"><input type="radio" name="assist-target" value="project" checked onchange="onTargetChange()"> Active project</label>
+            <label class="target-label"><input type="radio" name="assist-target" value="self" onchange="onTargetChange()"> Nexus itself (self-update)</label>
+          </div>
+          <div class="form-row">
+            <select id="assist-file-select"></select>
+            <button class="btn btn-secondary" onclick="refreshFileList()">↻ Refresh files</button>
+          </div>
+          <div class="form-row">
+            <input type="text" id="assist-error-text" placeholder="Paste the error message (or leave blank to just look for bugs)">
+          </div>
+          <div class="form-row" style="align-items:center;">
+            <label class="autonomous-toggle">
+              <input type="checkbox" id="autonomous-checkbox" onchange="onAutonomousToggle()">
+              Fully autonomous (skip review — resets to OFF every app restart)
+            </label>
+            <button class="btn" onclick="analyzeBug()">Analyze</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="proposal-card" style="display:none; flex:1; overflow:hidden; display:flex; flex-direction:column;">
+        <p class="accent bold" style="margin-bottom:8px;">Proposed change to <span id="proposal-file" class="mono"></span></p>
+        <p id="proposal-explanation" class="muted small" style="margin-bottom:10px;"></p>
+        <div style="display:flex; gap:12px; flex:1; overflow:hidden;">
+          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <span class="muted small bold">BEFORE</span>
+            <pre id="proposal-before" class="diff-box"></pre>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <span class="accent small bold">PROPOSED AFTER</span>
+            <pre id="proposal-after" class="diff-box"></pre>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px; flex-shrink:0;">
+          <button class="btn" onclick="approveChange()">✓ Approve & Write File</button>
+          <button class="btn btn-secondary" onclick="rejectChange()">✕ Reject</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Feature Suggestions (Claude) — advisory only, nothing is ever applied automatically</label>
+        <div class="form-row">
+          <button class="btn" onclick="analyzeFeatures()">Analyze Active Project</button>
+        </div>
+        <div id="suggestions-list" class="suggestions-list"></div>
+      </div>
+    </div>
+
+    <!-- SHIP: git, feature builder, deploy -->
+    <div id="view-ship" class="view-pane">
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Git — active project: <span id="ship-active-name" class="accent">none</span></label>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="refreshGitStatus()">↻ Refresh status</button>
+          <span class="mono small" id="git-branch-display">branch: —</span>
+        </div>
+        <pre id="git-status-display" class="diff-box" style="max-height:100px; margin-top:8px;"></pre>
+        <div class="form-row" style="margin-top:10px;">
+          <input type="text" id="git-branch-input" placeholder="new-feature-branch-name">
+          <button class="btn btn-secondary" onclick="createBranch()">Create Branch</button>
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="text" id="git-commit-message" placeholder="Commit message">
+          <button class="btn" onclick="commitAndPush()">Commit &amp; Push</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Feature Builder (Claude) — plans across files, you approve each one</label>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="text" id="feature-description" placeholder="Describe the feature in plain language">
+          <button class="btn" onclick="planFeature()">Plan Feature</button>
+        </div>
+        <div id="feature-plan-list" class="suggestions-list"></div>
+      </div>
+
+      <div class="card" id="feature-proposal-card" style="display:none; flex:1; overflow:hidden; display:flex; flex-direction:column;">
+        <p class="accent bold" style="margin-bottom:8px;">Proposed change to <span id="feature-proposal-file" class="mono"></span></p>
+        <p id="feature-proposal-explanation" class="muted small" style="margin-bottom:10px;"></p>
+        <div style="display:flex; gap:12px; flex:1; overflow:hidden;">
+          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <span class="muted small bold">BEFORE (empty = new file)</span>
+            <pre id="feature-proposal-before" class="diff-box"></pre>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <span class="accent small bold">PROPOSED AFTER</span>
+            <pre id="feature-proposal-after" class="diff-box"></pre>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px; flex-shrink:0;">
+          <button class="btn" onclick="approveFeatureChange()">✓ Approve & Write File</button>
+          <button class="btn btn-secondary" onclick="rejectFeatureChange()">✕ Reject</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Changelog (Claude) — writes CHANGELOG.md and release-notes.md</label>
+        <p class="muted small" style="margin-top:6px;">Pending approved changes this session: <span id="changelog-pending-count">0</span></p>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn" onclick="generateChangelog()">Generate Changelog Entry</button>
+        </div>
+        <div id="changelog-preview" style="display:none; margin-top:10px;">
+          <span class="muted small bold">DEVELOPER (CHANGELOG.md)</span>
+          <pre id="changelog-dev-text" class="diff-box" style="max-height:110px;"></pre>
+          <span class="accent small bold">END USER (release-notes.md)</span>
+          <pre id="changelog-user-text" class="diff-box" style="max-height:110px;"></pre>
+          <div class="row" style="margin-top:8px;">
+            <button class="btn" onclick="saveChangelog()">✓ Save to Files</button>
+            <button class="btn btn-secondary" onclick="discardChangelog()">✕ Discard</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Pipeline: Audit → Repair → Test → Gate</label>
+        <p class="muted small" style="margin-top:6px;">Runs against the active project. No build/deploy step should be trusted until this gate is green.</p>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn" onclick="runPipeline()">Run Pipeline</button>
+          <span class="pill" id="gate-pill">GATE: NOT RUN</span>
+        </div>
+        <div id="pipeline-steps" class="suggestions-list"></div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Deploy — runs your existing script for this project</label>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="text" id="deploy-command" placeholder="e.g. npm run deploy, or bash deploy.sh">
+          <button class="btn btn-secondary" onclick="saveDeployCommand()">Save</button>
+          <button class="btn" onclick="runDeploy()">▶ Run Deploy</button>
+        </div>
+        <pre id="deploy-log-screen" class="diff-box" style="max-height:140px; margin-top:8px;"></pre>
+      </div>
+    </div>
+
+    <!-- PROJECT CONFIG: secrets + services -->
+    <div id="view-config" class="view-pane">
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Project Identity — <span id="config-active-name" class="accent">none</span></label>
+        <p class="muted small mono" id="config-uid-display" style="margin-top:6px;">no project selected</p>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Project Constitution (CONSTITUTION.md) — governs Bug Fix Assist &amp; Feature Builder for this project</label>
+        <p class="muted small" style="margin-top:6px;">When this file exists in a project, every AI-proposed change for that project is required to follow it — not just stored as a reference doc.</p>
+        <textarea id="constitution-text" rows="10" style="width:100%; margin-top:8px; background:var(--bg-dark); border:1px solid var(--border); color:#fff; border-radius:8px; padding:10px 14px; font-family:Consolas, monospace; font-size:12px;" placeholder="Paste or write this project's governing rules here…"></textarea>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn" onclick="saveConstitutionUI()">Save to Project</button>
+          <button class="btn btn-secondary" onclick="loadConstitution()">↻ Reload from Disk</button>
+          <button class="btn btn-secondary" onclick="loadSmokeStackTemplate()">Load SmokeStack Constitution v5</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">This Project's Own API Keys / Secrets — encrypted, scoped to this project only</label>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="text" id="secret-key-name" placeholder="Name, e.g. OPENAI_API_KEY">
+          <input type="password" id="secret-key-value" placeholder="Value">
+          <button class="btn" onclick="saveProjectSecret()">Save</button>
+        </div>
+        <div id="secrets-list" class="suggestions-list"></div>
+        <div class="form-row" style="margin-top:10px;">
+          <button class="btn btn-secondary" onclick="exportSecretsToEnv()">Export to .env (so this project's own code can read them)</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Services — scrapers, databases, background workers (real handshake, no optimistic status)</label>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="text" id="service-name" placeholder="Service name, e.g. scraper">
+          <input type="text" id="service-command" placeholder="Start command, e.g. python scraper.py">
+          <input type="text" id="service-healthcheck" placeholder="Health check URL (optional)">
+          <button class="btn" onclick="startServiceUI()">Start</button>
+        </div>
+        <div id="services-list" class="suggestions-list"></div>
+      </div>
+
+      <div class="card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+        <label class="label">Detected Integrations in this Project</label>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="scanIntegrations()">Scan Project</button>
+        </div>
+        <div id="integrations-list" class="suggestions-list" style="overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
