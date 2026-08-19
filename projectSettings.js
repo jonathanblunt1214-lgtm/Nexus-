@@ -11,8 +11,9 @@ const fs = require('fs');
 
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'nexus-settings.json');
 
-// First-run default: Documents\Nexus Projects
-const DEFAULT_PROJECTS_ROOT = path.join(app.getPath('documents'), 'Nexus Projects');
+// First-run default: Documents\NexusProjects (no space in the folder name -
+// avoids Windows argument-quoting issues when this path gets passed to git).
+const DEFAULT_PROJECTS_ROOT = path.join(app.getPath('documents'), 'NexusProjects');
 
 function readSettings() {
   if (!fs.existsSync(SETTINGS_FILE)) {

@@ -74,11 +74,7 @@ function cloneProject(gitUrl, onLog = () => {}) {
 
     onLog(`Cloning ${gitUrl} into ${destPath} …`);
 
-    const gitProcess = spawn('git', ['clone', gitUrl, destPath], {
-      // On Windows, PATH picked up by a freshly-installed git may need
-      // shell:true to resolve correctly from a spawned (non-interactive) process.
-      shell: process.platform === 'win32',
-    });
+    const gitProcess = spawn('git', ['clone', gitUrl, destPath]);
 
     gitProcess.stdout.on('data', (data) => onLog(data.toString().trim()));
     gitProcess.stderr.on('data', (data) => onLog(data.toString().trim())); // git writes progress to stderr
