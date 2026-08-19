@@ -4,7 +4,7 @@
 // directly — it only talks to this file through the safe bridge in
 // preload.js. That separation is what makes it safe to load web-ish UI code.
 
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -74,8 +74,33 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
+function setupPreviewSession() {
+  // The Preview tab's webview runs in its own dedicated session partition
+  // (see index.html: partition="persist:nexus-preview"). Local dev servers
+  // often send their own Content-Security-Policy / X-Frame-Options headers -
+  // entirely reasonable for a real deployed app, but Electron's webview still
+  // respects them, and Nexus's own window (loaded via file://) doesn't match
+  // most frame-ancestors policies even when they look permissive (e.g. "*"
+  // only matches network-scheme origins, not file://). Since this partition
+  // is used exclusively to preview the user's own local projects - never
+  // arbitrary third-party sites - stripping these specific framing headers
+  // here is safe and is exactly what a local dev-preview tool needs to do.
+  const previewSession = session.fromPartition('persist:nexus-preview');
+  previewSession.webRequest.onHeadersReceived((details, callback) => {
+    const headers = { ...details.responseHeaders };
+    for (const key of Object.keys(headers)) {
+      const lower = key.toLowerCase();
+      if (lower === 'content-security-policy' || lower === 'x-frame-options') {
+        delete headers[key];
+      }
+    }
+    callback({ responseHeaders: headers });
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
+  setupPreviewSession();
   initUpdater(mainWindow);
   checkForUpdates().catch((err) => {
     console.error('Update check failed:', err.message);

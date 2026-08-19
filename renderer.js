@@ -38,6 +38,8 @@ function persistProjects() {
   localStorage.setItem('nexus_active', JSON.stringify(activeProjectId));
 }
 
+let editingProjectId = null;
+
 async function addProject(e) {
   const name = document.getElementById('project-name').value.trim();
   const rawInput = document.getElementById('project-path').value.trim();
@@ -52,6 +54,39 @@ async function addProject(e) {
 
   const saveBtn = e.target;
   saveBtn.disabled = true;
+
+  // Editing an existing project: the folder is already real and settled,
+  // so skip the clone/resolve step entirely - just update the fields.
+  if (editingProjectId !== null) {
+    const p = projects.find((x) => x.id === editingProjectId);
+    if (p) {
+      const wasRunning = p.running;
+      if (wasRunning) {
+        alert('Stop this project before editing it, then try again.');
+        saveBtn.disabled = false;
+        return;
+      }
+      p.name = name;
+      p.command = command;
+      p.port = port;
+      // Folder is intentionally left alone here - re-resolving it would
+      // re-trigger a clone attempt on a GitHub URL that's already been
+      // turned into a real local path. Use Browse in the form if the
+      // folder itself genuinely needs to change.
+      if (rawInput !== p.folder) p.folder = rawInput;
+    }
+    editingProjectId = null;
+    saveBtn.innerText = 'Save Project';
+    saveBtn.disabled = false;
+    document.getElementById('project-name').value = '';
+    document.getElementById('project-path').value = '';
+    document.getElementById('project-command').value = 'npm run dev';
+    document.getElementById('project-port').value = '3000';
+    persistProjects();
+    renderProjects();
+    return;
+  }
+
   progressEl.innerText = 'Checking path...';
 
   const result = await window.nexus.resolveProjectPath(rawInput);
@@ -72,6 +107,32 @@ async function addProject(e) {
   document.getElementById('project-path').value = '';
   persistProjects();
   renderProjects();
+}
+
+function editProject(id, e) {
+  e.stopPropagation();
+  const p = projects.find((x) => x.id === id);
+  if (!p) return;
+  if (p.running) {
+    alert('Stop this project before editing it.');
+    return;
+  }
+  editingProjectId = id;
+  document.getElementById('project-name').value = p.name;
+  document.getElementById('project-path').value = p.folder;
+  document.getElementById('project-command').value = p.command;
+  document.getElementById('project-port').value = p.port;
+  document.querySelector('#view-projects .card button.btn[onclick^="addProject"]').innerText = 'Update Project';
+  document.getElementById('project-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEdit() {
+  editingProjectId = null;
+  document.getElementById('project-name').value = '';
+  document.getElementById('project-path').value = '';
+  document.getElementById('project-command').value = 'npm run dev';
+  document.getElementById('project-port').value = '3000';
+  document.querySelector('#view-projects .card button.btn[onclick^="addProject"]').innerText = 'Save Project';
 }
 
 function removeProject(id, e) {
@@ -133,7 +194,10 @@ function renderProjects() {
       <div>
         <div class="row" style="justify-content:space-between; align-items:center;">
           <strong>${escapeHtml(p.name)}</strong>
-          <button onclick="removeProject(${p.id}, event)" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
+          <div>
+            <button onclick="editProject(${p.id}, event)" style="background:none; border:none; color:var(--text-muted); cursor:pointer; margin-right:4px;" title="Edit">✎</button>
+            <button onclick="removeProject(${p.id}, event)" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
+          </div>
         </div>
         <p class="path">${escapeHtml(p.folder)}</p>
         <p class="meta">${escapeHtml(p.command)} — port ${escapeHtml(p.port)}</p>
@@ -190,6 +254,15 @@ function loadPreview() {
 function openInBrowser() {
   const url = document.getElementById('preview-url').value.trim();
   if (url) window.nexus.openExternal(url);
+}
+
+function inspectPreview() {
+  const webview = document.getElementById('preview-frame');
+  if (webview && webview.isDevToolsOpened && webview.isDevToolsOpened()) {
+    webview.closeDevTools();
+  } else if (webview) {
+    webview.openDevTools();
+  }
 }
 
 // ---------- Terminal ----------

@@ -40,6 +40,7 @@
             <input type="text" id="project-command" placeholder="Start command" value="npm run dev">
             <input type="text" id="project-port" placeholder="Port" value="3000" style="max-width:110px;">
             <button class="btn" onclick="addProject(event)">Save Project</button>
+            <button class="btn btn-secondary" onclick="cancelEdit()" title="Clear the form / cancel editing">✕</button>
           </div>
         </div>
       </div>
@@ -60,10 +61,11 @@
             <input type="text" id="preview-url" placeholder="Appears once a project is running">
             <button class="btn" onclick="loadPreview()">Go</button>
             <button class="btn btn-secondary" onclick="openInBrowser()">Open in Browser ↗</button>
+            <button class="btn btn-secondary" onclick="inspectPreview()">🔍 Inspect Preview</button>
           </div>
           <button class="btn btn-secondary" onclick="loadPreview()">↻ Refresh</button>
         </div>
-        <webview id="preview-frame"></webview>
+        <webview id="preview-frame" partition="persist:nexus-preview"></webview>
         <div id="log-panel">
           <div class="log-header">
             <span>Process Output — <span id="log-project-name">no project running</span></span>
