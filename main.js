@@ -96,6 +96,20 @@ function setupPreviewSession() {
     }
     callback({ responseHeaders: headers });
   });
+
+  // This partition uses "persist:" so a signed-in session (Firebase auth,
+  // stored in localStorage/IndexedDB) survives between Nexus launches -
+  // without it, users would have to sign in again every time. But "persist:"
+  // also means any Service Worker a previewed project registers sticks
+  // around forever too, including a broken/stale one from an earlier dev
+  // session that can silently break every future page load by intercepting
+  // and mishandling requests (e.g. Vite's dev-mode HMR requests). Clearing
+  // just the service-worker storage on every startup keeps auth intact while
+  // guaranteeing each session starts with no leftover, possibly-broken
+  // service workers from a previous run.
+  previewSession.clearStorageData({ storages: ['serviceworkers'] }).catch((err) => {
+    console.error('Failed to clear stale service workers:', err.message);
+  });
 }
 
 // --- Popup allowlist for the Preview webview ----------------------------
@@ -201,6 +215,18 @@ ipcMain.handle('pick-folder', async () => {
 // a real local folder is returned as-is; a GitHub URL is cloned first into
 // the configured projects folder (default: Documents\Nexus Projects), with
 // live progress streamed to the renderer so the UI isn't just frozen.
+// --- Manual preview cache clear, in case a stale/broken service worker
+// shows up mid-session rather than only at startup ---
+ipcMain.handle('clear-preview-cache', async () => {
+  try {
+    const previewSession = session.fromPartition('persist:nexus-preview');
+    await previewSession.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 ipcMain.handle('resolve-project-path', async (_event, { input }) => {
   try {
     const resolvedPath = await resolveProjectPath(input, (line) => {

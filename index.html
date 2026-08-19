@@ -62,10 +62,11 @@
             <button class="btn" onclick="loadPreview()">Go</button>
             <button class="btn btn-secondary" onclick="openInBrowser()">Open in Browser ↗</button>
             <button class="btn btn-secondary" onclick="inspectPreview()">🔍 Inspect Preview</button>
+            <button class="btn btn-secondary" onclick="clearPreviewCache()" title="Clears stale Service Workers if the preview breaks unexpectedly">🧹 Clear Preview Cache</button>
           </div>
           <button class="btn btn-secondary" onclick="loadPreview()">↻ Refresh</button>
         </div>
-        <webview id="preview-frame" partition="persist:nexus-preview"></webview>
+        <webview id="preview-frame" partition="persist:nexus-preview" allowpopups></webview>
         <div id="log-panel">
           <div class="log-header">
             <span>Process Output — <span id="log-project-name">no project running</span></span>

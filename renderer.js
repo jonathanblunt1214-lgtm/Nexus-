@@ -265,6 +265,15 @@ function inspectPreview() {
   }
 }
 
+async function clearPreviewCache() {
+  const result = await window.nexus.clearPreviewCache();
+  if (result.ok) {
+    alert('Preview cache cleared. Click Refresh (or relaunch the project) to reload cleanly.');
+  } else {
+    alert('Could not clear cache: ' + result.error);
+  }
+}
+
 // ---------- Terminal ----------
 async function handleTermKey(e) {
   if (e.key !== 'Enter') return;

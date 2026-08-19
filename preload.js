@@ -9,6 +9,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('nexus', {
   pickFolder: () => ipcRenderer.invoke('pick-folder'),
   resolveProjectPath: (input) => ipcRenderer.invoke('resolve-project-path', { input }),
+  clearPreviewCache: () => ipcRenderer.invoke('clear-preview-cache'),
   onProjectCloneLog: (callback) => ipcRenderer.on('project-clone-log', (_e, payload) => callback(payload)),
 
   // Auto-updater: checks Nexus's own GitHub repo Releases for newer builds
