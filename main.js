@@ -98,9 +98,76 @@ function setupPreviewSession() {
   });
 }
 
+// --- Popup allowlist for the Preview webview ----------------------------
+// The webview has `allowpopups` set (needed for real Google/Firebase sign-in
+// flows), which by itself would let ANY page it loads open ANY popup window -
+// too broad for something whose whole purpose is previewing arbitrary local
+// projects. Instead: every popup request is checked against a known list of
+// legitimate auth-provider domains, plus localhost/127.0.0.1 (same machine,
+// same trust level as the preview itself). Anything else is denied outright
+// and logged - never silently allowed "just in case."
+const ALLOWED_POPUP_HOSTS = [
+  'accounts.google.com',
+  'accounts.youtube.com', // Google's auth flow sometimes routes through this
+  'appleid.apple.com',
+  'github.com',
+  'login.microsoftonline.com',
+  'login.live.com',
+  'www.facebook.com',
+  'api.twitter.com',
+  'twitter.com',
+  'x.com',
+];
+
+function isAllowedPopupUrl(urlString) {
+  let parsed;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    return false; // unparseable URL - never allow
+  }
+
+  const host = parsed.hostname.toLowerCase();
+
+  // Any localhost/127.0.0.1 popup is same-machine, same-trust-level as the
+  // project being previewed - always allowed regardless of port.
+  if (host === 'localhost' || host === '127.0.0.1') return true;
+
+  // Firebase's own auth-handler popups live on <project-id>.firebaseapp.com
+  // or <project-id>.web.app - can't allowlist every project id in advance,
+  // so match the pattern instead of a fixed list.
+  if (host.endsWith('.firebaseapp.com') || host.endsWith('.web.app')) return true;
+
+  return ALLOWED_POPUP_HOSTS.includes(host);
+}
+
+function setupPopupAllowlist() {
+  app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType() !== 'webview') return;
+
+    contents.setWindowOpenHandler(({ url }) => {
+      if (isAllowedPopupUrl(url)) {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              nodeIntegration: false,
+              contextIsolation: true,
+              sandbox: true,
+            },
+          },
+        };
+      }
+      console.warn(`[preview] Blocked popup to non-allowlisted host: ${url}`);
+      return { action: 'deny' };
+    });
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
   setupPreviewSession();
+  setupPopupAllowlist();
   initUpdater(mainWindow);
   checkForUpdates().catch((err) => {
     console.error('Update check failed:', err.message);
