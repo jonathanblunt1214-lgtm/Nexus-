@@ -4,22 +4,1008 @@
   <meta charset="UTF-8">
   <title>NEXUS — Developer OS</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Workspace: 2x2 resizable grid combining Live Preview, Terminal, Ship, and AI Assist */
+    #view-workspace { padding: 0; }
+    #workspace-grid {
+      display: grid;
+      width: 100%;
+      height: 100%;
+      grid-template-columns: 1fr 6px 1fr;
+      grid-template-rows: 1fr 6px 1fr;
+    }
+    #wp-preview  { grid-column: 1; grid-row: 1; }
+    #wp-terminal { grid-column: 3; grid-row: 1; }
+    #wp-ship     { grid-column: 1; grid-row: 3; }
+    #wp-assist   { grid-column: 3; grid-row: 3; }
+    /* Vertical resizer spans the full height, including the middle-row
+       crossing cell - simpler than trying to carve out a plus-shape with
+       named grid-template-areas, which can't represent non-rectangular
+       regions. */
+    #resizer-v       { grid-column: 2; grid-row: 1 / 4; }
+    #resizer-h-left  { grid-column: 1; grid-row: 2; }
+    #resizer-h-right { grid-column: 3; grid-row: 2; }
+
+    .workspace-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--bg-dark);
+    }
+    .workspace-panel-title {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--emerald-bright);
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .workspace-panel-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .workspace-panel-body > #preview-wrap,
+    .workspace-panel-body > #terminal-wrap {
+      flex: 1;
+      min-height: 0;
+      padding: 0;
+      margin: -12px;
+      width: calc(100% + 24px);
+      height: calc(100% + 24px);
+    }
+
+    .workspace-resizer {
+      background: var(--border);
+      transition: background 0.15s;
+    }
+    .workspace-resizer:hover,
+    .workspace-resizer.dragging {
+      background: var(--emerald);
+    }
+    .workspace-resizer-v { cursor: col-resize; }
+    .workspace-resizer-h { cursor: row-resize; }
+
+    /* Code Editor - styled after GitHub's dark code view: near-black
+       background, muted gray file tree, blue accent for the selected file,
+       monospace throughout. */
+    #code-editor-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #code-editor-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 78vw;
+      max-width: 1200px;
+      min-width: 640px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+    }
+    #code-editor-filetree-col {
+      width: 260px;
+      flex-shrink: 0;
+      border-right: 1px solid #21262d;
+      display: flex;
+      flex-direction: column;
+      background: #0d1117;
+    }
+    .code-editor-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #c9d1d9;
+      font-size: 13px;
+    }
+    .code-editor-header button {
+      background: none; border: none; color: #8b949e; cursor: pointer; font-size: 14px;
+    }
+    #code-editor-filetree {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+
+    /* Files / Search toggle in the left column */
+    .cet-mode-tabs {
+      display: flex;
+      border-bottom: 1px solid #21262d;
+      flex-shrink: 0;
+    }
+    .cet-mode-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #8b949e;
+      padding: 8px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .cet-mode-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+    .cet-mode-tab:hover:not(.active) { color: #c9d1d9; }
+
+    #code-editor-search-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .cet-search-box {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 8px 10px;
+      border-bottom: 1px solid #21262d;
+    }
+    .cet-search-box input[type="text"] {
+      flex: 1;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    .cet-search-case {
+      font-size: 11px;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+    #ce-search-results {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .cet-search-file-group {
+      padding: 6px 10px 2px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #7ee787;
+      font-family: Consolas, monospace;
+    }
+    .cet-search-result {
+      padding: 3px 14px;
+      font-size: 12px;
+      font-family: Consolas, monospace;
+      color: #8b949e;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cet-search-result:hover { background: #161b22; color: #c9d1d9; }
+    .cet-search-result .cet-line-num { color: #6e7681; margin-right: 8px; }
+    .cet-search-jump-highlight { background: rgba(88, 166, 255, 0.15) !important; }
+
+    /* Real git diff viewer in Ship - accordion-style file list, click a
+       file to expand its colored diff inline. */
+    .gd-file-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    .gd-file-row:hover { background: var(--bg-dark); }
+    .gd-file-badge {
+      flex-shrink: 0;
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: #000;
+    }
+    .gd-badge-modified { background: #d29922; }
+    .gd-badge-added { background: var(--emerald); }
+    .gd-badge-deleted { background: var(--danger); }
+    .gd-file-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gd-diff-body {
+      display: none;
+      margin: 4px 0 10px 4px;
+      padding: 6px 0 6px 8px;
+      border-left: 2px solid var(--border);
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .gd-diff-body.open { display: block; }
+    .gd-diff-hunk-header { color: var(--emerald-bright); padding: 3px 0; }
+    .gd-line { white-space: pre; padding: 0 4px; }
+    .gd-line-add { background: rgba(63, 185, 80, 0.15); color: #7ee787; }
+    .gd-line-del { background: rgba(248, 81, 73, 0.15); color: #ffa198; }
+    .gd-line-context { color: var(--text-muted); }
+
+    /* Commit history list */
+    .ch-commit-row {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    .ch-commit-row:hover { background: var(--bg-dark); }
+    .ch-commit-top { display: flex; justify-content: space-between; gap: 8px; }
+    .ch-hash { color: var(--emerald-bright); flex-shrink: 0; }
+    .ch-message { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ch-meta { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+    .ch-branch-tag {
+      display: inline-block;
+      background: var(--emerald);
+      color: #000;
+      border-radius: 4px;
+      padding: 0 5px;
+      font-size: 10px;
+      margin-left: 6px;
+    }
+
+    /* Per-test results */
+    .tr-row {
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 3px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tr-icon { flex-shrink: 0; }
+    .tr-icon-pass { color: var(--emerald); }
+    .tr-icon-fail { color: var(--danger); }
+    .tr-icon-skip { color: var(--text-muted); }
+    .tr-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tr-duration { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+    .tr-rerun { flex-shrink: 0; }
+    .tr-failure-message {
+      white-space: pre-wrap;
+      color: #ffa198;
+      font-size: 11px;
+      margin: 0 0 6px 0;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: none;
+    }
+    .tr-failure-message.open { display: block; }
+
+    /* API Tester */
+    #api-tester-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #api-tester-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 78vw;
+      max-width: 1200px;
+      min-width: 640px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+    }
+    #api-tester-saved-col {
+      width: 240px;
+      flex-shrink: 0;
+      border-right: 1px solid #21262d;
+      display: flex;
+      flex-direction: column;
+    }
+    #api-saved-list { flex: 1; overflow-y: auto; }
+    .api-saved-item {
+      padding: 8px 12px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      color: #c9d1d9;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .api-saved-item:hover { background: #161b22; }
+    .api-saved-item-method { color: #58a6ff; font-size: 10px; flex-shrink: 0; }
+    .api-saved-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .api-saved-item-delete { color: #6e7681; flex-shrink: 0; }
+    .api-saved-item-delete:hover { color: #f85149; }
+
+    #api-tester-main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #api-request-bar {
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+      padding: 10px;
+      border-bottom: 1px solid #21262d;
+    }
+    #api-method {
+      background: #0d1117; border: 1px solid #30363d; color: #c9d1d9;
+      padding: 6px 8px; border-radius: 6px; font-family: Consolas, monospace; font-size: 12px;
+    }
+    #api-url {
+      flex: 1; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9;
+      padding: 6px 10px; border-radius: 6px; font-family: Consolas, monospace; font-size: 13px;
+    }
+    #api-request-detail {
+      flex-shrink: 0;
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid #21262d;
+      height: 140px;
+    }
+    .api-detail-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .api-detail-col textarea {
+      flex: 1;
+      background: #0d1117; border: 1px solid #30363d; color: #c9d1d9;
+      border-radius: 6px; padding: 8px; font-family: Consolas, monospace; font-size: 12px;
+      resize: none;
+    }
+    #api-response-area { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px; overflow: hidden; }
+    #api-response-status { flex-shrink: 0; font-family: Consolas, monospace; }
+    #api-response-status.status-ok { color: #7ee787; }
+    #api-response-status.status-err { color: #ffa198; }
+
+    /* Docker */
+    #docker-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #docker-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 60vw;
+      max-width: 900px;
+      min-width: 480px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+    }
+    #docker-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .dk-container-row {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dk-container-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dk-container-status { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+    .dk-container-status.running { color: var(--emerald); }
+
+    /* Package Manager */
+    #pkgmgr-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #pkgmgr-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 60vw;
+      max-width: 900px;
+      min-width: 480px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+    }
+    #pkgmgr-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .pm-row {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pm-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pm-version { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+    .pm-version.outdated { color: #d29922; }
+    .pm-dev-badge {
+      background: var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 0 5px;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    .pm-missing { color: var(--danger); font-size: 11px; }
+
+    /* Recent Changes */
+    #recentchanges-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #recentchanges-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 60vw;
+      max-width: 900px;
+      min-width: 480px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+    }
+    #recentchanges-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .rc-row {
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    .rc-row-top { display: flex; align-items: center; gap: 8px; }
+    .rc-file { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--emerald-bright); }
+    .rc-time { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+    .rc-source { color: var(--text-muted); font-size: 11px; margin-top: 3px; }
+    .rc-reverted { color: var(--emerald); font-size: 11px; }
+
+    /* Activity */
+    #tab-btn-activity { position: relative; }
+    #activity-dot {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 4px var(--emerald);
+    }
+    #activity-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #activity-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 50vw;
+      max-width: 700px;
+      min-width: 420px;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 8px 0 24px rgba(0,0,0,0.4);
+    }
+    #activity-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .act-row {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .act-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); flex-shrink: 0; }
+    .act-name { flex: 1; }
+    .act-meta { color: var(--text-muted); font-size: 11px; }
+
+    /* Command Palette - Ctrl+K, centered near the top of the screen */
+    #cmdp-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.5);
+    }
+    #cmdp-overlay.open { display: block; }
+    #cmdp-box {
+      position: absolute;
+      top: 14vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 560px;
+      max-width: 90vw;
+      max-height: 60vh;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    }
+    #cmdp-input {
+      flex-shrink: 0;
+      background: #0d1117;
+      border: none;
+      border-bottom: 1px solid #21262d;
+      color: #c9d1d9;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: Consolas, monospace;
+    }
+    #cmdp-input:focus { outline: none; }
+    #cmdp-results { overflow-y: auto; padding: 6px; }
+    .cmdp-item {
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #c9d1d9;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cmdp-item.selected { background: #21262d; }
+    .cmdp-item-category { color: #6e7681; font-size: 11px; }
+    .cmdp-empty { padding: 20px; text-align: center; color: #6e7681; font-size: 13px; }
+
+    /* Global error toasts - highest z-index in the app, always visible
+       above any overlay, since an error notification is more important
+       than whatever else is on screen. */
+    #error-toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 420px;
+    }
+    .error-toast {
+      background: #161b22;
+      border: 1px solid #f85149;
+      border-left: 4px solid #f85149;
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      font-family: Consolas, monospace;
+      cursor: pointer;
+      animation: error-toast-in 0.15s ease-out;
+    }
+    @keyframes error-toast-in {
+      from { transform: translateX(20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .error-toast-title {
+      color: #ffa198;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .error-toast-message {
+      color: #c9d1d9;
+      font-size: 11px;
+      margin-top: 4px;
+      white-space: pre-wrap;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .error-toast-dismiss { color: #6e7681; font-size: 14px; }
+    .error-toast-dismiss:hover { color: #c9d1d9; }
+
+    /* Success/info variants of the same toast, for routine feedback that
+       used to be a blocking alert() - "Committed and pushed," "Package
+       installed," etc. Only the accent color and title text color change;
+       everything else (position, stacking, dismiss behavior) is shared. */
+    .toast-success { border-color: var(--emerald); border-left-color: var(--emerald); }
+    .toast-success .error-toast-title { color: var(--emerald-bright); }
+    .toast-info { border-color: #58a6ff; border-left-color: #58a6ff; }
+    .toast-info .error-toast-title { color: #58a6ff; }
+
+    /* Lint results panel, shown above the status bar in the Code Editor */
+    #ce-lint-panel {
+      display: none;
+      flex-shrink: 0;
+      max-height: 140px;
+      overflow-y: auto;
+      background: #0d1117;
+      border-top: 1px solid #21262d;
+    }
+    #ce-lint-panel.open { display: block; }
+    .ce-lint-item {
+      display: flex;
+      gap: 8px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-family: Consolas, monospace;
+      cursor: pointer;
+      color: #c9d1d9;
+    }
+    .ce-lint-item:hover { background: #161b22; }
+    .ce-lint-item .ce-lint-line { color: #6e7681; flex-shrink: 0; }
+    .ce-lint-item.ce-lint-error .ce-lint-dot { color: #f85149; }
+    .ce-lint-item.ce-lint-warning .ce-lint-dot { color: #d29922; }
+    .ce-lint-item .ce-lint-rule { color: #6e7681; flex-shrink: 0; }
+    .cet-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      color: #c9d1d9;
+      cursor: pointer;
+      white-space: nowrap;
+      border-left: 2px solid transparent;
+    }
+    .cet-row:hover { background: #161b22; }
+    .cet-row.active { background: #161b22; border-left-color: #58a6ff; color: #58a6ff; }
+    .cet-folder { color: #8b949e; }
+
+    #code-editor-main-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+    #code-editor-tabbar {
+      display: flex;
+      overflow-x: auto;
+      background: #010409;
+      border-bottom: 1px solid #21262d;
+      flex-shrink: 0;
+    }
+    .cet-tab {
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: Consolas, monospace;
+      color: #8b949e;
+      border-right: 1px solid #21262d;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cet-tab.active { background: #0d1117; color: #c9d1d9; border-bottom: 2px solid #58a6ff; }
+    .cet-tab .cet-tab-dirty { width: 6px; height: 6px; border-radius: 50%; background: #f0883e; }
+    .cet-tab .cet-tab-close { color: #6e7681; }
+    .cet-tab .cet-tab-close:hover { color: #c9d1d9; }
+
+    #code-editor-cm-container { flex: 1; min-height: 0; overflow: hidden; }
+
+    /* Prompt-driven coding bar - modeled on Claude's own composer: a
+       rounded input box with a "+" context menu, auto-growing textarea,
+       and a send arrow, kept in Nexus's own dark/emerald palette. */
+    #code-editor-prompt-bar {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+      background: #161b22;
+      border-bottom: 1px solid #21262d;
+    }
+    .ce-target-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .ce-target-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #58a6ff;
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      padding: 2px 4px;
+    }
+    #ce-attachments-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ce-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #c9d1d9;
+      font-family: Consolas, monospace;
+    }
+    .ce-chip .ce-chip-remove { cursor: pointer; color: #8b949e; }
+    .ce-chip .ce-chip-remove:hover { color: #f0883e; }
+
+    #ce-composer {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 18px;
+      padding: 6px 8px 6px 6px;
+    }
+    #ce-composer:focus-within { border-color: var(--emerald); }
+
+    .ce-composer-plus-wrap { position: relative; flex-shrink: 0; }
+    #ce-plus-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #ce-plus-btn:hover { background: #30363d; }
+    #ce-plus-menu {
+      display: none;
+      position: absolute;
+      bottom: 38px;
+      left: 0;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 6px;
+      width: 240px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 20;
+    }
+    #ce-plus-menu.open { display: block; }
+    .ce-plus-item {
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #c9d1d9;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ce-plus-item:hover { background: #21262d; }
+
+    #ce-prompt-instruction {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #c9d1d9;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      resize: none;
+      max-height: 160px;
+      overflow-y: auto;
+      padding: 6px 4px;
+      line-height: 1.4;
+    }
+    #ce-prompt-instruction:focus { outline: none; }
+
+    #ce-send-btn {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--emerald);
+      border: none;
+      color: #000;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #ce-send-btn:disabled { background: #30363d; color: #6e7681; cursor: not-allowed; }
+
+    /* Simple file-picker popover used by the "Attach a file" plus-option */
+    #ce-file-picker-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      background: rgba(1,4,9,0.75);
+    }
+    #ce-file-picker-box {
+      position: absolute;
+      bottom: 60px;
+      left: 50px;
+      width: 320px;
+      max-height: 360px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    #ce-file-picker-search {
+      margin: 8px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    #ce-file-picker-list { overflow-y: auto; flex: 1; padding-bottom: 8px; }
+    .ce-file-picker-item {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-family: Consolas, monospace;
+      color: #c9d1d9;
+      cursor: pointer;
+    }
+    .ce-file-picker-item:hover { background: #21262d; }
+
+    #code-editor-diff-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: none;
+      background: rgba(1,4,9,0.92);
+      flex-direction: column;
+      padding: 16px;
+    }
+    #code-editor-diff-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #code-editor-cm-container .CodeMirror {
+      height: 100%;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+    #code-editor-cm-container .CodeMirror-gutters { background: #0d1117; border-right: 1px solid #21262d; }
+    #code-editor-cm-container .CodeMirror-linenumber { color: #6e7681; }
+    #code-editor-cm-container .cm-keyword { color: #ff7b72; }
+    #code-editor-cm-container .cm-string { color: #a5d6ff; }
+    #code-editor-cm-container .cm-comment { color: #8b949e; font-style: italic; }
+    #code-editor-cm-container .cm-number { color: #79c0ff; }
+    #code-editor-cm-container .cm-atom { color: #79c0ff; }
+    #code-editor-cm-container .cm-def { color: #d2a8ff; }
+    #code-editor-cm-container .cm-variable { color: #c9d1d9; }
+    #code-editor-cm-container .cm-property { color: #79c0ff; }
+    #code-editor-cm-container .cm-tag { color: #7ee787; }
+    #code-editor-cm-container .cm-attribute { color: #d2a8ff; }
+    #code-editor-cm-container .CodeMirror-cursor { border-left-color: #c9d1d9; }
+    #code-editor-cm-container .CodeMirror-selected { background: #264f78; }
+
+    .code-editor-statusbar {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background: #010409;
+      border-top: 1px solid #21262d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #8b949e;
+      font-family: Consolas, monospace;
+    }
+    .code-editor-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6e7681;
+      font-size: 13px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 </head>
 <body>
-  <div id="sidebar">
+  <div id="sidebar" role="navigation" aria-label="Main navigation">
     <div class="logo">NEXUS</div>
-    <button class="nav-btn active" id="tab-btn-projects" onclick="switchTab('projects')" title="Projects Dashboard">📁</button>
-    <button class="nav-btn" id="tab-btn-preview" onclick="switchTab('preview')" title="Live App Preview">🌐</button>
-    <button class="nav-btn" id="tab-btn-terminal" onclick="switchTab('terminal')" title="Real Terminal">💻</button>
-    <button class="nav-btn" id="tab-btn-cloud" onclick="switchTab('cloud')" title="Gemini / Cloud">☁️</button>
-    <button class="nav-btn" id="tab-btn-assist" onclick="switchTab('assist')" title="AI Code Assist">🩹</button>
-    <button class="nav-btn" id="tab-btn-ship" onclick="switchTab('ship')" title="Ship: Git, Feature Builder, Deploy">🚀</button>
-    <button class="nav-btn" id="tab-btn-config" onclick="switchTab('config')" title="Project Config: Secrets & Services">🔐</button>
+    <button class="nav-btn active" id="tab-btn-projects" onclick="switchTab('projects')" aria-label="Projects Dashboard" title="Projects Dashboard">📁</button>
+    <button class="nav-btn" id="tab-btn-workspace" onclick="switchTab('workspace')" aria-label="Workspace: Live Preview, Terminal, Ship, AI Assist" title="Workspace: Live Preview, Terminal, Ship, AI Assist">🧩</button>
+    <button class="nav-btn" id="tab-btn-editor" onclick="toggleCodeEditor()" aria-label="Code Editor" title="Code Editor">📝</button>
+    <button class="nav-btn" id="tab-btn-apitester" onclick="toggleApiTester()" aria-label="API Tester" title="API Tester">🔌</button>
+    <button class="nav-btn" id="tab-btn-docker" onclick="toggleDockerPanel()" aria-label="Docker" title="Docker">🐳</button>
+    <button class="nav-btn" id="tab-btn-packages" onclick="togglePackageManager()" aria-label="Package Manager" title="Package Manager">📦</button>
+    <button class="nav-btn" id="tab-btn-recentchanges" onclick="toggleRecentChanges()" aria-label="Recent Changes" title="Recent Changes">↺</button>
+    <button class="nav-btn" id="tab-btn-activity" onclick="toggleActivityView()" aria-label="Activity: everything currently running" title="Activity: everything currently running">
+      ⚡<span id="activity-dot" style="display:none;"></span>
+    </button>
+    <button class="nav-btn" id="tab-btn-cloud" onclick="switchTab('cloud')" aria-label="Gemini / Cloud" title="Gemini / Cloud">☁️</button>
   </div>
 
   <div id="main-container">
     <header>
       <h2>NEXUS <span class="muted">Active: <strong id="header-active-name" class="accent">None</strong></span></h2>
+      <span class="muted small mono" id="build-badge" style="margin-right:10px;" title="Build number = real git commit count in Nexus's own repo">Build —</span>
+      <button class="btn btn-secondary tiny" onclick="openCommandPalette()" title="Command Palette" style="margin-right:10px;">⌘ Ctrl+K</button>
       <div class="status-badge"><span class="status-dot"></span> ELECTRON — REAL BACKEND</div>
     </header>
 
@@ -44,12 +1030,32 @@
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <label class="label">✨ Create New Project from a Prompt (Claude generates real starter code)</label>
+        <div class="form-grid">
+          <div class="form-row">
+            <input type="text" id="new-project-name" placeholder="New project name (e.g. recipe-tracker)">
+          </div>
+          <div class="form-row">
+            <input type="text" id="new-project-description" placeholder="Describe what it should do (e.g. a React app that tracks recipes with local storage)">
+          </div>
+          <div class="form-row">
+            <button class="btn" onclick="generateNewProjectUI(event)">Generate Project</button>
+          </div>
+          <div class="muted small" id="new-project-progress" style="min-height:16px;"></div>
+        </div>
+      </div>
       <h3 class="section-title">Workspace Projects</h3>
       <div id="project-list" class="project-grid"></div>
     </div>
 
-    <!-- PREVIEW -->
-    <div id="view-preview" class="view-pane">
+    <!-- WORKSPACE: Live Preview, Terminal, Ship, AI Assist - one screen, resizable -->
+    <div id="view-workspace" class="view-pane">
+      <div id="workspace-grid">
+        <div class="workspace-panel" id="wp-preview">
+          <div class="workspace-panel-title">🌐 Live Preview</div>
+          <div class="workspace-panel-body">
       <div id="preview-wrap">
         <div id="preview-placeholder" class="muted small" style="flex:1; display:flex; align-items:center; justify-content:center; text-align:center;">
           No project running. Launch a project from the Projects tab to see its live preview here.
@@ -76,10 +1082,14 @@
         </div>
         </div>
       </div>
-    </div>
+          </div>
+        </div>
 
-    <!-- TERMINAL -->
-    <div id="view-terminal" class="view-pane">
+        <div class="workspace-resizer workspace-resizer-v" id="resizer-v"></div>
+
+        <div class="workspace-panel" id="wp-terminal">
+          <div class="workspace-panel-title">💻 Real Terminal</div>
+          <div class="workspace-panel-body">
       <div id="terminal-wrap">
         <div id="terminal-screen">NEXUS real terminal — commands run for real on your machine.
 Type "help" for tips.
@@ -90,111 +1100,23 @@ Type "help" for tips.
           <input type="text" id="term-input" placeholder="Type a real shell command…" onkeydown="handleTermKey(event)">
         </div>
       </div>
-    </div>
-
-    <!-- CLOUD / GEMINI -->
-    <div id="view-cloud" class="view-pane">
-      <div class="card">
-        <label class="label">Claude API Key — powers Bug Fix Assist & Feature Suggestions</label>
-        <div class="form-row">
-          <input type="password" id="claude-api-key" placeholder="Paste your Anthropic Claude API key">
-          <button class="btn" onclick="saveClaudeKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearClaudeKey()">Clear</button>
-        </div>
-        <p class="muted small" id="claude-status" style="margin-top:8px;">No key saved yet.</p>
-      </div>
-
-      <div class="card">
-        <label class="label">Gemini API Key — powers the "Ask Gemini" box below</label>
-        <div class="form-row">
-          <input type="password" id="gemini-api-key" placeholder="Paste your Gemini API key">
-          <button class="btn" onclick="saveGeminiKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearGeminiKey()">Clear</button>
-        </div>
-        <p class="muted small" id="gemini-status" style="margin-top:8px;">No key saved yet.</p>
-      </div>
-
-      <div class="card">
-        <label class="label">GCP / Firebase Project ID</label>
-        <div class="form-row">
-          <input type="text" id="gcp-project-id" placeholder="my-firebase-project">
-          <button class="btn" onclick="saveGcpProject()">Save</button>
-        </div>
-      </div>
-
-      <div class="card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
-        <label class="label">Ask Gemini (real API call)</label>
-        <div class="form-row">
-          <input type="text" id="gemini-prompt" placeholder="Ask something…">
-          <button class="btn" onclick="askGemini()">Send</button>
-        </div>
-        <pre id="gemini-response" class="response-box"></pre>
-      </div>
-    </div>
-
-    <!-- AI CODE ASSIST -->
-    <div id="view-assist" class="view-pane">
-      <div class="card" style="flex-shrink:0;">
-        <label class="label">Bug Fix Assist (Claude) — every change requires your approval</label>
-        <div class="form-grid">
-          <div class="form-row">
-            <label class="target-label"><input type="radio" name="assist-target" value="project" checked onchange="onTargetChange()"> Active project</label>
-            <label class="target-label"><input type="radio" name="assist-target" value="self" onchange="onTargetChange()"> Nexus itself (self-update)</label>
-          </div>
-          <div class="form-row">
-            <select id="assist-file-select"></select>
-            <button class="btn btn-secondary" onclick="refreshFileList()">↻ Refresh files</button>
-          </div>
-          <div class="form-row">
-            <input type="text" id="assist-error-text" placeholder="Paste the error message (or leave blank to just look for bugs)">
-          </div>
-          <div class="form-row" style="align-items:center;">
-            <label class="autonomous-toggle">
-              <input type="checkbox" id="autonomous-checkbox" onchange="onAutonomousToggle()">
-              Fully autonomous (skip review — resets to OFF every app restart)
-            </label>
-            <button class="btn" onclick="analyzeBug()">Analyze</button>
           </div>
         </div>
-      </div>
 
-      <div class="card" id="proposal-card" style="display:none; flex:1; overflow:hidden; display:flex; flex-direction:column;">
-        <p class="accent bold" style="margin-bottom:8px;">Proposed change to <span id="proposal-file" class="mono"></span></p>
-        <p id="proposal-explanation" class="muted small" style="margin-bottom:10px;"></p>
-        <div style="display:flex; gap:12px; flex:1; overflow:hidden;">
-          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-            <span class="muted small bold">BEFORE</span>
-            <pre id="proposal-before" class="diff-box"></pre>
-          </div>
-          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-            <span class="accent small bold">PROPOSED AFTER</span>
-            <pre id="proposal-after" class="diff-box"></pre>
-          </div>
-        </div>
-        <div class="row" style="margin-top:12px; flex-shrink:0;">
-          <button class="btn" onclick="approveChange()">✓ Approve & Write File</button>
-          <button class="btn btn-secondary" onclick="rejectChange()">✕ Reject</button>
-        </div>
-      </div>
+        <div class="workspace-resizer workspace-resizer-h" id="resizer-h-left"></div>
+        <div class="workspace-resizer workspace-resizer-h" id="resizer-h-right"></div>
 
-      <div class="card" style="flex-shrink:0;">
-        <label class="label">Feature Suggestions (Claude) — advisory only, nothing is ever applied automatically</label>
-        <div class="form-row">
-          <button class="btn" onclick="analyzeFeatures()">Analyze Active Project</button>
-        </div>
-        <div id="suggestions-list" class="suggestions-list"></div>
-      </div>
-    </div>
-
-    <!-- SHIP: git, feature builder, deploy -->
-    <div id="view-ship" class="view-pane">
+        <div class="workspace-panel" id="wp-ship">
+          <div class="workspace-panel-title">🚀 Ship</div>
+          <div class="workspace-panel-body">
       <div class="card" style="flex-shrink:0;">
         <label class="label">Git — active project: <span id="ship-active-name" class="accent">none</span></label>
         <div class="form-row" style="margin-top:8px;">
           <button class="btn btn-secondary" onclick="refreshGitStatus()">↻ Refresh status</button>
           <span class="mono small" id="git-branch-display">branch: —</span>
         </div>
-        <pre id="git-status-display" class="diff-box" style="max-height:100px; margin-top:8px;"></pre>
+        <pre id="git-status-display" class="diff-box" style="max-height:60px; margin-top:8px;"></pre>
+        <div id="git-diff-file-list" style="margin-top:8px;"></div>
         <div class="form-row" style="margin-top:10px;">
           <input type="text" id="git-branch-input" placeholder="new-feature-branch-name">
           <button class="btn btn-secondary" onclick="createBranch()">Create Branch</button>
@@ -203,6 +1125,14 @@ Type "help" for tips.
           <input type="text" id="git-commit-message" placeholder="Commit message">
           <button class="btn" onclick="commitAndPush()">Commit &amp; Push</button>
         </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Commit History</label>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="refreshCommitHistory()">↻ Load history</button>
+        </div>
+        <div id="commit-history-list" style="margin-top:8px; max-height:280px; overflow-y:auto;"></div>
       </div>
 
       <div class="card" style="flex-shrink:0;">
@@ -262,6 +1192,16 @@ Type "help" for tips.
       </div>
 
       <div class="card" style="flex-shrink:0;">
+        <label class="label">Test Results — per-test detail (Jest/Vitest), rerun a single failing test</label>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="runDetailedTests()">▶ Run Tests</button>
+          <span class="muted small" id="test-framework-label"></span>
+        </div>
+        <div id="test-results-summary" class="muted small" style="margin-top:6px;"></div>
+        <div id="test-results-list" style="margin-top:6px; max-height:260px; overflow-y:auto;"></div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
         <label class="label">Deploy — runs your existing script for this project</label>
         <div class="form-row" style="margin-top:8px;">
           <input type="text" id="deploy-command" placeholder="e.g. npm run deploy, or bash deploy.sh">
@@ -270,10 +1210,127 @@ Type "help" for tips.
         </div>
         <pre id="deploy-log-screen" class="diff-box" style="max-height:140px; margin-top:8px;"></pre>
       </div>
+          </div>
+        </div>
+
+        <div class="workspace-panel" id="wp-assist">
+          <div class="workspace-panel-title">🩹 AI Code Assist</div>
+          <div class="workspace-panel-body">
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Bug Fix Assist (Claude) — every change requires your approval</label>
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="target-label"><input type="radio" name="assist-target" value="project" checked onchange="onTargetChange()"> Active project</label>
+            <label class="target-label"><input type="radio" name="assist-target" value="self" onchange="onTargetChange()"> Nexus itself (self-update)</label>
+          </div>
+          <div class="form-row">
+            <select id="assist-file-select"></select>
+            <button class="btn btn-secondary" onclick="refreshFileList()">↻ Refresh files</button>
+          </div>
+          <div class="form-row">
+            <input type="text" id="assist-error-text" placeholder="Paste the error message (or leave blank to just look for bugs)">
+          </div>
+          <div class="form-row" style="align-items:center;">
+            <label class="autonomous-toggle">
+              <input type="checkbox" id="autonomous-checkbox" onchange="onAutonomousToggle()">
+              Fully autonomous (skip review — resets to OFF every app restart)
+            </label>
+            <button class="btn" onclick="analyzeBug()">Analyze</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="proposal-card" style="display:none; flex:1; overflow:hidden; display:flex; flex-direction:column;">
+        <p class="accent bold" style="margin-bottom:8px;">Proposed change to <span id="proposal-file" class="mono"></span></p>
+        <p id="proposal-explanation" class="muted small" style="margin-bottom:10px;"></p>
+        <div style="display:flex; gap:12px; flex:1; overflow:hidden;">
+          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <span class="muted small bold">BEFORE</span>
+            <pre id="proposal-before" class="diff-box"></pre>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <span class="accent small bold">PROPOSED AFTER</span>
+            <pre id="proposal-after" class="diff-box"></pre>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px; flex-shrink:0;">
+          <button class="btn" onclick="approveChange()">✓ Approve & Write File</button>
+          <button class="btn btn-secondary" onclick="rejectChange()">✕ Reject</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Feature Suggestions (Claude) — advisory only, nothing is ever applied automatically</label>
+        <div class="form-row">
+          <button class="btn" onclick="analyzeFeatures()">Analyze Active Project</button>
+        </div>
+        <div id="suggestions-list" class="suggestions-list"></div>
+      </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOUD / GEMINI -->
+    <div id="view-cloud" class="view-pane">
+      <div class="card">
+        <label class="label">Claude API Key — powers Bug Fix Assist & Feature Suggestions</label>
+        <div class="form-row">
+          <input type="password" id="claude-api-key" placeholder="Paste your Anthropic Claude API key">
+          <button class="btn" onclick="saveClaudeKey()">Save</button>
+          <button class="btn btn-secondary" onclick="clearClaudeKey()">Clear</button>
+        </div>
+        <p class="muted small" id="claude-status" style="margin-top:8px;">No key saved yet.</p>
+      </div>
+
+      <div class="card">
+        <label class="label">Gemini API Key — powers the "Ask Gemini" box below</label>
+        <div class="form-row">
+          <input type="password" id="gemini-api-key" placeholder="Paste your Gemini API key">
+          <button class="btn" onclick="saveGeminiKey()">Save</button>
+          <button class="btn btn-secondary" onclick="clearGeminiKey()">Clear</button>
+        </div>
+        <p class="muted small" id="gemini-status" style="margin-top:8px;">No key saved yet.</p>
+      </div>
+
+      <div class="card">
+        <label class="label">GCP / Firebase Project ID</label>
+        <div class="form-row">
+          <input type="text" id="gcp-project-id" placeholder="my-firebase-project">
+          <button class="btn" onclick="saveGcpProject()">Save</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="label">Backup / Move "My Nexus Setup"</label>
+        <p class="muted small" style="margin-top:6px;">
+          Exports your project list (names, folders, commands, ports, deploy commands, services) to a file you can move to a new machine.
+          <strong>Secrets are never included</strong> — they're encrypted per-Windows-account via <code>safeStorage</code> and genuinely can't be decrypted anywhere else. You'll need to re-enter them per project after importing.
+        </p>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="exportNexusSetupUI()">⬇ Export Setup</button>
+          <button class="btn btn-secondary" onclick="importNexusSetupUI()">⬆ Import Setup</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+        <label class="label">Ask Gemini (real API call)</label>
+        <div class="form-row">
+          <input type="text" id="gemini-prompt" placeholder="Ask something…">
+          <button class="btn" onclick="askGemini()">Send</button>
+        </div>
+        <pre id="gemini-response" class="response-box"></pre>
+      </div>
     </div>
 
     <!-- PROJECT CONFIG: secrets + services -->
-    <div id="view-config" class="view-pane">
+    <!-- Per-project config panel - hidden here by default, physically moved
+         into whichever project card's ⚙️ Config button was clicked. Only
+         one project's config is open/visible at a time. All the secrets,
+         constitution, services, and integrations here are already correctly
+         scoped by that specific project's folder/project_uid - this is just
+         changing WHERE the panel appears, not how the data is scoped. -->
+    <div id="project-config-panel" style="display:none; flex-direction:column; gap:16px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
       <div class="card" style="flex-shrink:0;">
         <label class="label">Project Identity — <span id="config-active-name" class="accent">none</span></label>
         <p class="muted small mono" id="config-uid-display" style="margin-top:6px;">no project selected</p>
@@ -314,15 +1371,297 @@ Type "help" for tips.
         <div id="services-list" class="suggestions-list"></div>
       </div>
 
-      <div class="card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="card" style="flex-shrink:0;">
         <label class="label">Detected Integrations in this Project</label>
         <div class="form-row" style="margin-top:8px;">
           <button class="btn btn-secondary" onclick="scanIntegrations()">Scan Project</button>
         </div>
-        <div id="integrations-list" class="suggestions-list" style="overflow-y:auto;"></div>
+        <div id="integrations-list" class="suggestions-list"></div>
       </div>
     </div>
   </div>
+
+  <!-- Activity: one place to see everything Nexus currently has running -
+       dev servers, Docker containers, npm operations, Docker builds. All
+       state here is aggregated from what's already tracked elsewhere, not
+       a separate/parallel tracking system that could drift out of sync. -->
+  <div id="activity-overlay" onclick="if(event.target===this) closeActivityView()" role="dialog" aria-modal="true">
+    <div id="activity-panel">
+      <div class="code-editor-header">
+        <strong>⚡ Activity</strong>
+        <button onclick="closeActivityView()" aria-label="Close panel" title="Close">✕</button>
+      </div>
+      <div id="activity-body">
+        <div class="card" style="flex-shrink:0;">
+          <label class="label">Running Dev Servers</label>
+          <div id="activity-projects-list" style="margin-top:8px;"></div>
+        </div>
+        <div class="card" style="flex-shrink:0;">
+          <label class="label">Docker</label>
+          <div id="activity-docker-list" style="margin-top:8px;"></div>
+        </div>
+        <div class="card" style="flex-shrink:0;">
+          <label class="label">Package Manager</label>
+          <div id="activity-npm-list" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Changes: every write that creates a real .bak (AI approvals,
+       manual saves, search & replace, format/lint) shows up here, with a
+       real one-click revert. -->
+  <div id="recentchanges-overlay" onclick="if(event.target===this) closeRecentChanges()" role="dialog" aria-modal="true">
+    <div id="recentchanges-panel">
+      <div class="code-editor-header">
+        <strong>↺ Recent Changes</strong>
+        <button onclick="closeRecentChanges()" aria-label="Close panel" title="Close">✕</button>
+      </div>
+      <div id="recentchanges-body">
+        <div class="card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+          <div class="form-row" style="flex-shrink:0;">
+            <button class="btn btn-secondary" onclick="refreshRecentChanges()">↻ Refresh</button>
+          </div>
+          <div id="recentchanges-list" style="margin-top:8px; overflow-y:auto; flex:1;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Package Manager: real npm install/uninstall/update against the
+       active project's own package.json and node_modules. -->
+  <div id="pkgmgr-overlay" onclick="if(event.target===this) closePackageManager()" role="dialog" aria-modal="true">
+    <div id="pkgmgr-panel">
+      <div class="code-editor-header">
+        <strong>📦 Packages — <span id="pkgmgr-project-name">none</span></strong>
+        <button onclick="closePackageManager()" aria-label="Close panel" title="Close">✕</button>
+      </div>
+      <div id="pkgmgr-body">
+        <div class="card" style="flex-shrink:0;">
+          <label class="label">Add a Package</label>
+          <div class="form-row" style="margin-top:8px;">
+            <input type="text" id="pkgmgr-add-name" placeholder="package name">
+            <input type="text" id="pkgmgr-add-version" placeholder="version (optional)" style="max-width:140px;">
+            <label class="cet-search-case"><input type="checkbox" id="pkgmgr-add-dev"> Dev dep</label>
+            <button class="btn" onclick="installNewPackage()">Install</button>
+          </div>
+        </div>
+
+        <div class="card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+          <label class="label">Installed Dependencies</label>
+          <div class="form-row" style="margin-top:8px;">
+            <button class="btn btn-secondary" onclick="refreshPackageList()">↻ Refresh</button>
+            <button class="btn btn-secondary" onclick="checkOutdatedPackages()">Check for updates</button>
+          </div>
+          <div id="pkgmgr-list" style="margin-top:8px; overflow-y:auto; flex:1;"></div>
+        </div>
+
+        <div class="card" id="pkgmgr-log-card" style="flex-shrink:0; display:none;">
+          <label class="label">Output</label>
+          <pre id="pkgmgr-log" class="diff-box" style="max-height:180px; margin-top:8px;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docker: real build/run/stop against the user's own installed Docker,
+       never bundled or faked. -->
+  <div id="docker-overlay" onclick="if(event.target===this) closeDockerPanel()" role="dialog" aria-modal="true">
+    <div id="docker-panel">
+      <div class="code-editor-header">
+        <strong>🐳 Docker — <span id="docker-status-label">checking…</span></strong>
+        <button onclick="closeDockerPanel()" aria-label="Close panel" title="Close">✕</button>
+      </div>
+      <div id="docker-body">
+        <div class="card" style="flex-shrink:0;">
+          <label class="label">Build — active project: <span id="docker-project-name" class="accent">none</span></label>
+          <div class="form-row" style="margin-top:8px;">
+            <input type="text" id="docker-build-tag" placeholder="image tag, e.g. my-app:latest">
+            <button class="btn" onclick="startDockerBuild()">Build</button>
+          </div>
+          <pre id="docker-build-log" class="diff-box" style="max-height:160px; margin-top:8px; display:none;"></pre>
+        </div>
+
+        <div class="card" style="flex-shrink:0;">
+          <label class="label">Run a Container</label>
+          <div class="form-grid">
+            <div class="form-row">
+              <input type="text" id="docker-run-image" placeholder="image name (e.g. the tag you just built)">
+              <input type="text" id="docker-run-name" placeholder="container name">
+            </div>
+            <div class="form-row">
+              <input type="text" id="docker-run-hostport" placeholder="host port" style="max-width:120px;">
+              <input type="text" id="docker-run-containerport" placeholder="container port" style="max-width:120px;">
+              <button class="btn" onclick="startDockerRun()">▶ Run</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+          <label class="label">Containers</label>
+          <div class="form-row" style="margin-top:8px;">
+            <button class="btn btn-secondary" onclick="refreshDockerContainers()">↻ Refresh</button>
+          </div>
+          <div id="docker-containers-list" style="margin-top:8px; overflow-y:auto; flex:1;"></div>
+        </div>
+
+        <div class="card" id="docker-logs-card" style="flex-shrink:0; display:none;">
+          <label class="label">Logs — <span id="docker-logs-container-name"></span></label>
+          <pre id="docker-container-logs" class="diff-box" style="max-height:200px; margin-top:8px;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Tester: real HTTP requests sent from the main process (no CORS
+       issues), with a real per-project saved-request collection. -->
+  <div id="api-tester-overlay" onclick="if(event.target===this) closeApiTester()" role="dialog" aria-modal="true">
+    <div id="api-tester-panel">
+      <div id="api-tester-saved-col">
+        <div class="code-editor-header">
+          <strong>🔌 Saved Requests</strong>
+          <button onclick="closeApiTester()" aria-label="Close panel" title="Close">✕</button>
+        </div>
+        <div id="api-saved-list"></div>
+        <div style="padding:8px;">
+          <button class="btn btn-secondary tiny" style="width:100%;" onclick="saveCurrentApiRequest()">💾 Save current as new</button>
+        </div>
+      </div>
+      <div id="api-tester-main-col">
+        <div id="api-request-bar">
+          <select id="api-method">
+            <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+          </select>
+          <input type="text" id="api-url" placeholder="http://localhost:3000/api/...">
+          <button class="btn" onclick="sendApiRequest()">Send</button>
+        </div>
+        <div id="api-request-detail">
+          <div class="api-detail-col">
+            <span class="muted small bold">HEADERS (one per line, "Key: Value")</span>
+            <textarea id="api-headers" placeholder="Content-Type: application/json"></textarea>
+          </div>
+          <div class="api-detail-col">
+            <span class="muted small bold">BODY</span>
+            <textarea id="api-body" placeholder='{"example": true}'></textarea>
+          </div>
+        </div>
+        <div id="api-response-area">
+          <div id="api-response-status" class="muted small"></div>
+          <pre id="api-response-body" class="diff-box" style="flex:1; margin-top:6px;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code Editor: a real file tree + syntax-highlighted editor, styled
+       after GitHub's dark code view. Reuses the same listProjectFiles /
+       readFile / applyFileChange backend as Bug Fix Assist - saves here get
+       the exact same automatic .bak backup as any other write in Nexus. -->
+  <div id="code-editor-overlay" onclick="if (event.target === this) closeCodeEditor()" role="dialog" aria-modal="true">
+    <div id="code-editor-panel">
+      <div id="code-editor-filetree-col">
+        <div class="code-editor-header">
+          <strong>📝 <span id="editor-project-name">No project</span></strong>
+          <button onclick="closeCodeEditor()" aria-label="Close panel" title="Close">✕</button>
+        </div>
+        <div class="cet-mode-tabs">
+          <button class="cet-mode-tab active" id="cet-mode-files-btn" onclick="showCodeEditorFileTree()">📁 Files</button>
+          <button class="cet-mode-tab" id="cet-mode-search-btn" onclick="showCodeEditorSearch()">🔍 Search</button>
+        </div>
+        <div id="code-editor-filetree"></div>
+        <div id="code-editor-search-panel" style="display:none;">
+          <div class="cet-search-box">
+            <input type="text" id="ce-search-query" placeholder="Search across all files…" onkeydown="if(event.key==='Enter') runProjectSearch()">
+            <label class="cet-search-case"><input type="checkbox" id="ce-search-case"> Aa</label>
+          </div>
+          <div class="cet-search-box">
+            <input type="text" id="ce-search-replacement" placeholder="Replace with…">
+            <button class="btn tiny btn-secondary" onclick="runProjectReplaceAll()" title="Replace all matches across the project">Replace All</button>
+          </div>
+          <div id="ce-search-summary" class="muted small" style="padding:4px 10px;"></div>
+          <div id="ce-search-results"></div>
+        </div>
+      </div>
+      <div id="code-editor-main-col">
+        <div id="code-editor-tabbar"></div>
+        <div id="code-editor-prompt-bar">
+          <div class="ce-target-row">
+            <span class="muted small">Target file:</span>
+            <input type="text" id="ce-prompt-filepath" placeholder="current file, or a new path to create">
+          </div>
+          <div id="ce-attachments-row"></div>
+          <div id="ce-composer">
+            <div class="ce-composer-plus-wrap">
+              <button id="ce-plus-btn" onclick="toggleCePlusMenu(event)" title="Add context">+</button>
+              <div id="ce-plus-menu">
+                <div class="ce-plus-item" onclick="ceAttachFile()">📎 Attach a file for context</div>
+                <div class="ce-plus-item" onclick="ceIncludeTerminal()">🖥️ Include recent terminal output</div>
+                <div class="ce-plus-item" onclick="ceOpenFeatureBuilder()">🧩 Multi-file feature → Feature Builder</div>
+              </div>
+            </div>
+            <textarea id="ce-prompt-instruction" rows="1" placeholder="Ask Claude to write or change this file…" oninput="ceAutoResize(this)" onkeydown="ceHandleKeydown(event)"></textarea>
+            <button id="ce-send-btn" onclick="submitEditorPrompt()" title="Send (Enter)">↑</button>
+          </div>
+        </div>
+        <div id="code-editor-cm-container"></div>
+        <div id="code-editor-empty" class="code-editor-empty">Select a file from the tree to start editing, or ask Claude above to write a new one.</div>
+
+        <div id="code-editor-diff-overlay">
+          <div id="code-editor-diff-panel">
+            <p class="accent bold" id="ce-diff-explanation" style="margin-bottom:8px;"></p>
+            <div style="display:flex; gap:12px; flex:1; overflow:hidden;">
+              <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                <span class="muted small bold">BEFORE (empty = new file)</span>
+                <pre id="ce-diff-before" class="diff-box"></pre>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                <span class="accent small bold">PROPOSED AFTER</span>
+                <pre id="ce-diff-after" class="diff-box"></pre>
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px; flex-shrink:0;">
+              <button class="btn" onclick="approveEditorPrompt()">✓ Approve &amp; Write File</button>
+              <button class="btn btn-secondary" onclick="rejectEditorPrompt()">✕ Reject</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ce-file-picker-overlay" onclick="if(event.target===this) closeCeFilePicker()" role="dialog" aria-modal="true">
+          <div id="ce-file-picker-box">
+            <input type="text" id="ce-file-picker-search" placeholder="Filter files…" oninput="renderCeFilePickerList()">
+            <div id="ce-file-picker-list"></div>
+          </div>
+        </div>
+
+        <div id="ce-lint-panel"></div>
+
+        <div class="code-editor-statusbar">
+          <span id="editor-current-file">No file open</span>
+          <div class="row" style="gap:8px; align-items:center;">
+            <label class="cet-search-case" id="ce-format-on-save-row" style="display:none;">
+              <input type="checkbox" id="ce-format-on-save"> Format on save
+            </label>
+            <span id="ce-lint-summary" class="muted small"></span>
+            <button class="btn tiny btn-secondary" id="ce-format-btn" style="display:none;" onclick="formatCurrentEditorFile()">🧹 Format</button>
+            <button class="btn tiny" onclick="saveCurrentEditorFile()">💾 Save (Ctrl+S)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command Palette: Ctrl+K from anywhere, fuzzy-filtered real actions. -->
+  <div id="cmdp-overlay" onclick="if(event.target===this) closeCommandPalette()" role="dialog" aria-modal="true">
+    <div id="cmdp-box">
+      <input type="text" id="cmdp-input" placeholder="Type a command…" oninput="renderCommandPaletteResults()" onkeydown="handleCommandPaletteKeydown(event)">
+      <div id="cmdp-results"></div>
+    </div>
+  </div>
+
+  <!-- Global error toasts - surfaces uncaught errors/rejections from both
+       the renderer and the main process, instead of them vanishing
+       silently unless DevTools happens to be open. -->
+  <div id="error-toast-container"></div>
 
   <script src="renderer.js"></script>
 </body>

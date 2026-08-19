@@ -11,9 +11,33 @@ const os = require('os');
 const { exec, spawn } = require('child_process');
 const crypto = require('crypto');
 const { resolveProjectPath } = require('./projectCloner');
+const { getProjectsRoot } = require('./projectSettings');
+const { saveProject } = require('./projectRegistry');
 const { initUpdater, checkForUpdates, downloadUpdate, installUpdateAndRestart } = require('./updater');
 
 let mainWindow;
+
+// --- Global error surfacing: previously an uncaught exception or rejected
+// promise anywhere in the main process would fail silently - the app could
+// freeze, or a background operation could just stop working, with no
+// indication to the person using it that anything went wrong at all. These
+// two handlers make sure every such error at least reaches the renderer as
+// a visible notification, instead of vanishing into a terminal only a
+// developer running from source would ever see. ---
+process.on('uncaughtException', (err) => {
+  console.error('[Nexus] Uncaught exception in main process:', err);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('main-process-error', { message: err.message, stack: err.stack });
+  }
+});
+process.on('unhandledRejection', (reason) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : null;
+  console.error('[Nexus] Unhandled rejection in main process:', reason);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('main-process-error', { message, stack });
+  }
+});
 
 // Where we persist small bits of config (encrypted Gemini key, GCP project id).
 const CONFIG_PATH = path.join(app.getPath('userData'), 'nexus-config.json');
@@ -70,6 +94,15 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+  // Electron normally syncs the window title to the page's own <title> tag
+  // whenever it loads/changes. Since we set a real title (with build info)
+  // ourselves after an async git lookup, that sync would otherwise race
+  // against it and could silently overwrite our title back to the plain
+  // <title> tag text depending on timing. Disabling the auto-sync makes our
+  // explicit setTitle() call the only thing that ever sets the title.
+  mainWindow.webContents.on('page-title-updated', (event) => {
+    event.preventDefault();
+  });
   // Uncomment while developing to see console errors from the UI:
   // mainWindow.webContents.openDevTools();
 }
@@ -178,7 +211,7 @@ function setupPopupAllowlist() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow();
   setupPreviewSession();
   setupPopupAllowlist();
@@ -186,11 +219,23 @@ app.whenReady().then(() => {
   checkForUpdates().catch((err) => {
     console.error('Update check failed:', err.message);
   });
+
+  const buildInfo = await computeBuildInfo();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (buildInfo.ok) {
+      mainWindow.setTitle(`NEXUS — v${buildInfo.version} · build ${buildInfo.buildNumber} (${buildInfo.commitHash})`);
+    } else if (buildInfo.version) {
+      mainWindow.setTitle(`NEXUS — v${buildInfo.version}`);
+    }
+    // If neither is available, leave the default <title> from index.html.
+  }
 });
 
 app.on('window-all-closed', () => {
   // Make sure we don't leave dev servers running as orphaned processes.
   for (const child of runningProcesses.values()) killProcessTree(child);
+  for (const child of runningContainerLogs.values()) killProcessTree(child);
+  for (const child of npmOperations.values()) killProcessTree(child);
   if (process.platform !== 'darwin') app.quit();
 });
 
@@ -211,6 +256,70 @@ ipcMain.handle('pick-folder', async () => {
   return result.filePaths[0];
 });
 
+// --- Backup/export of "my Nexus setup." Only the genuinely portable parts
+// are included: project names, folders, commands, ports, deploy commands,
+// and service definitions. Secrets are deliberately excluded - they're
+// encrypted via Electron's safeStorage, which is tied to the Windows
+// account that created them, and cannot be decrypted by a different
+// account or machine. Pretending to export them would just produce a file
+// that silently fails to restore anything useful; better to be upfront
+// that secrets always need to be re-entered after an import. ---
+ipcMain.handle('export-nexus-setup', async (_event, { projects }) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Nexus Setup',
+    defaultPath: `nexus-setup-backup-${new Date().toISOString().slice(0, 10)}.json`,
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    note: 'Secrets are NOT included - they are encrypted per-Windows-account and cannot be moved. Re-enter them per project after importing.',
+    projects: (projects || []).map((p) => ({
+      name: p.name,
+      folder: p.folder,
+      command: p.command,
+      port: p.port,
+      deployCommand: p.deployCommand || '',
+      services: p.services || [],
+    })),
+  };
+
+  try {
+    fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2), 'utf8');
+    return { ok: true, path: result.filePath, count: exportData.projects.length };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('import-nexus-setup', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Import Nexus Setup',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
+
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
+  } catch (err) {
+    return { ok: false, error: `Could not read or parse that file: ${err.message}` };
+  }
+
+  if (!Array.isArray(data.projects)) {
+    return { ok: false, error: 'That file does not look like a Nexus setup export (missing a "projects" array).' };
+  }
+
+  const validProjects = data.projects.filter((p) => p && typeof p === 'object' && p.name && p.folder);
+  if (validProjects.length === 0) {
+    return { ok: false, error: 'No valid projects found in that file.' };
+  }
+
+  return { ok: true, projects: validProjects, droppedCount: data.projects.length - validProjects.length };
+});
+
 // --- Resolve whatever the user typed/pasted into the project path field:
 // a real local folder is returned as-is; a GitHub URL is cloned first into
 // the configured projects folder (default: Documents\Nexus Projects), with
@@ -225,6 +334,114 @@ ipcMain.handle('clear-preview-cache', async () => {
   } catch (err) {
     return { ok: false, error: err.message };
   }
+});
+
+// --- Create a brand-new project from a plain-language description.
+// Claude generates a complete, real starter file set (not placeholders) in
+// a strict parseable format; every file gets genuinely written to disk in
+// a fresh local folder. Nothing is silently dropped - if parsing fails, the
+// raw response is returned so the failure is visible, not masked. ---
+function sanitizeProjectFolderName(name) {
+  const cleaned = name.trim().replace(/[^a-zA-Z0-9._ -]/g, '').trim().replace(/\s+/g, '-');
+  return cleaned || 'new-project';
+}
+
+function parseGeneratedFiles(text) {
+  const fileRegex = /===FILE:\s*(.+?)===\r?\n([\s\S]*?)===END FILE===/g;
+  const files = [];
+  let match;
+  while ((match = fileRegex.exec(text)) !== null) {
+    const relPath = match[1].trim();
+    let content = match[2];
+    // Strip a single leading/trailing newline that commonly wraps the block.
+    content = content.replace(/^\r?\n/, '').replace(/\r?\n$/, '');
+    if (relPath) files.push({ relPath, content });
+  }
+  return files;
+}
+
+function detectStartCommand(files) {
+  const pkgFile = files.find((f) => f.relPath === 'package.json');
+  if (pkgFile) {
+    try {
+      const pkg = JSON.parse(pkgFile.content);
+      if (pkg.scripts?.dev) return 'npm run dev';
+      if (pkg.scripts?.start) return 'npm start';
+    } catch {
+      // fall through to default below
+    }
+  }
+  return 'npm run dev';
+}
+
+ipcMain.handle('generate-new-project', async (_event, { name, description }) => {
+  if (!name || !name.trim()) return { ok: false, error: 'Project name is required.' };
+  if (!description || !description.trim()) return { ok: false, error: 'Describe what the project should do.' };
+
+  const projectsRoot = getProjectsRoot();
+  const folderName = sanitizeProjectFolderName(name);
+  const destPath = path.join(projectsRoot, folderName);
+
+  if (fs.existsSync(destPath) && fs.readdirSync(destPath).length > 0) {
+    return { ok: false, error: `A folder already exists at ${destPath} and isn't empty. Pick a different project name.` };
+  }
+
+  const prompt = [
+    'Generate a complete, REAL, runnable starter project based on the description below.',
+    'Respond with a series of files in EXACTLY this format, and nothing else outside it - no',
+    'commentary before or after, no markdown code fences around the whole response:',
+    '',
+    '===FILE: relative/path/to/file.ext===',
+    '<complete file content, nothing else>',
+    '===END FILE===',
+    '(repeat for every file)',
+    '',
+    'Requirements:',
+    '- Pick whatever runtime/stack genuinely best fits the description if none is specified.',
+    '- If it is a Node-based project, include a real package.json with a working "dev" or',
+    '  "start" script that actually runs the app.',
+    '- Include a short README.md explaining what was generated and how to run it.',
+    '- Write real, working code - not empty placeholders or TODO stubs. Keep the file count',
+    '  reasonable (a genuinely minimal but functional starter), but every file must be complete.',
+    '- Do NOT include node_modules, package-lock.json, or any build/generated output.',
+    '- Do NOT wrap individual file contents in markdown code fences (no ```).',
+    '',
+    `PROJECT NAME: ${name}`,
+    `DESCRIPTION: ${description}`,
+  ].join('\n');
+
+  const result = await callClaudeForProjectGeneration(prompt);
+  if (!result.ok) return result;
+
+  const files = parseGeneratedFiles(result.text);
+  if (files.length === 0) {
+    return {
+      ok: false,
+      error: 'AI response was not in the expected file format - nothing was written.',
+      raw: result.text,
+    };
+  }
+
+  try {
+    fs.mkdirSync(destPath, { recursive: true });
+    for (const file of files) {
+      const absPath = path.join(destPath, file.relPath);
+      fs.mkdirSync(path.dirname(absPath), { recursive: true });
+      fs.writeFileSync(absPath, file.content, 'utf8');
+    }
+  } catch (err) {
+    return { ok: false, error: `Failed writing generated files: ${err.message}` };
+  }
+
+  const suggestedCommand = detectStartCommand(files);
+  saveProject({ localPath: destPath, name: name.trim() });
+
+  return {
+    ok: true,
+    path: destPath,
+    files: files.map((f) => f.relPath),
+    suggestedCommand,
+  };
 });
 
 ipcMain.handle('resolve-project-path', async (_event, { input }) => {
@@ -446,6 +663,41 @@ async function callClaude(prompt) {
   }
 }
 
+// Same as callClaude, but with a much higher token ceiling - generating a
+// whole starter project (multiple real files) needs far more room than a
+// single bug-fix diff does.
+async function callClaudeForProjectGeneration(prompt) {
+  const key = getClaudeKey();
+  if (!key) return { ok: false, error: 'No Claude API key saved yet. Add one in the Cloud tab.' };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 16000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+    }
+    const text = (data?.content || [])
+      .filter((block) => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+    return { ok: true, text };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
 // =======================================================================
 // Project Constitution: a governing document for one project's own rules
 // (e.g. "never fabricate telemetry," "unknown means unknown," "no
@@ -568,7 +820,142 @@ ipcMain.handle('list-project-files', (_event, { folder }) => {
   return results.sort();
 });
 
+// --- Project-wide search & replace. Reuses the same walkFiles/IGNORED_DIRS
+// logic as the file tree - searches real file contents on disk, not a
+// cached index, so results always reflect the current state of the project.
+const SEARCH_BINARY_EXTENSIONS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.bmp', '.svg',
+  '.woff', '.woff2', '.ttf', '.eot', '.otf',
+  '.mp3', '.mp4', '.wav', '.mov', '.avi',
+  '.zip', '.tar', '.gz', '.7z', '.rar',
+  '.pdf', '.exe', '.dll', '.so', '.bin', '.wasm',
+]);
+const SEARCH_MAX_FILE_SIZE = 500 * 1024; // skip anything bigger than 500KB
+const SEARCH_MAX_MATCHES = 500;
+const SEARCH_MAX_PER_FILE = 50;
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+ipcMain.handle('search-project', (_event, { folder, query, caseSensitive }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+  if (!query || !query.trim()) return { ok: false, error: 'Enter something to search for.' };
+
+  const relFiles = [];
+  walkFiles(folder, '', relFiles, 0);
+
+  const pattern = new RegExp(escapeRegex(query), caseSensitive ? 'g' : 'gi');
+  const matches = [];
+  let truncated = false;
+
+  for (const relPath of relFiles) {
+    if (matches.length >= SEARCH_MAX_MATCHES) { truncated = true; break; }
+    const ext = path.extname(relPath).toLowerCase();
+    if (SEARCH_BINARY_EXTENSIONS.has(ext)) continue;
+
+    const absPath = path.join(folder, relPath);
+    let stat;
+    try { stat = fs.statSync(absPath); } catch { continue; }
+    if (stat.size > SEARCH_MAX_FILE_SIZE) continue;
+
+    let content;
+    try { content = fs.readFileSync(absPath, 'utf8'); } catch { continue; }
+    if (!pattern.test(content)) continue;
+    pattern.lastIndex = 0;
+
+    const lines = content.split('\n');
+    let perFileCount = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (perFileCount >= SEARCH_MAX_PER_FILE || matches.length >= SEARCH_MAX_MATCHES) break;
+      if (pattern.test(lines[i])) {
+        matches.push({
+          relPath,
+          lineNumber: i + 1,
+          lineText: lines[i].length > 300 ? lines[i].slice(0, 300) + '…' : lines[i],
+        });
+        perFileCount++;
+      }
+      pattern.lastIndex = 0;
+    }
+  }
+
+  return { ok: true, matches, truncated };
+});
+
+ipcMain.handle('replace-in-project', (_event, { folder, query, replacement, caseSensitive }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+  if (!query || !query.trim()) return { ok: false, error: 'Enter something to search for.' };
+
+  const relFiles = [];
+  walkFiles(folder, '', relFiles, 0);
+
+  const pattern = new RegExp(escapeRegex(query), caseSensitive ? 'g' : 'gi');
+  const filesChanged = [];
+  let totalOccurrences = 0;
+
+  for (const relPath of relFiles) {
+    const ext = path.extname(relPath).toLowerCase();
+    if (SEARCH_BINARY_EXTENSIONS.has(ext)) continue;
+
+    const absPath = path.join(folder, relPath);
+    let stat;
+    try { stat = fs.statSync(absPath); } catch { continue; }
+    if (stat.size > SEARCH_MAX_FILE_SIZE) continue;
+
+    let content;
+    try { content = fs.readFileSync(absPath, 'utf8'); } catch { continue; }
+
+    const occurrences = (content.match(pattern) || []).length;
+    if (occurrences === 0) continue;
+
+    const newContent = content.replace(pattern, replacement);
+    try {
+      fs.copyFileSync(absPath, absPath + '.bak');
+      fs.writeFileSync(absPath, newContent, 'utf8');
+      logChange({ filePath: absPath, backupPath: absPath + '.bak', source: `Search & Replace: "${query}" → "${replacement}"` });
+      filesChanged.push(relPath);
+      totalOccurrences += occurrences;
+    } catch (err) {
+      return { ok: false, error: `Failed writing ${relPath}: ${err.message}`, filesChangedSoFar: filesChanged };
+    }
+  }
+
+  return { ok: true, filesChanged, totalOccurrences };
+});
+
 ipcMain.handle('get-app-dir', () => __dirname);
+
+// --- Build number: the actual git commit count in Nexus's own repo, not a
+// manually-maintained counter. Every real commit is a real build increment
+// automatically - nothing to remember to bump, and it can never drift out
+// of sync with what's actually been shipped. Falls back gracefully (shows
+// just the package.json version) if this ever runs somewhere without a
+// .git folder, e.g. a packaged build with .git excluded. Used both for the
+// IPC call the renderer makes, and to set the real OS window title. ---
+async function computeBuildInfo() {
+  let version = null;
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    version = pkg.version;
+  } catch { /* ignore - version stays null */ }
+
+  const countResult = await runGit(__dirname, 'rev-list --count HEAD');
+  const hashResult = await runGit(__dirname, 'rev-parse --short HEAD');
+
+  if (!countResult.ok || !hashResult.ok) {
+    return { ok: false, version };
+  }
+
+  return {
+    ok: true,
+    version,
+    buildNumber: parseInt(countResult.output, 10) || 0,
+    commitHash: hashResult.output,
+  };
+}
+
+ipcMain.handle('get-build-info', () => computeBuildInfo());
 
 ipcMain.handle('read-file', (_event, { filePath }) => {
   try {
@@ -624,8 +1011,102 @@ ipcMain.handle('ai-propose-fix', async (_event, { filePath, errorText, folder })
   return { ok: true, oldContent, newContent, explanation, filePath };
 });
 
+// General-purpose prompt-driven coding, for the Code Editor's built-in
+// prompt bar. Same before/after/approve shape as ai-propose-fix, but framed
+// as a neutral coding instruction rather than specifically "fix this bug" -
+// used for adding features, refactors, or writing brand-new files within
+// an existing project, not just fixing errors. filePath may not exist yet
+// (creating a new file) - handled the same way ai-propose-fix does.
+ipcMain.handle('ai-edit-file-with-prompt', async (_event, { filePath, instruction, folder }) => {
+  let editOldContent;
+  try {
+    editOldContent = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    editOldContent = ''; // file doesn't exist yet — treat as "create this new file"
+  }
+
+  const editPrompt = constitutionPreamble(folder) + [
+    'You are a careful coding assistant working inside a real code editor. You will be shown a',
+    'file (which may be empty, meaning it does not exist yet and should be created) and an',
+    'instruction describing what to write or change.',
+    'Respond in EXACTLY this format, nothing else:',
+    'EXPLANATION:',
+    '<1-3 sentence plain-English explanation of what you wrote or changed>',
+    '---NEWFILE---',
+    '<the COMPLETE resulting file content, and nothing else after it>',
+    '',
+    `FILE PATH: ${filePath}`,
+    'CURRENT FILE CONTENT (empty means the file does not exist yet):',
+    editOldContent,
+    '',
+    'INSTRUCTION:',
+    instruction,
+  ].join('\n');
+
+  const editResult = await callClaude(editPrompt);
+  if (!editResult.ok) return editResult;
+
+  const editMarker = '---NEWFILE---';
+  const editIdx = editResult.text.indexOf(editMarker);
+  if (editIdx === -1) {
+    return { ok: false, error: 'AI response was not in the expected format. Try again.', raw: editResult.text };
+  }
+  const editExplanation = editResult.text.slice('EXPLANATION:'.length, editIdx).trim();
+  let editNewContent = editResult.text.slice(editIdx + editMarker.length);
+  editNewContent = editNewContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
+
+  return { ok: true, oldContent: editOldContent, newContent: editNewContent, explanation: editExplanation, filePath };
+});
+
+// =======================================================================
+// Central "recent changes" log with one-click revert. Every write that
+// already creates a .bak (apply-file-change, replace-in-project, and now
+// format-and-lint-file below - which previously did NOT back up before
+// running Prettier/ESLint --fix, a real gap closed as part of this) gets
+// recorded here, so there's one place to see recent writes across a whole
+// session and revert any of them without hunting for the matching .bak
+// file on disk yourself.
+// =======================================================================
+
+const RECENT_CHANGES_LOG_PATH = path.join(app.getPath('userData'), 'nexus-recent-changes.json');
+const RECENT_CHANGES_MAX = 200;
+
+function loadRecentChanges() {
+  try {
+    return JSON.parse(fs.readFileSync(RECENT_CHANGES_LOG_PATH, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function logChange({ filePath, backupPath, source }) {
+  if (!backupPath) return; // nothing to offer reverting to
+  const log = loadRecentChanges();
+  log.unshift({ filePath, backupPath, source: source || 'File change', timestamp: Date.now() });
+  const trimmed = log.slice(0, RECENT_CHANGES_MAX);
+  try {
+    fs.writeFileSync(RECENT_CHANGES_LOG_PATH, JSON.stringify(trimmed, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[Nexus] Could not write recent-changes log:', err.message);
+  }
+}
+
+ipcMain.handle('get-recent-changes', () => ({ ok: true, changes: loadRecentChanges() }));
+
+ipcMain.handle('revert-change', (_event, { filePath, backupPath }) => {
+  if (!fs.existsSync(backupPath)) {
+    return { ok: false, error: 'The backup file no longer exists on disk - it may have been cleaned up or already reverted.' };
+  }
+  try {
+    fs.copyFileSync(backupPath, filePath);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // The ONLY place a write happens. Always backs up first (if the file already exists).
-ipcMain.handle('apply-file-change', (_event, { filePath, newContent }) => {
+ipcMain.handle('apply-file-change', (_event, { filePath, newContent, source }) => {
   try {
     let backupPath = null;
     if (fs.existsSync(filePath)) {
@@ -635,10 +1116,104 @@ ipcMain.handle('apply-file-change', (_event, { filePath, newContent }) => {
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
     }
     fs.writeFileSync(filePath, newContent, 'utf8');
+    logChange({ filePath, backupPath, source });
     return { ok: true, backupPath };
   } catch (err) {
     return { ok: false, error: err.message };
   }
+});
+
+// --- Linting/formatting on save: always runs the PROJECT'S OWN installed
+// ESLint/Prettier (from its own node_modules) - never a version bundled
+// with Nexus. Different projects use different configs and rule sets;
+// using Nexus's own copy would silently apply the wrong rules. If a
+// project hasn't installed these tools, the corresponding feature is
+// simply unavailable for it - never faked or skipped silently without
+// telling you. ---
+function findLocalBin(folder, name) {
+  const binName = process.platform === 'win32' ? `${name}.cmd` : name;
+  const binPath = path.join(folder, 'node_modules', '.bin', binName);
+  return fs.existsSync(binPath) ? binPath : null;
+}
+
+function runCommand(cwd, command) {
+  return new Promise((resolve) => {
+    exec(command, { cwd, shell: true, timeout: 30_000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      resolve({ ok: !error, stdout: stdout || '', stderr: stderr || '', error: error ? error.message : null });
+    });
+  });
+}
+
+ipcMain.handle('detect-lint-tools', (_event, { folder }) => {
+  if (!folder || !fs.existsSync(folder)) return { hasEslint: false, hasPrettier: false };
+  return {
+    hasEslint: !!findLocalBin(folder, 'eslint'),
+    hasPrettier: !!findLocalBin(folder, 'prettier'),
+  };
+});
+
+ipcMain.handle('format-and-lint-file', async (_event, { folder, filePath }) => {
+  if (!fs.existsSync(filePath)) return { ok: false, error: 'File does not exist yet - save it first.' };
+
+  const prettierBin = findLocalBin(folder, 'prettier');
+  const eslintBin = findLocalBin(folder, 'eslint');
+
+  if (!prettierBin && !eslintBin) {
+    return { ok: false, error: 'Neither Prettier nor ESLint is installed in this project (checked node_modules/.bin).' };
+  }
+
+  // Prettier --write and ESLint --fix both modify the file in place on
+  // disk directly - back it up first, same as every other write in Nexus,
+  // so a bad auto-format is always one revert away.
+  const backupPath = filePath + '.bak';
+  try {
+    fs.copyFileSync(filePath, backupPath);
+  } catch (err) {
+    return { ok: false, error: `Could not create backup before formatting: ${err.message}` };
+  }
+
+  let formatted = false;
+  if (prettierBin) {
+    const result = await runCommand(folder, `"${prettierBin}" --write "${filePath}"`);
+    formatted = result.ok;
+  }
+
+  let fixed = false;
+  let lintMessages = [];
+  if (eslintBin) {
+    // --fix first (auto-fixable issues), then a plain pass to report
+    // whatever's left that couldn't be auto-fixed.
+    const fixResult = await runCommand(folder, `"${eslintBin}" --fix "${filePath}"`);
+    fixed = fixResult.ok;
+
+    const reportResult = await runCommand(folder, `"${eslintBin}" --format json "${filePath}"`);
+    try {
+      const parsed = JSON.parse(reportResult.stdout || '[]');
+      lintMessages = (parsed[0]?.messages || []).map((m) => ({
+        line: m.line || 0,
+        message: m.message,
+        ruleId: m.ruleId || '',
+        severity: m.severity === 2 ? 'error' : 'warning',
+      }));
+    } catch {
+      // ESLint failed to run at all (e.g. no config present) - surface
+      // the raw error rather than silently reporting zero issues.
+      if (!reportResult.ok && reportResult.stderr) {
+        return { ok: false, error: `ESLint error: ${reportResult.stderr.trim()}` };
+      }
+    }
+  }
+
+  let newContent;
+  try {
+    newContent = fs.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+
+  logChange({ filePath, backupPath, source: 'Format/Lint (Prettier/ESLint)' });
+
+  return { ok: true, newContent, formatted, fixed, lintMessages, hasEslint: !!eslintBin, hasPrettier: !!prettierBin, backupPath };
 });
 
 // Advisory only — this handler has no corresponding write path at all.
@@ -703,6 +1278,128 @@ ipcMain.handle('git-status', async (_event, { folder }) => {
   const status = await runGit(folder, 'status --short');
   if (!branch.ok) return { ok: false, error: branch.output || 'Not a git repository.' };
   return { ok: true, branch: branch.output || '(detached HEAD)', status: status.output || '(clean)' };
+});
+
+// --- Real git diff viewer: parses unified diff output into structured
+// per-file hunks (added/removed/context lines) instead of showing raw text.
+// Untracked files don't appear in `git diff` at all, so those are handled
+// separately - their whole content is shown as one big "addition" hunk. ---
+function parseUnifiedDiff(rawDiff) {
+  const files = [];
+  let current = null;
+  let currentHunk = null;
+
+  const lines = rawDiff.split('\n');
+  for (const line of lines) {
+    const fileMatch = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+    if (fileMatch) {
+      current = { relPath: fileMatch[2], status: 'M', hunks: [] };
+      files.push(current);
+      currentHunk = null;
+      continue;
+    }
+    if (!current) continue;
+    if (line.startsWith('index ') || line.startsWith('--- ') || line.startsWith('+++ ')) continue;
+    if (line.startsWith('@@')) {
+      currentHunk = { header: line, lines: [] };
+      current.hunks.push(currentHunk);
+      continue;
+    }
+    if (!currentHunk) continue;
+    if (line.startsWith('+')) currentHunk.lines.push({ type: 'add', text: line.slice(1) });
+    else if (line.startsWith('-')) currentHunk.lines.push({ type: 'del', text: line.slice(1) });
+    else currentHunk.lines.push({ type: 'context', text: line.slice(1) });
+  }
+  return files;
+}
+
+ipcMain.handle('git-diff', async (_event, { folder }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+
+  const statusResult = await runGit(folder, 'status --porcelain');
+  if (!statusResult.ok) return { ok: false, error: statusResult.output || 'Not a git repository.' };
+
+  const statusLines = statusResult.output.split('\n').filter(Boolean);
+  const statusByPath = {};
+  const untrackedPaths = [];
+  for (const line of statusLines) {
+    const code = line.slice(0, 2).trim();
+    const relPath = line.slice(3).trim();
+    statusByPath[relPath] = code;
+    if (code === '??') untrackedPaths.push(relPath);
+  }
+
+  const diffResult = await runGit(folder, 'diff HEAD --unified=3');
+  const trackedFiles = diffResult.ok ? parseUnifiedDiff(diffResult.output) : [];
+  for (const f of trackedFiles) {
+    f.status = statusByPath[f.relPath] || 'M';
+  }
+
+  for (const relPath of untrackedPaths) {
+    const absPath = path.join(folder, relPath);
+    const ext = path.extname(relPath).toLowerCase();
+    if (SEARCH_BINARY_EXTENSIONS.has(ext)) {
+      trackedFiles.push({ relPath, status: '??', hunks: [{ header: '(binary file)', lines: [] }] });
+      continue;
+    }
+    let stat;
+    try { stat = fs.statSync(absPath); } catch { continue; }
+    if (stat.size > SEARCH_MAX_FILE_SIZE) {
+      trackedFiles.push({ relPath, status: '??', hunks: [{ header: '(file too large to preview)', lines: [] }] });
+      continue;
+    }
+    let content;
+    try { content = fs.readFileSync(absPath, 'utf8'); } catch { continue; }
+    trackedFiles.push({
+      relPath,
+      status: '??',
+      hunks: [{
+        header: 'New file',
+        lines: content.split('\n').map((text) => ({ type: 'add', text })),
+      }],
+    });
+  }
+
+  return { ok: true, files: trackedFiles };
+});
+
+// --- Commit history / branch viewer. Real git log data - hashes, authors,
+// dates, messages - plus which branches point at which commits. Clicking a
+// commit shows its actual diff, reusing the same parser as the working-tree
+// diff viewer above. ---
+ipcMain.handle('git-log', async (_event, { folder, limit }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+
+  const logResult = await runGit(folder, `log --pretty=format:"%H|||%an|||%ad|||%s" --date=short -n ${limit || 50}`);
+  if (!logResult.ok) return { ok: false, error: logResult.output || 'Not a git repository, or no commits yet.' };
+
+  const commits = logResult.output.split('\n').filter(Boolean).map((line) => {
+    const [hash, author, date, ...msgParts] = line.split('|||');
+    return { hash, shortHash: hash.slice(0, 7), author, date, message: msgParts.join('|||'), branches: [] };
+  });
+
+  const branchResult = await runGit(folder, `for-each-ref --format="%(refname:short)|||%(objectname)" refs/heads refs/remotes`);
+  if (branchResult.ok) {
+    const branchMap = {};
+    for (const line of branchResult.output.split('\n').filter(Boolean)) {
+      const [branchName, commitHash] = line.split('|||');
+      if (!branchMap[commitHash]) branchMap[commitHash] = [];
+      branchMap[commitHash].push(branchName);
+    }
+    for (const c of commits) {
+      c.branches = branchMap[c.hash] || [];
+    }
+  }
+
+  return { ok: true, commits };
+});
+
+ipcMain.handle('git-show-commit', async (_event, { folder, hash }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+  const result = await runGit(folder, `show ${hash} --unified=3 --pretty=format:""`);
+  if (!result.ok) return { ok: false, error: result.output };
+  const files = parseUnifiedDiff(result.output);
+  return { ok: true, files };
 });
 
 ipcMain.handle('git-create-branch', async (_event, { folder, branchName }) => {
@@ -1142,6 +1839,334 @@ ipcMain.handle('run-tests', async (_event, { folder }) => {
     return { ok: true, skipped: true, output: 'No "test" script defined in package.json — skipping (not a failure).' };
   }
   return runCommandForPipeline(folder, 'npm test');
+});
+
+// --- Real per-test results, not just overall pass/fail. Only Jest and
+// Vitest are supported with structured results (their JSON reporters are
+// close enough in shape to parse with one function) - any other test
+// runner falls back to the plain npm-test output above rather than
+// pretending to show per-test detail it doesn't actually have. ---
+function detectTestFramework(folder) {
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  if (deps.vitest) return 'vitest';
+  if (deps.jest) return 'jest';
+  return null;
+}
+
+ipcMain.handle('detect-test-framework', (_event, { folder }) => {
+  return { framework: detectTestFramework(folder) };
+});
+
+function parseJestStyleResults(jsonText) {
+  const parsed = JSON.parse(jsonText);
+  const tests = [];
+  for (const fileResult of parsed.testResults || []) {
+    for (const t of fileResult.assertionResults || []) {
+      tests.push({
+        name: t.fullName || t.title,
+        status: t.status === 'passed' ? 'pass' : t.status === 'pending' || t.status === 'skipped' ? 'skip' : 'fail',
+        duration: t.duration || null,
+        failureMessage: (t.failureMessages || []).join('\n\n') || null,
+      });
+    }
+  }
+  return { tests, numPassed: parsed.numPassedTests, numFailed: parsed.numFailedTests, numSkipped: parsed.numPendingTests };
+}
+
+ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern }) => {
+  const framework = detectTestFramework(folder);
+  if (!framework) {
+    // Honest fallback - no structured per-test data available, but still
+    // give real output rather than a dead end.
+    const plain = await runCommandForPipeline(folder, 'npm test');
+    return { ok: plain.ok, detailed: false, output: plain.output, error: plain.ok ? null : 'No supported test framework (Jest or Vitest) detected - showing plain output instead.' };
+  }
+
+  const bin = findLocalBin(folder, framework) || framework; // fall back to PATH/npx resolution if not locally installed
+  const outFile = path.join(os.tmpdir(), `nexus-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  const namePart = testNamePattern ? ` -t "${testNamePattern.replace(/"/g, '\\"')}"` : '';
+
+  let command;
+  if (framework === 'jest') {
+    command = `"${bin}" --json --outputFile="${outFile}"${namePart}`;
+  } else {
+    command = `"${bin}" run --reporter=json --outputFile="${outFile}"${namePart}`;
+  }
+
+  const runResult = await runCommand(folder, command);
+
+  let parsed = null;
+  try {
+    const jsonText = fs.readFileSync(outFile, 'utf8');
+    parsed = parseJestStyleResults(jsonText);
+  } catch (err) {
+    // The framework ran but we couldn't parse structured output - surface
+    // the raw command output rather than showing nothing.
+    return { ok: runResult.ok, detailed: false, output: runResult.stdout + '\n' + runResult.stderr, error: `Could not parse ${framework} JSON output: ${err.message}` };
+  } finally {
+    try { fs.unlinkSync(outFile); } catch { /* best effort cleanup */ }
+  }
+
+  return { ok: runResult.ok, detailed: true, framework, ...parsed };
+});
+
+// =======================================================================
+// API Testing Tool: sends real HTTP requests from the main process (avoids
+// any renderer CORS restriction), and persists a real per-project request
+// collection to a JSON file - not an in-memory-only "session" that vanishes
+// on restart.
+// =======================================================================
+
+const API_COLLECTION_FILENAME = '.nexus-api-requests.json';
+
+ipcMain.handle('api-send-request', async (_event, { method, url, headersText, body }) => {
+  if (!url || !url.trim()) return { ok: false, error: 'Enter a URL.' };
+
+  const headers = {};
+  for (const line of (headersText || '').split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (key) headers[key] = value;
+  }
+
+  const startTime = Date.now();
+  try {
+    const fetchOptions = { method: method || 'GET', headers };
+    if (body && !['GET', 'HEAD'].includes((method || 'GET').toUpperCase())) {
+      fetchOptions.body = body;
+    }
+    const res = await fetch(url, fetchOptions);
+    const timeMs = Date.now() - startTime;
+    const responseText = await res.text();
+    const responseHeaders = {};
+    res.headers.forEach((value, key) => { responseHeaders[key] = value; });
+
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      headers: responseHeaders,
+      body: responseText,
+      timeMs,
+    };
+  } catch (err) {
+    return { ok: false, error: err.message, timeMs: Date.now() - startTime };
+  }
+});
+
+ipcMain.handle('api-load-collection', (_event, { folder }) => {
+  if (!folder) return { ok: true, requests: [] };
+  const filePath = path.join(folder, API_COLLECTION_FILENAME);
+  if (!fs.existsSync(filePath)) return { ok: true, requests: [] };
+  try {
+    const requests = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return { ok: true, requests: Array.isArray(requests) ? requests : [] };
+  } catch (err) {
+    return { ok: false, error: `Could not read ${API_COLLECTION_FILENAME}: ${err.message}` };
+  }
+});
+
+ipcMain.handle('api-save-collection', (_event, { folder, requests }) => {
+  if (!folder) return { ok: false, error: 'No active project.' };
+  try {
+    fs.writeFileSync(path.join(folder, API_COLLECTION_FILENAME), JSON.stringify(requests, null, 2), 'utf8');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// =======================================================================
+// Docker integration: build/run/stop/inspect real containers. Every action
+// shells out to the user's own installed `docker` binary - Nexus doesn't
+// bundle or fake any part of Docker itself. If Docker isn't installed or
+// the daemon isn't running, that's reported plainly, not silently skipped.
+// =======================================================================
+
+const runningContainerLogs = new Map(); // containerName -> spawned `docker logs -f` process
+
+ipcMain.handle('docker-check', async () => {
+  const result = await runCommand(process.cwd(), 'docker version --format "{{.Server.Version}}"');
+  if (!result.ok) {
+    // Distinguish "not installed" from "installed but daemon not running"
+    // by checking whether the client version alone is reachable.
+    const clientCheck = await runCommand(process.cwd(), 'docker version --format "{{.Client.Version}}"');
+    if (!clientCheck.ok) return { installed: false, running: false };
+    return { installed: true, running: false };
+  }
+  return { installed: true, running: true, version: result.stdout.trim() };
+});
+
+ipcMain.handle('docker-detect-project', (_event, { folder }) => {
+  if (!folder) return { hasDockerfile: false, hasCompose: false };
+  return {
+    hasDockerfile: fs.existsSync(path.join(folder, 'Dockerfile')),
+    hasCompose: fs.existsSync(path.join(folder, 'docker-compose.yml')) || fs.existsSync(path.join(folder, 'docker-compose.yaml')),
+  };
+});
+
+ipcMain.handle('docker-build', (_event, { folder, tag }) => {
+  if (!fs.existsSync(path.join(folder, 'Dockerfile'))) {
+    return { ok: false, error: 'No Dockerfile found in this project.' };
+  }
+  let child;
+  try {
+    child = spawn('docker', ['build', '-t', tag, '.'], { cwd: folder, shell: true });
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+
+  child.stdout.on('data', (data) => mainWindow?.webContents.send('docker-build-log', { text: data.toString() }));
+  child.stderr.on('data', (data) => mainWindow?.webContents.send('docker-build-log', { text: data.toString() }));
+  child.on('close', (code) => mainWindow?.webContents.send('docker-build-done', { ok: code === 0, code }));
+  child.on('error', (err) => mainWindow?.webContents.send('docker-build-log', { text: `\n[error] ${err.message}\n` }));
+
+  return { ok: true };
+});
+
+ipcMain.handle('docker-run', async (_event, { image, containerName, hostPort, containerPort }) => {
+  const portArgs = hostPort && containerPort ? ['-p', `${hostPort}:${containerPort}`] : [];
+  const args = ['run', '-d', '--name', containerName, ...portArgs, image];
+  const result = await runCommand(process.cwd(), `docker ${args.map((a) => `"${a}"`).join(' ')}`);
+  if (!result.ok) return { ok: false, error: result.stderr.trim() || result.error };
+  return { ok: true, containerId: result.stdout.trim() };
+});
+
+ipcMain.handle('docker-stop', async (_event, { containerName }) => {
+  const result = await runCommand(process.cwd(), `docker stop "${containerName}"`);
+  return { ok: result.ok, error: result.ok ? null : result.stderr.trim() };
+});
+
+ipcMain.handle('docker-remove', async (_event, { containerName }) => {
+  const result = await runCommand(process.cwd(), `docker rm -f "${containerName}"`);
+  return { ok: result.ok, error: result.ok ? null : result.stderr.trim() };
+});
+
+ipcMain.handle('docker-ps', async () => {
+  const result = await runCommand(process.cwd(), 'docker ps -a --format "{{.ID}}|||{{.Image}}|||{{.Names}}|||{{.Status}}|||{{.Ports}}"');
+  if (!result.ok) return { ok: false, error: result.stderr.trim() || result.error };
+  const containers = result.stdout.split('\n').filter(Boolean).map((line) => {
+    const [id, image, names, status, ports] = line.split('|||');
+    return { id, image, names, status, ports: ports || '' };
+  });
+  return { ok: true, containers };
+});
+
+ipcMain.handle('docker-stream-logs', (_event, { containerName }) => {
+  if (runningContainerLogs.has(containerName)) return { ok: true }; // already streaming
+  let child;
+  try {
+    child = spawn('docker', ['logs', '-f', '--tail', '100', containerName], { shell: true });
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+  runningContainerLogs.set(containerName, child);
+  child.stdout.on('data', (data) => mainWindow?.webContents.send('docker-container-log', { containerName, text: data.toString() }));
+  child.stderr.on('data', (data) => mainWindow?.webContents.send('docker-container-log', { containerName, text: data.toString() }));
+  child.on('close', () => runningContainerLogs.delete(containerName));
+  return { ok: true };
+});
+
+ipcMain.handle('docker-stop-log-stream', (_event, { containerName }) => {
+  const child = runningContainerLogs.get(containerName);
+  if (child) { killProcessTree(child); runningContainerLogs.delete(containerName); }
+  return { ok: true };
+});
+
+// =======================================================================
+// Package Manager UI: real npm commands against the active project's own
+// package.json/node_modules. Installed-version data comes from actually
+// reading node_modules/<pkg>/package.json, not just trusting whatever
+// range is written in package.json - those can differ.
+// =======================================================================
+
+const npmOperations = new Map(); // arbitrary op id -> spawned child, for streaming
+
+ipcMain.handle('npm-list-deps', (_event, { folder }) => {
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf8'));
+  } catch (err) {
+    return { ok: false, error: `Could not read package.json: ${err.message}` };
+  }
+
+  const deps = [];
+  for (const [name, wantedVersion] of Object.entries(pkg.dependencies || {})) {
+    deps.push({ name, wantedVersion, dev: false, installedVersion: readInstalledVersion(folder, name) });
+  }
+  for (const [name, wantedVersion] of Object.entries(pkg.devDependencies || {})) {
+    deps.push({ name, wantedVersion, dev: true, installedVersion: readInstalledVersion(folder, name) });
+  }
+  deps.sort((a, b) => a.name.localeCompare(b.name));
+
+  return { ok: true, deps };
+});
+
+function readInstalledVersion(folder, packageName) {
+  try {
+    const pkgPath = path.join(folder, 'node_modules', packageName, 'package.json');
+    const installed = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    return installed.version || null;
+  } catch {
+    return null; // not installed
+  }
+}
+
+ipcMain.handle('npm-check-outdated', async (_event, { folder }) => {
+  // npm outdated intentionally exits with a non-zero code when outdated
+  // packages exist - that's normal, not a failure, so read stdout either way.
+  const result = await runCommand(folder, 'npm outdated --json');
+  try {
+    const parsed = JSON.parse(result.stdout || '{}');
+    return { ok: true, outdated: parsed };
+  } catch {
+    // No output at all usually means nothing is outdated.
+    return { ok: true, outdated: {} };
+  }
+});
+
+function runNpmStreamed(opId, folder, args) {
+  let child;
+  try {
+    child = spawn('npm', args, { cwd: folder, shell: true });
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+  npmOperations.set(opId, child);
+  child.stdout.on('data', (data) => mainWindow?.webContents.send('npm-op-log', { opId, text: data.toString() }));
+  child.stderr.on('data', (data) => mainWindow?.webContents.send('npm-op-log', { opId, text: data.toString() }));
+  child.on('close', (code) => {
+    npmOperations.delete(opId);
+    mainWindow?.webContents.send('npm-op-done', { opId, ok: code === 0, code });
+  });
+  child.on('error', (err) => {
+    npmOperations.delete(opId);
+    mainWindow?.webContents.send('npm-op-log', { opId, text: `\n[error] ${err.message}\n` });
+    mainWindow?.webContents.send('npm-op-done', { opId, ok: false, code: -1 });
+  });
+  return { ok: true };
+}
+
+ipcMain.handle('npm-install-package', (_event, { opId, folder, packageName, version, isDev }) => {
+  const spec = version ? `${packageName}@${version}` : packageName;
+  const args = ['install', spec, isDev ? '--save-dev' : '--save'];
+  return runNpmStreamed(opId, folder, args);
+});
+
+ipcMain.handle('npm-uninstall-package', (_event, { opId, folder, packageName }) => {
+  return runNpmStreamed(opId, folder, ['uninstall', packageName]);
+});
+
+ipcMain.handle('npm-update-package', (_event, { opId, folder, packageName }) => {
+  return runNpmStreamed(opId, folder, ['update', packageName]);
 });
 
 // =======================================================================

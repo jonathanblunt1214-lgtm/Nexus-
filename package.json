@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test": "node --test",
     "dist": "electron-builder --win nsis",
     "dist:publish": "electron-builder --win nsis --publish always"
   },
@@ -33,7 +34,8 @@
       "updater.js",
       "projectCloner.js",
       "projectSettings.js",
-      "projectRegistry.js"
+      "projectRegistry.js",
+      "pureLogic.js"
     ],
     "publish": {
       "provider": "github",
