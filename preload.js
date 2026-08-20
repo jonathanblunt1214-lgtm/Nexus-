@@ -147,6 +147,11 @@ githubPutFile: (owner, repo, path, content, message, branch, sha) =>
 githubCreatePR: (owner, repo, title, body, head, base) => 
   ipcRenderer.invoke('github-create-pr', { owner, repo, title, body, head, base }),
 githubListPRs: (owner, repo, state) => ipcRenderer.invoke('github-list-prs', { owner, repo, state }),
+  // Add to window.nexus
+githubAuthorize: () => ipcRenderer.invoke('github-authorize'),
+githubGetToken: () => ipcRenderer.invoke('github-get-token'),
+githubClearToken: () => ipcRenderer.invoke('github-clear-token'),
+githubIsAuthorized: () => ipcRenderer.invoke('github-is-authorized'),
 githubCreateBranch: (owner, repo, branch, fromBranch) => 
   ipcRenderer.invoke('github-create-branch', { owner, repo, branch, fromBranch }),
 githubGetCommits: (owner, repo, branch, per_page) => 
