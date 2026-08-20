@@ -24,6 +24,21 @@ const {
 } = require('./pureLogic');
 const { initUpdater, checkForUpdates, downloadUpdate, installUpdateAndRestart } = require('./updater');
 
+// AI Improvement Framework - real, working modules for inventorying,
+// measuring, testing, and safely upgrading the AI parts of whatever project
+// is open. Every one of these operates on real files/processes for the
+// active project folder; none of them fabricate data.
+const aiInventory = require('./aiInventory');
+const aiMetrics = require('./aiMetrics');
+const aiGuardrailTester = require('./aiGuardrailTester');
+const aiUpgradeOrchestrator = require('./aiUpgradeOrchestrator');
+const promptTesting = require('./promptTesting');
+const dependencyAuditor = require('./dependencyAuditor');
+const complianceMonitor = require('./complianceMonitor');
+const changelogGenerator = require('./changelogGenerator');
+const knowledgeBase = require('./knowledgeBase');
+const experimentationFramework = require('./experimentationFramework');
+
 let mainWindow;
 
 // --- Global error surfacing: previously an uncaught exception or rejected
@@ -2338,40 +2353,63 @@ ipcMain.handle('export-secrets-to-env', (_event, { folder, projectUid }) => {
     return { ok: false, error: err.message };
   }
 });
-// Add these near the other key storage functions
-
+// GitHub personal access token: same encrypted-at-rest pattern as the
+// Gemini/NIM keys (see save-gemini-key above) - never stored in plaintext
+// when OS-level encryption is available.
 ipcMain.handle('save-github-token', (_event, { token }) => {
   const cfg = loadConfig();
-  cfg.githubToken = token;
+  if (safeStorage.isEncryptionAvailable()) {
+    cfg.githubTokenEnc = safeStorage.encryptString(token).toString('base64');
+  } else {
+    cfg.githubTokenPlain = token;
+  }
+  delete cfg.githubToken; // drop any older plaintext value from before this was encrypted
   saveConfig(cfg);
   return { ok: true };
 });
 
-ipcMain.handle('has-github-token', () => {
-  const cfg = loadConfig();
-  return Boolean(cfg.githubToken);
-});
+ipcMain.handle('has-github-token', () => Boolean(getGithubToken()));
 
 ipcMain.handle('clear-github-token', () => {
   const cfg = loadConfig();
   delete cfg.githubToken;
+  delete cfg.githubTokenEnc;
+  delete cfg.githubTokenPlain;
   saveConfig(cfg);
   return { ok: true };
 });
 
+function getGithubToken() {
+  const cfg = loadConfig();
+  if (cfg.githubTokenEnc && safeStorage.isEncryptionAvailable()) {
+    return safeStorage.decryptString(Buffer.from(cfg.githubTokenEnc, 'base64'));
+  }
+  return cfg.githubTokenPlain || cfg.githubToken || null;
+}
+
+// All seven of these call the real GitHub REST API via githubClient.js,
+// using the token saved through save-github-token above. Each fails fast
+// and clearly if nothing is connected yet, rather than making a request
+// that GitHub would just reject.
+const NOT_CONNECTED_ERROR = 'No GitHub token saved - connect GitHub in the Config tab first.';
+
 ipcMain.handle('github-list-repos', async () => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { listRepos } = require('./githubClient');
   try {
-    return { ok: true, repos: await listRepos() };
+    return { ok: true, repos: await listRepos(token) };
   } catch (err) {
     return { ok: false, error: err.message };
   }
 });
 
 ipcMain.handle('github-get-file', async (_event, { owner, repo, path, ref }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { getFileContent } = require('./githubClient');
   try {
-    const result = await getFileContent(owner, repo, path, ref);
+    const result = await getFileContent(token, owner, repo, path, ref);
     return { ok: true, ...result };
   } catch (err) {
     return { ok: false, error: err.message };
@@ -2379,9 +2417,11 @@ ipcMain.handle('github-get-file', async (_event, { owner, repo, path, ref }) => 
 });
 
 ipcMain.handle('github-put-file', async (_event, { owner, repo, path, content, message, branch, sha }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { createOrUpdateFile } = require('./githubClient');
   try {
-    const result = await createOrUpdateFile(owner, repo, path, content, message, branch, sha);
+    const result = await createOrUpdateFile(token, owner, repo, path, content, message, branch, sha);
     return { ok: true, result };
   } catch (err) {
     return { ok: false, error: err.message };
@@ -2389,9 +2429,11 @@ ipcMain.handle('github-put-file', async (_event, { owner, repo, path, content, m
 });
 
 ipcMain.handle('github-create-pr', async (_event, { owner, repo, title, body, head, base }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { createPullRequest } = require('./githubClient');
   try {
-    const result = await createPullRequest(owner, repo, title, body, head, base);
+    const result = await createPullRequest(token, owner, repo, title, body, head, base);
     return { ok: true, pr: result };
   } catch (err) {
     return { ok: false, error: err.message };
@@ -2399,9 +2441,11 @@ ipcMain.handle('github-create-pr', async (_event, { owner, repo, title, body, he
 });
 
 ipcMain.handle('github-list-prs', async (_event, { owner, repo, state }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { getPullRequests } = require('./githubClient');
   try {
-    const prs = await getPullRequests(owner, repo, state);
+    const prs = await getPullRequests(token, owner, repo, state);
     return { ok: true, prs };
   } catch (err) {
     return { ok: false, error: err.message };
@@ -2409,9 +2453,11 @@ ipcMain.handle('github-list-prs', async (_event, { owner, repo, state }) => {
 });
 
 ipcMain.handle('github-create-branch', async (_event, { owner, repo, branch, fromBranch }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { createBranch } = require('./githubClient');
   try {
-    const result = await createBranch(owner, repo, branch, fromBranch);
+    const result = await createBranch(token, owner, repo, branch, fromBranch);
     return { ok: true, result };
   } catch (err) {
     return { ok: false, error: err.message };
@@ -2419,19 +2465,75 @@ ipcMain.handle('github-create-branch', async (_event, { owner, repo, branch, fro
 });
 
 ipcMain.handle('github-get-commits', async (_event, { owner, repo, branch, per_page }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
   const { getCommits } = require('./githubClient');
   try {
-    const commits = await getCommits(owner, repo, branch, per_page);
+    const commits = await getCommits(token, owner, repo, branch, per_page);
     return { ok: true, commits };
   } catch (err) {
     return { ok: false, error: err.message };
   }
 });
-// At the top with other requires
-const { authorize, getToken, clearToken, isAuthorized } = require('./github-oauth');
 
-// Add with other IPC handlers
-ipcMain.handle('github-authorize', async () => await authorize());
-ipcMain.handle('github-get-token', () => ({ ok: isAuthorized(), token: getToken() }));
-ipcMain.handle('github-clear-token', () => { clearToken(); return { ok: true }; });
-ipcMain.handle('github-is-authorized', () => ({ ok: isAuthorized() }));
+// =======================================================================
+// AI Improvement Framework: inventory, metrics, guardrail testing, guarded
+// config upgrades, prompt A/B testing, dependency auditing, compliance
+// tracking, an AI-focused changelog, a cross-project knowledge base, and
+// side-by-side experiments - all operating on real files/processes for
+// whichever project folder the renderer passes in. See each module's own
+// header comment for what it actually does and doesn't do.
+// =======================================================================
+
+function wrapAsync(fn) {
+  return async (_event, args) => {
+    try {
+      return await fn(args || {});
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+}
+
+// Inventory
+ipcMain.handle('ai-fw-scan-inventory', wrapAsync(({ folder }) => aiInventory.scanProject(folder)));
+
+// Metrics
+ipcMain.handle('ai-fw-record-metric', wrapAsync(({ folder, event }) => aiMetrics.recordMetric(folder, event)));
+ipcMain.handle('ai-fw-metrics-summary', wrapAsync(({ folder }) => aiMetrics.getMetricsSummary(folder)));
+ipcMain.handle('ai-fw-metrics-history', wrapAsync(({ folder, limit }) => aiMetrics.getMetricsHistory(folder, limit)));
+
+// Guardrail testing
+ipcMain.handle('ai-fw-run-guardrails', wrapAsync(({ folder }) => aiGuardrailTester.runGuardrailTests(folder)));
+ipcMain.handle('ai-fw-guardrail-history', wrapAsync(({ folder, limit }) => aiGuardrailTester.getGuardrailHistory(folder, limit)));
+
+// Guarded config upgrades
+ipcMain.handle('ai-fw-plan-upgrade', wrapAsync(({ folder, options }) => aiUpgradeOrchestrator.planUpgrade(folder, options || {})));
+ipcMain.handle('ai-fw-apply-upgrade', wrapAsync(({ folder, options }) => aiUpgradeOrchestrator.applyUpgrade(folder, options || {})));
+ipcMain.handle('ai-fw-upgrade-history', wrapAsync(({ folder, limit }) => aiUpgradeOrchestrator.getUpgradeHistory(folder, limit)));
+
+// Prompt testing
+ipcMain.handle('ai-fw-save-prompt-variant', wrapAsync(({ folder, variant }) => promptTesting.saveVariant(folder, variant || {})));
+ipcMain.handle('ai-fw-record-prompt-result', wrapAsync(({ folder, variantName, result }) => promptTesting.recordResult(folder, variantName, result || {})));
+ipcMain.handle('ai-fw-compare-prompts', wrapAsync(({ folder }) => promptTesting.compareVariants(folder)));
+
+// Dependency auditing
+ipcMain.handle('ai-fw-audit-dependencies', wrapAsync(({ folder }) => dependencyAuditor.auditAIDependencies(folder)));
+
+// Compliance
+ipcMain.handle('ai-fw-compliance-status', wrapAsync(({ folder }) => complianceMonitor.getComplianceStatus(folder)));
+ipcMain.handle('ai-fw-log-violation', wrapAsync(({ folder, violation }) => complianceMonitor.logViolation(folder, violation || {})));
+
+// Changelog
+ipcMain.handle('ai-fw-generate-changelog', wrapAsync(({ folder, limit }) => changelogGenerator.generateAIChangelog(folder, { limit })));
+
+// Knowledge base (cross-project, not tied to a folder)
+ipcMain.handle('ai-fw-knowledge-add', wrapAsync(({ entry }) => knowledgeBase.addEntry(entry || {})));
+ipcMain.handle('ai-fw-knowledge-search', wrapAsync(({ query }) => ({ ok: true, entries: knowledgeBase.search(query) })));
+ipcMain.handle('ai-fw-knowledge-list', wrapAsync(() => ({ ok: true, entries: knowledgeBase.listAll() })));
+
+// Experiments
+ipcMain.handle('ai-fw-create-experiment', wrapAsync(({ folder, experiment }) => experimentationFramework.createExperiment(folder, experiment || {})));
+ipcMain.handle('ai-fw-record-observation', wrapAsync(({ folder, observation }) => experimentationFramework.recordObservation(folder, observation || {})));
+ipcMain.handle('ai-fw-analyze-experiment', wrapAsync(({ folder, name }) => experimentationFramework.analyzeExperiment(folder, name)));
+ipcMain.handle('ai-fw-list-experiments', wrapAsync(({ folder }) => ({ ok: true, experiments: experimentationFramework.listExperiments(folder) })));

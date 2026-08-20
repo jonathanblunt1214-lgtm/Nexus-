@@ -613,6 +613,67 @@
     .pl-table td { padding: 4px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
     .pl-table tr:hover td { background: var(--bg-dark); }
 
+    /* AI Tools panel: inventory, metrics, guardrails, upgrades, prompt
+       testing, dependency auditing, compliance, changelog, knowledge base,
+       experiments - one collapsible section per capability. */
+    #aitools-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      background: rgba(0,0,0,0.5);
+    }
+    #aitools-panel {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 68vw;
+      max-width: 1100px;
+      min-width: 560px;
+      background: #0d1117;
+      border-left: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+    }
+    #aitools-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .aitools-section {
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      background: #161b22;
+    }
+    .aitools-section > summary {
+      cursor: pointer;
+      padding: 10px 14px;
+      font-weight: 600;
+      color: var(--emerald-bright);
+      list-style: none;
+    }
+    .aitools-section > summary::-webkit-details-marker { display: none; }
+    .aitools-section > summary::before { content: '▸ '; }
+    .aitools-section[open] > summary::before { content: '▾ '; }
+    .aitools-section-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .aitools-output {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #c9d1d9;
+      margin: 0;
+    }
+
     /* Command Palette - Ctrl+K, centered near the top of the screen */
     #cmdp-overlay {
       display: none;
@@ -1055,6 +1116,7 @@
     <button class="nav-btn" id="tab-btn-packages" onclick="togglePackageManager()" aria-label="Package Manager" title="Package Manager">📦</button>
     <button class="nav-btn" id="tab-btn-recentchanges" onclick="toggleRecentChanges()" aria-label="Recent Changes" title="Recent Changes">↺</button>
     <button class="nav-btn" id="tab-btn-pipeline" onclick="togglePipelinePanel()" aria-label="Object Pipeline" title="Object Pipeline (PowerShell-inspired, sandboxed - no OS access)">λ</button>
+    <button class="nav-btn" id="tab-btn-aitools" onclick="toggleAIToolsPanel()" aria-label="AI Tools" title="AI Tools: inventory, metrics, guardrails, upgrades, experiments">🧠</button>
     <button class="nav-btn" id="tab-btn-activity" onclick="toggleActivityView()" aria-label="Activity: everything currently running" title="Activity: everything currently running">
       ⚡<span id="activity-dot" style="display:none;"></span>
     </button>
@@ -1075,7 +1137,7 @@
         <label class="label">Add a Project</label>
         <div class="form-grid">
           <div class="form-row">
-            <input type="text" id="project-name" placeholder="Display name (e.g. smoker-hours-tracker)">
+            <input type="text" id="project-name" placeholder="Display name (e.g. my-web-app)">
           </div>
           <div class="form-row">
             <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it">
@@ -1363,6 +1425,20 @@ Type "help" for tips.
       </div>
 
       <div class="card">
+        <label class="label">🔐 GitHub — powers the GitHub actions in the Ship tab (create branch, commit via API, open a PR) and the AI Changelog</label>
+        <p class="muted small">
+          Paste a Personal Access Token with <code>repo</code> scope. Create one at
+          github.com → Settings → Developer settings → Personal access tokens → Generate new token (classic). Stored encrypted at rest, same as your other API keys.
+        </p>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="password" id="github-token" placeholder="ghp_...">
+          <button class="btn" onclick="githubConnect()">Connect</button>
+          <button class="btn btn-secondary" onclick="githubDisconnect()">Disconnect</button>
+        </div>
+        <p class="muted small" id="github-status" style="margin-top:8px;">Not connected.</p>
+      </div>
+
+      <div class="card">
         <label class="label">Backup / Move "My Nexus Setup"</label>
         <p class="muted small" style="margin-top:6px;">
           Exports your project list (names, folders, commands, ports, deploy commands, services) to a file you can move to a new machine.
@@ -1404,7 +1480,7 @@ Type "help" for tips.
         <div class="form-row" style="margin-top:8px;">
           <button class="btn" onclick="saveConstitutionUI()">Save to Project</button>
           <button class="btn btn-secondary" onclick="loadConstitution()">↻ Reload from Disk</button>
-          <button class="btn btn-secondary" onclick="loadSmokeStackTemplate()">Load SmokeStack Constitution v5</button>
+          <button class="btn btn-secondary" onclick="loadConstitutionTemplate()">Load Starter Template</button>
         </div>
       </div>
 
@@ -1472,6 +1548,143 @@ Measure-Object</pre>
           <div id="pipeline-error" class="muted small" style="color:var(--danger); display:none;"></div>
           <div id="pipeline-output" style="overflow-y:auto; flex:1;"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Tools: real, working modules for inventorying, measuring, testing,
+       and safely upgrading the AI parts of whichever project is active -
+       see aiInventory.js, aiMetrics.js, aiGuardrailTester.js,
+       aiUpgradeOrchestrator.js, promptTesting.js, dependencyAuditor.js,
+       complianceMonitor.js, changelogGenerator.js, knowledgeBase.js, and
+       experimentationFramework.js for what each section actually does. -->
+  <div id="aitools-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) closeAIToolsPanel()">
+    <div id="aitools-panel">
+      <div class="code-editor-header">
+        <strong>🧠 AI Tools</strong>
+        <button onclick="closeAIToolsPanel()" aria-label="Close panel" title="Close">✕</button>
+      </div>
+      <div id="aitools-body">
+        <p class="muted small">Operates on the active project (<span id="aitools-active-project">none</span>). Launch a project from the Projects tab first.</p>
+
+        <details class="aitools-section" open>
+          <summary>Inventory</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Scans the project for AI models, required API keys, config files, and guardrail files in use.</p>
+            <button class="btn" onclick="aiToolsScanInventory()">Scan Project</button>
+            <pre class="aitools-output" id="aitools-out-inventory">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Metrics</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Real recorded AI call latency/cost/error data for this project (nothing here until something records an event via aiFwRecordMetric).</p>
+            <button class="btn" onclick="aiToolsGetMetrics()">Refresh Summary</button>
+            <pre class="aitools-output" id="aitools-out-metrics">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Guardrail Testing</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Runs every npm script whose name matches guardrail/contract/safety/compliance/constitution and reports real pass/fail.</p>
+            <button class="btn" onclick="aiToolsRunGuardrails()">Run Guardrail Tests</button>
+            <pre class="aitools-output" id="aitools-out-guardrails">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Guarded Upgrade</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Backs up a config file, does a literal find/replace, then keeps the change only if guardrail tests and lint still pass - otherwise rolls back automatically.</p>
+            <div class="form-row"><input type="text" id="aitools-upgrade-file" placeholder="Config file, e.g. src/aiConfig.ts"></div>
+            <div class="form-row"><input type="text" id="aitools-upgrade-find" placeholder="Find (exact text)"></div>
+            <div class="form-row"><input type="text" id="aitools-upgrade-replace" placeholder="Replace with"></div>
+            <button class="btn" onclick="aiToolsApplyUpgrade()">Apply Guarded Upgrade</button>
+            <pre class="aitools-output" id="aitools-out-upgrade">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Prompt Testing</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Save named prompt variants and record quality scores against them (score comes from you or your own eval script).</p>
+            <div class="form-row"><input type="text" id="aitools-prompt-name" placeholder="Variant name"></div>
+            <textarea id="aitools-prompt-text" rows="2" placeholder="Prompt text" style="width:100%; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; padding:6px 8px; font-family:Consolas,monospace; font-size:12px;"></textarea>
+            <button class="btn btn-secondary" onclick="aiToolsSavePromptVariant()">Save Variant</button>
+            <div class="form-row">
+              <input type="text" id="aitools-prompt-result-name" placeholder="Variant name">
+              <input type="number" id="aitools-prompt-result-score" placeholder="Score" step="any">
+              <button class="btn" onclick="aiToolsRecordPromptResult()">Record Result</button>
+            </div>
+            <button class="btn btn-secondary" onclick="aiToolsComparePrompts()">Compare Variants</button>
+            <pre class="aitools-output" id="aitools-out-prompts">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Dependency Audit</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Checks installed vs. latest version for AI-related npm packages (Gemini, Anthropic, OpenAI, Firebase, etc). Latest-version lookups are best-effort and skipped gracefully offline.</p>
+            <button class="btn" onclick="aiToolsAuditDependencies()">Audit Dependencies</button>
+            <pre class="aitools-output" id="aitools-out-deps">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Compliance</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Latest guardrail score, trend vs. the previous run, and any manually-logged violations.</p>
+            <button class="btn" onclick="aiToolsComplianceStatus()">Check Compliance</button>
+            <pre class="aitools-output" id="aitools-out-compliance">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>AI Changelog</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Filters this project's real git history down to commits that touch AI-related files or mention AI-related terms.</p>
+            <button class="btn" onclick="aiToolsGenerateChangelog()">Generate</button>
+            <pre class="aitools-output" id="aitools-out-changelog">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Knowledge Base</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Cross-project notes on what worked - carries lessons forward into the next project, not just this one.</p>
+            <div class="form-row"><input type="text" id="aitools-kb-title" placeholder="Title"></div>
+            <textarea id="aitools-kb-lesson" rows="2" placeholder="What did you learn?" style="width:100%; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; padding:6px 8px; font-family:Consolas,monospace; font-size:12px;"></textarea>
+            <button class="btn btn-secondary" onclick="aiToolsAddKnowledge()">Add Entry</button>
+            <button class="btn" onclick="aiToolsListKnowledge()">List All</button>
+            <pre class="aitools-output" id="aitools-out-kb">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Experiments</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Side-by-side comparison of two variants (models, prompts, whatever) using real recorded numeric observations.</p>
+            <div class="form-row">
+              <input type="text" id="aitools-exp-name" placeholder="Experiment name">
+              <input type="text" id="aitools-exp-a" placeholder="Variant A name">
+              <input type="text" id="aitools-exp-b" placeholder="Variant B name">
+            </div>
+            <button class="btn btn-secondary" onclick="aiToolsCreateExperiment()">Create Experiment</button>
+            <div class="form-row">
+              <input type="text" id="aitools-obs-name" placeholder="Experiment name">
+              <input type="text" id="aitools-obs-variant" placeholder="Variant name">
+              <input type="number" id="aitools-obs-value" placeholder="Value" step="any">
+              <button class="btn" onclick="aiToolsRecordObservation()">Record</button>
+            </div>
+            <div class="form-row">
+              <input type="text" id="aitools-analyze-name" placeholder="Experiment name">
+              <button class="btn" onclick="aiToolsAnalyzeExperiment()">Analyze</button>
+            </div>
+            <pre class="aitools-output" id="aitools-out-experiments">—</pre>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -1761,12 +1974,3 @@ Measure-Object</pre>
   <script src="renderer.js"></script>
 </body>
 </html>
-<div class="card">
-  <label class="label">🔐 GitHub</label>
-  <p class="muted small">Click authorize, approve in browser, done.</p>
-  <div class="form-row" style="margin-top:8px;">
-    <button class="btn" onclick="githubAuthorize()" id="github-btn">🔐 Authorize</button>
-    <button class="btn btn-secondary" onclick="githubSignOut()">Sign Out</button>
-  </div>
-  <p class="muted small" id="github-status" style="margin-top:8px;">Not authorized.</p>
-</div>

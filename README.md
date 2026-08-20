@@ -235,9 +235,9 @@ couldn't.
   `CONSTITUTION.md` in the active project's root (existing file backed up
   to `.bak` first).
 - **Reload from Disk** shows you what's currently saved.
-- **Load SmokeStack Constitution v5** fills the box with the SmokeStack
-  governing document as a starting point — review it, then Save to Project
-  once the right project is active.
+- **Load Starter Template** fills the box with a generic governing-document
+  template as a starting point — replace the bracketed notes with rules
+  specific to your project, then Save to Project.
 
 This only affects AI-proposed *content* — it can't force the pipeline
 gate to physically block a build if a step is skipped, but a constitution

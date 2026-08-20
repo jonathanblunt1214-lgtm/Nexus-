@@ -1,7 +1,8 @@
-// smokerSupport.js
-// Main-process module for Smoker-Hours-Tracker support in Nexus.
-// Detects TypeScript/React/Vite projects and configures Nexus appropriately.
-// Enables full-stack development with frontend (Vite) + backend (Express) support.
+// fullStackSupport.js
+// Main-process module for full-stack project support in Nexus.
+// Detects TypeScript/React/Vite/Express-style projects and surfaces the
+// setup steps and commands they need, so Nexus isn't limited to simple
+// single-process JS projects.
 
 const path = require('path');
 const fs = require('fs');
@@ -27,16 +28,15 @@ function detectProjectType(projectPath) {
     const hasVite = fs.existsSync(viteConfigPath);
     const hasReact = !!(packageJson.dependencies?.react || packageJson.devDependencies?.react);
     const hasExpress = !!(packageJson.dependencies?.express || packageJson.devDependencies?.express);
-    const hasFirebase = !!(packageJson.dependencies?.firebase || packageJson.dependencies?.['firebase-admin']);
+    const hasFirebase = !!(packageJson.dependencies?.firebase || packageJson.dependencies?.['firebase-admin']) || fs.existsSync(firebaseJsonPath);
     const hasBackend = fs.existsSync(serverTsPath) || hasExpress;
     const hasEnvExample = fs.existsSync(envExamplePath);
 
-    // Determine if this is Smoker or similar full-stack project
-    const isSmoker = hasTypeScript && hasReact && hasVite && hasExpress && hasBackend;
+    const isFullStack = hasTypeScript && hasReact && hasVite && hasBackend;
     const isModern = hasTypeScript && (hasReact || hasVite || hasExpress);
 
     return {
-      type: isSmoker ? 'smoker-stack' : isModern ? 'modern' : 'legacy',
+      type: isFullStack ? 'full-stack' : isModern ? 'modern' : 'legacy',
       isTypeScript: hasTypeScript,
       isReact: hasReact,
       isVite: hasVite,
@@ -49,7 +49,7 @@ function detectProjectType(projectPath) {
       buildCommand: packageJson.scripts?.build || 'npm run build',
       startCommand: packageJson.scripts?.start || 'npm start',
       lintCommand: packageJson.scripts?.lint || 'npm run lint',
-      isSmoker,
+      isFullStack,
       isModern
     };
   } catch (err) {
@@ -63,7 +63,7 @@ function detectProjectType(projectPath) {
  */
 function parseEnvExample(projectPath) {
   const envExamplePath = path.join(projectPath, '.env.example');
-  
+
   if (!fs.existsSync(envExamplePath)) {
     return [];
   }
@@ -71,7 +71,7 @@ function parseEnvExample(projectPath) {
   try {
     const content = fs.readFileSync(envExamplePath, 'utf-8');
     const envVars = [];
-    
+
     content.split('\n').forEach(line => {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith('#')) {
@@ -85,7 +85,7 @@ function parseEnvExample(projectPath) {
         }
       }
     });
-    
+
     return envVars;
   } catch (err) {
     console.error('Error parsing .env.example:', err);
@@ -114,16 +114,16 @@ function extractDescription(content, key) {
 function getTypeScriptStatus(projectPath) {
   const srcPath = path.join(projectPath, 'src');
   const tsFiles = [];
-  
+
   function findTsFiles(dir) {
     if (!fs.existsSync(dir)) return;
-    
+
     try {
       const files = fs.readdirSync(dir);
       files.forEach(file => {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory() && !file.startsWith('.')) {
           findTsFiles(filePath);
         } else if (file.endsWith('.ts') || file.endsWith('.tsx')) {
@@ -134,9 +134,9 @@ function getTypeScriptStatus(projectPath) {
       // Ignore read errors
     }
   }
-  
+
   findTsFiles(srcPath);
-  
+
   return {
     hasTypeScript: fs.existsSync(path.join(projectPath, 'tsconfig.json')),
     tsFileCount: tsFiles.length,
@@ -145,70 +145,63 @@ function getTypeScriptStatus(projectPath) {
 }
 
 /**
- * Returns Smoker-specific commands if applicable
+ * Returns the standard full-stack commands this project actually defines
+ * (only ever surfaces scripts that exist in this project's own
+ * package.json - never assumes any project-specific script names).
  */
-function getSmokerCommands(projectPath, scripts) {
-  const smokerCommands = [];
-  
-  // Check for Smoker-specific scripts
-  if (scripts['generate:release']) {
-    smokerCommands.push({
-      label: 'Generate Release',
-      command: 'npm run generate:release',
-      description: 'Generate release metadata'
-    });
-  }
-  
-  if (scripts['generate:trusted-runtime']) {
-    smokerCommands.push({
-      label: 'Generate Trusted Runtime',
-      command: 'npm run generate:trusted-runtime',
-      description: 'Build secure server, client, and storage layers'
-    });
-  }
-  
+function getFullStackCommands(projectPath, scripts) {
+  const commands = [];
+
   if (scripts['dev']) {
-    smokerCommands.push({
+    commands.push({
       label: 'Start Dev (Full Stack)',
       command: 'npm run dev',
-      description: 'Launch with Vite frontend + Express backend'
+      description: 'Launch the dev server(s) defined by this project'
     });
   }
-  
+
   if (scripts['build']) {
-    smokerCommands.push({
+    commands.push({
       label: 'Build Production',
       command: 'npm run build',
-      description: 'Build frontend + bundle backend'
+      description: 'Build frontend + bundle backend, per this project\'s own build script'
     });
   }
-  
+
   if (scripts['lint']) {
-    smokerCommands.push({
+    commands.push({
       label: 'Type Check & Lint',
       command: 'npm run lint',
-      description: 'Run TypeScript type checking'
+      description: 'Run this project\'s own lint/type-check script'
     });
   }
-  
-  return smokerCommands;
+
+  if (scripts['test']) {
+    commands.push({
+      label: 'Run Tests',
+      command: 'npm test',
+      description: 'Run this project\'s own test script'
+    });
+  }
+
+  return commands;
 }
 
 /**
- * Creates a Smoker-specific configuration object
+ * Creates a full-stack-aware configuration summary for a project.
  */
-function createSmokerConfig(projectPath) {
+function createFullStackConfig(projectPath) {
   const projectType = detectProjectType(projectPath);
   const envVars = parseEnvExample(projectPath);
   const tsStatus = getTypeScriptStatus(projectPath);
-  const smokerCommands = getSmokerCommands(projectPath, projectType.scripts);
-  
+  const fullStackCommands = getFullStackCommands(projectPath, projectType.scripts);
+
   return {
     projectPath,
     projectType,
     envVars,
     tsStatus,
-    smokerCommands,
+    fullStackCommands,
     readyForDevelopment: projectType.isTypeScript && projectType.isReact && projectType.isVite,
     requiresSetup: envVars.length > 0 || !fs.existsSync(path.join(projectPath, '.env')),
     setupSteps: generateSetupSteps(projectPath, projectType, envVars)
@@ -220,7 +213,7 @@ function createSmokerConfig(projectPath) {
  */
 function generateSetupSteps(projectPath, projectType, envVars) {
   const steps = [];
-  
+
   // Check npm install
   if (!fs.existsSync(path.join(projectPath, 'node_modules'))) {
     steps.push({
@@ -231,7 +224,7 @@ function generateSetupSteps(projectPath, projectType, envVars) {
       required: true
     });
   }
-  
+
   // Check .env file
   if (envVars.length > 0 && !fs.existsSync(path.join(projectPath, '.env'))) {
     steps.push({
@@ -242,7 +235,7 @@ function generateSetupSteps(projectPath, projectType, envVars) {
       envVars: envVars
     });
   }
-  
+
   // TypeScript compilation
   if (projectType.isTypeScript) {
     steps.push({
@@ -253,7 +246,7 @@ function generateSetupSteps(projectPath, projectType, envVars) {
       required: false
     });
   }
-  
+
   return steps;
 }
 
@@ -261,7 +254,7 @@ module.exports = {
   detectProjectType,
   parseEnvExample,
   getTypeScriptStatus,
-  getSmokerCommands,
-  createSmokerConfig,
+  getFullStackCommands,
+  createFullStackConfig,
   generateSetupSteps
 };

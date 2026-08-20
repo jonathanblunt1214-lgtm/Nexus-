@@ -133,26 +133,47 @@ contextBridge.exposeInMainWorld('nexus', {
   runTests: (folder) => ipcRenderer.invoke('run-tests', { folder }),
   readConstitution: (folder) => ipcRenderer.invoke('read-constitution', { folder }),
   saveConstitution: (folder, content) => ipcRenderer.invoke('save-constitution', { folder, content }),
-});
-// Add these to the window.nexus exports
 
-// GitHub integration
-saveGitHubToken: (token) => ipcRenderer.invoke('save-github-token', { token }),
-hasGitHubToken: () => ipcRenderer.invoke('has-github-token'),
-clearGitHubToken: () => ipcRenderer.invoke('clear-github-token'),
-githubListRepos: () => ipcRenderer.invoke('github-list-repos'),
-githubGetFile: (owner, repo, path, ref) => ipcRenderer.invoke('github-get-file', { owner, repo, path, ref }),
-githubPutFile: (owner, repo, path, content, message, branch, sha) => 
-  ipcRenderer.invoke('github-put-file', { owner, repo, path, content, message, branch, sha }),
-githubCreatePR: (owner, repo, title, body, head, base) => 
-  ipcRenderer.invoke('github-create-pr', { owner, repo, title, body, head, base }),
-githubListPRs: (owner, repo, state) => ipcRenderer.invoke('github-list-prs', { owner, repo, state }),
-  // Add to window.nexus
-githubAuthorize: () => ipcRenderer.invoke('github-authorize'),
-githubGetToken: () => ipcRenderer.invoke('github-get-token'),
-githubClearToken: () => ipcRenderer.invoke('github-clear-token'),
-githubIsAuthorized: () => ipcRenderer.invoke('github-is-authorized'),
-githubCreateBranch: (owner, repo, branch, fromBranch) => 
-  ipcRenderer.invoke('github-create-branch', { owner, repo, branch, fromBranch }),
-githubGetCommits: (owner, repo, branch, per_page) => 
-  ipcRenderer.invoke('github-get-commits', { owner, repo, branch, per_page }),
+  // GitHub integration (personal access token path)
+  saveGitHubToken: (token) => ipcRenderer.invoke('save-github-token', { token }),
+  hasGitHubToken: () => ipcRenderer.invoke('has-github-token'),
+  clearGitHubToken: () => ipcRenderer.invoke('clear-github-token'),
+  githubListRepos: () => ipcRenderer.invoke('github-list-repos'),
+  githubGetFile: (owner, repo, path, ref) => ipcRenderer.invoke('github-get-file', { owner, repo, path, ref }),
+  githubPutFile: (owner, repo, path, content, message, branch, sha) =>
+    ipcRenderer.invoke('github-put-file', { owner, repo, path, content, message, branch, sha }),
+  githubCreatePR: (owner, repo, title, body, head, base) =>
+    ipcRenderer.invoke('github-create-pr', { owner, repo, title, body, head, base }),
+  githubListPRs: (owner, repo, state) => ipcRenderer.invoke('github-list-prs', { owner, repo, state }),
+  githubCreateBranch: (owner, repo, branch, fromBranch) =>
+    ipcRenderer.invoke('github-create-branch', { owner, repo, branch, fromBranch }),
+  githubGetCommits: (owner, repo, branch, per_page) =>
+    ipcRenderer.invoke('github-get-commits', { owner, repo, branch, per_page }),
+
+  // AI Improvement Framework: inventory, metrics, guardrail testing, guarded
+  // upgrades, prompt testing, dependency auditing, compliance, changelog,
+  // knowledge base, experiments - see aiFramework* modules in main.js.
+  aiFwScanInventory: (folder) => ipcRenderer.invoke('ai-fw-scan-inventory', { folder }),
+  aiFwRecordMetric: (folder, event) => ipcRenderer.invoke('ai-fw-record-metric', { folder, event }),
+  aiFwMetricsSummary: (folder) => ipcRenderer.invoke('ai-fw-metrics-summary', { folder }),
+  aiFwMetricsHistory: (folder, limit) => ipcRenderer.invoke('ai-fw-metrics-history', { folder, limit }),
+  aiFwRunGuardrails: (folder) => ipcRenderer.invoke('ai-fw-run-guardrails', { folder }),
+  aiFwGuardrailHistory: (folder, limit) => ipcRenderer.invoke('ai-fw-guardrail-history', { folder, limit }),
+  aiFwPlanUpgrade: (folder, options) => ipcRenderer.invoke('ai-fw-plan-upgrade', { folder, options }),
+  aiFwApplyUpgrade: (folder, options) => ipcRenderer.invoke('ai-fw-apply-upgrade', { folder, options }),
+  aiFwUpgradeHistory: (folder, limit) => ipcRenderer.invoke('ai-fw-upgrade-history', { folder, limit }),
+  aiFwSavePromptVariant: (folder, variant) => ipcRenderer.invoke('ai-fw-save-prompt-variant', { folder, variant }),
+  aiFwRecordPromptResult: (folder, variantName, result) => ipcRenderer.invoke('ai-fw-record-prompt-result', { folder, variantName, result }),
+  aiFwComparePrompts: (folder) => ipcRenderer.invoke('ai-fw-compare-prompts', { folder }),
+  aiFwAuditDependencies: (folder) => ipcRenderer.invoke('ai-fw-audit-dependencies', { folder }),
+  aiFwComplianceStatus: (folder) => ipcRenderer.invoke('ai-fw-compliance-status', { folder }),
+  aiFwLogViolation: (folder, violation) => ipcRenderer.invoke('ai-fw-log-violation', { folder, violation }),
+  aiFwGenerateChangelog: (folder, limit) => ipcRenderer.invoke('ai-fw-generate-changelog', { folder, limit }),
+  aiFwKnowledgeAdd: (entry) => ipcRenderer.invoke('ai-fw-knowledge-add', { entry }),
+  aiFwKnowledgeSearch: (query) => ipcRenderer.invoke('ai-fw-knowledge-search', { query }),
+  aiFwKnowledgeList: () => ipcRenderer.invoke('ai-fw-knowledge-list'),
+  aiFwCreateExperiment: (folder, experiment) => ipcRenderer.invoke('ai-fw-create-experiment', { folder, experiment }),
+  aiFwRecordObservation: (folder, observation) => ipcRenderer.invoke('ai-fw-record-observation', { folder, observation }),
+  aiFwAnalyzeExperiment: (folder, name) => ipcRenderer.invoke('ai-fw-analyze-experiment', { folder, name }),
+  aiFwListExperiments: (folder) => ipcRenderer.invoke('ai-fw-list-experiments', { folder }),
+});

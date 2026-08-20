@@ -7,7 +7,7 @@ const { runPipeline, tokenize, PipelineError } = require('../pipelineEngine');
 
 const sampleContext = {
   projects: [
-    { name: 'Smoke Stack', port: '3000', running: true },
+    { name: 'Sample App', port: '3000', running: true },
     { name: 'Nexus', port: '5173', running: false },
     { name: 'API Server', port: '8080', running: true },
   ],
@@ -29,7 +29,7 @@ test('runPipeline: Get-Project', async (t) => {
   await t.test('returns the real injected project list, unmodified', () => {
     const result = runPipeline('Get-Project', sampleContext);
     assert.equal(result.length, 3);
-    assert.equal(result[0].name, 'Smoke Stack');
+    assert.equal(result[0].name, 'Sample App');
   });
 
   await t.test('returns an empty array if no projects are in context', () => {
@@ -53,7 +53,7 @@ test('runPipeline: Where-Object', async (t) => {
   await t.test('-like does a case-insensitive substring match', () => {
     const result = runPipeline('Get-Project | Where-Object name -like "stack"', sampleContext);
     assert.equal(result.length, 1);
-    assert.equal(result[0].name, 'Smoke Stack');
+    assert.equal(result[0].name, 'Sample App');
   });
 
   await t.test('throws a clear PipelineError when given too few arguments', () => {
@@ -69,7 +69,7 @@ test('runPipeline: Select-Object', async (t) => {
   await t.test('projects only the requested properties', () => {
     const result = runPipeline('Get-Project | Select-Object name,port', sampleContext);
     assert.deepEqual(Object.keys(result[0]).sort(), ['name', 'port']);
-    assert.equal(result[0].name, 'Smoke Stack');
+    assert.equal(result[0].name, 'Sample App');
   });
 
   await t.test('throws if no property is given', () => {
@@ -80,12 +80,12 @@ test('runPipeline: Select-Object', async (t) => {
 test('runPipeline: Sort-Object', async (t) => {
   await t.test('sorts ascending by default', () => {
     const result = runPipeline('Get-Project | Sort-Object name', sampleContext);
-    assert.deepEqual(result.map((p) => p.name), ['API Server', 'Nexus', 'Smoke Stack']);
+    assert.deepEqual(result.map((p) => p.name), ['API Server', 'Nexus', 'Sample App']);
   });
 
   await t.test('-Descending reverses the order', () => {
     const result = runPipeline('Get-Project | Sort-Object name -Descending', sampleContext);
-    assert.deepEqual(result.map((p) => p.name), ['Smoke Stack', 'Nexus', 'API Server']);
+    assert.deepEqual(result.map((p) => p.name), ['Sample App', 'Nexus', 'API Server']);
   });
 });
 
@@ -103,7 +103,7 @@ test('runPipeline: full multi-stage pipeline', async (t) => {
       sampleContext
     );
     assert.deepEqual(result, [
-      { name: 'Smoke Stack', port: '3000' },
+      { name: 'Sample App', port: '3000' },
       { name: 'API Server', port: '8080' },
     ]);
   });

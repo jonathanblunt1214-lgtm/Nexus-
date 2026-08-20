@@ -39,8 +39,20 @@
       "projectSettings.js",
       "projectRegistry.js",
       "pureLogic.js",
-      "smokerSupport.js",
-      "processManager.js"
+      "pipelineEngine.js",
+      "githubClient.js",
+      "fullStackSupport.js",
+      "processManager.js",
+      "aiInventory.js",
+      "aiMetrics.js",
+      "aiGuardrailTester.js",
+      "aiUpgradeOrchestrator.js",
+      "promptTesting.js",
+      "dependencyAuditor.js",
+      "complianceMonitor.js",
+      "changelogGenerator.js",
+      "knowledgeBase.js",
+      "experimentationFramework.js"
     ],
     "publish": {
       "provider": "github",

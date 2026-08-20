@@ -32,7 +32,7 @@ function isGitUrl(input) {
 
 /**
  * Derives a filesystem-safe folder name from a repo URL.
- * https://github.com/user/Smoker-Hours-Tracker.git -> "Smoker-Hours-Tracker"
+ * https://github.com/user/my-web-app.git -> "my-web-app"
  */
 function repoNameFromUrl(url) {
   const cleaned = url.trim().replace(/\.git$/i, '').replace(/\/+$/, '');

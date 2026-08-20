@@ -225,6 +225,7 @@ function getCommandList() {
     { label: 'Open Activity', category: 'Navigate', keywords: 'running processes docker npm status', action: () => toggleActivityView() },
     { label: 'Check for Nexus Updates (pull from GitHub)', category: 'Navigate', keywords: 'sync update pull refresh source', action: () => checkForUpdatesNow() },
     { label: 'Open Object Pipeline', category: 'Navigate', keywords: 'powershell query data pipe', action: () => togglePipelinePanel() },
+    { label: 'Open AI Tools', category: 'Navigate', keywords: 'ai inventory metrics guardrails upgrade prompt experiment', action: () => toggleAIToolsPanel() },
     { label: 'Search across project files', category: 'Navigate', keywords: 'find search replace grep', action: async () => { await toggleCodeEditor(); showCodeEditorSearch(); } },
 
     { label: 'Add a Project (folder or GitHub URL)', category: 'Projects', keywords: 'clone add new local github', action: () => { switchTab('projects'); setTimeout(() => document.getElementById('project-path')?.focus(), 100); } },
@@ -2591,43 +2592,44 @@ async function ensureActiveProjectConfig() {
   return p;
 }
 
-const SMOKESTACK_CONSTITUTION_V5 = `# SMOKESTACK APP CONSTITUTION (AMENDED)
-**Status:** Governing law
-**Revision:** 4
-**Applies to:** Every SmokeStack client, server, background job, deployment, integration, AI response, administrator surface, data migration, and release artifact.
+const GENERIC_CONSTITUTION_TEMPLATE = `# PROJECT CONSTITUTION (STARTER TEMPLATE)
+**Status:** Governing law for this project
+**Applies to:** Every client, server, background job, deployment, integration, AI response, administrator surface, data migration, and release artifact in this project.
+
+Replace the bracketed notes below with rules specific to this project, then save. Bug Fix Assist and Feature Builder will follow whatever is saved here.
 
 ---
 
 ### 1. SUPREMACY AND SCOPE
-This Constitution governs all SmokeStack code and behavior. Product copy, feature requests, generated code, migrations, integrations, and release instructions are subordinate to it. A feature that cannot pass its constitutional gate remains unavailable and must be labeled unavailable.
+This Constitution governs all code and behavior in this project. Product copy, feature requests, generated code, migrations, integrations, and release instructions are subordinate to it. A feature that cannot pass its constitutional gate remains unavailable and must be labeled unavailable.
 
 ### 2. TRUTH AND NON-FABRICATION
 * **2.1** Unknown means unknown. Missing data is never replaced by a plausible value.
-* **2.2** SmokeStack must not fabricate cooks, smoker hours, fuel, prices, telemetry, device connections, identities, AI memory, verification, timestamps, backup success, synchronization, deployment, or store availability.
+* **2.2** [List the specific things this project must never fabricate - e.g. records, telemetry, device connections, identities, AI memory, verification, timestamps, backup success, synchronization, deployment, or availability status.]
 * **2.3** Demonstration and simulated data must be labeled DEMO or SIMULATED when it is created and must retain that provenance everywhere it is used.
 * **2.4** Success language is permitted only after the corresponding operation has succeeded and been verified.
-* **2.5** Configuration is not connection. Network availability is not AI grounding. A selected catalog item is not a paired device.
+* **2.5** Configuration is not connection. Network availability is not AI grounding. A selected item is not a verified paired device or account.
 
 ### 3. AUTHORITATIVE DATA AND IDENTITY
-* **3.1** Firebase Authentication establishes account identity. Client-supplied email addresses, device IDs, query parameters, and local storage never grant identity, permissions, or access to account data.
-* **3.2** All user data (cook logs, equipment records, photos, recipes, notes, preferences, backups, and community submissions) remains exclusively owned by the user. No upload, synchronization, backup, analysis, or contribution transfers title to SmokeStack.
-* **3.3** UID scoping is mandatory for all private user data operations. Cross-account data leakage is a critical constitutional failure.
+* **3.1** [Name this project's identity/auth source of truth - e.g. Firebase Auth, a session cookie, an API token.] Client-supplied identifiers (email addresses, device IDs, query parameters, local storage) never grant identity, permissions, or access to account data on their own.
+* **3.2** All user data remains exclusively owned by the user. No upload, synchronization, backup, analysis, or contribution transfers title to this project.
+* **3.3** Per-user/per-account scoping is mandatory for all private data operations. Cross-account data leakage is a critical constitutional failure.
 
-### 4. CONSTITUTIONAL EXCEPTIONS AND OVERRIDES (NEW)
-* **4.1 Absurdity Exception:** Strict literal enforcement of any constitutional clause that results in demonstrably absurd, self-contradictory, or catastrophic operational lock-out is nullified in that specific instance, provided the override preserves absolute data integrity, non-fabrication of telemetry, and explicit user consent.
-* **4.2 Contextual Override Mechanism:** Authorized administrative operations or verified real-time runtime constraints may invoke a contextual override to bypass rigid fallback blocks, provided the override event is fully auditable, leaves an unalterable log trail, and is never used to fabricate data or bypass user-ownership protections.
-* **4.3 Purpose-Driven Execution:** All system actions, UI rendering paths, and AI workflows shall execute dynamically to fulfill their verified user intent and functional purpose, preventing mechanical rigidity from breaking usable software interfaces or blocking legitimate operational workflows.
+### 4. CONSTITUTIONAL EXCEPTIONS AND OVERRIDES
+* **4.1 Absurdity Exception:** Strict literal enforcement of any clause that results in demonstrably absurd, self-contradictory, or catastrophic operational lock-out is nullified in that specific instance, provided the override preserves data integrity, non-fabrication, and explicit user consent.
+* **4.2 Contextual Override Mechanism:** Authorized administrative operations may bypass a rigid fallback block, provided the override is fully auditable, leaves an unalterable log trail, and is never used to fabricate data or bypass user-ownership protections.
+* **4.3 Purpose-Driven Execution:** System actions, UI rendering, and AI workflows should execute to fulfill verified user intent, without mechanical rigidity breaking usable interfaces or blocking legitimate workflows.
 
 ### 5. GATE AND FAILURE BEHAVIOR
-Every change follows this strict sequence:
+Every change follows this sequence:
 AUDIT -> REPAIR -> TEST -> GATE -> REPORT -> RELEASE
 If any gate fails, release stops. The failure remains visible and is not converted into simulated success, fallback data, or optimistic copy.
 `;
 
-function loadSmokeStackTemplate() {
+function loadConstitutionTemplate() {
   if (document.getElementById('constitution-text').value.trim() &&
       !confirm('This will replace the current text in the box (not yet saved). Continue?')) return;
-  document.getElementById('constitution-text').value = SMOKESTACK_CONSTITUTION_V5;
+  document.getElementById('constitution-text').value = GENERIC_CONSTITUTION_TEMPLATE;
 }
 
 async function renderConfigTab() {
@@ -3042,6 +3044,7 @@ setInterval(async () => {
   updatePrompt();
   refreshGeminiStatus();
   refreshNimStatus();
+  refreshGitHubStatus();
   const gcp = await window.nexus.getGcpProject();
   if (gcp) document.getElementById('gcp-project-id').value = gcp;
 
@@ -3049,109 +3052,181 @@ setInterval(async () => {
 
   updateActivityDot();
 })();
-async function githubAuthorize() {
-  const btn = document.getElementById('github-btn');
-  btn.disabled = true;
-  btn.innerText = '⏳ Authorizing...';
-  
-  const result = await window.nexus.githubAuthorize();
-  
-  btn.disabled = false;
-  btn.innerText = '🔐 Authorize';
-  
-  if (result.ok) {
-    showToast('success', '✅ GitHub authorized!', 'You can now push/pull from the Code Editor.');
-  } else if (result.error !== 'Cancelled') {
-    showToast('error', 'Authorization failed', result.error);
+// GitHub is connected with a pasted Personal Access Token (stored encrypted
+// via the same saveGeminiKey-style path), not an OAuth app flow - Nexus
+// isn't a registered GitHub OAuth App, so a real device-flow "Authorize"
+// button would have nothing to talk to. This is the honest, working version.
+async function githubConnect() {
+  const input = document.getElementById('github-token');
+  const token = input.value.trim();
+  if (!token) { alert('Paste a GitHub personal access token first.'); return; }
+
+  const result = await window.nexus.saveGitHubToken(token);
+  if (result && result.ok) {
+    input.value = '';
+    showToast('success', '✅ GitHub connected', 'Ship-tab GitHub actions and the AI Changelog can now use it.');
+  } else {
+    showToast('error', 'Could not save token', result?.error || 'Unknown error');
   }
   refreshGitHubStatus();
 }
 
-async function githubSignOut() {
-  if (!confirm('Remove GitHub authorization?')) return;
-  await window.nexus.githubClearToken();
+async function githubDisconnect() {
+  if (!confirm('Remove the saved GitHub token?')) return;
+  await window.nexus.clearGitHubToken();
   refreshGitHubStatus();
-  showToast('info', 'Signed out');
+  showToast('info', 'Disconnected');
 }
 
 async function refreshGitHubStatus() {
-  const result = await window.nexus.githubIsAuthorized();
   const statusEl = document.getElementById('github-status');
-  const btn = document.getElementById('github-btn');
-  
-  if (result.ok) {
-    statusEl.innerText = '✅ Authorized';
-    btn.innerText = '🔄 Re-authorize';
-  } else {
-    statusEl.innerText = '❌ Not authorized';
-    btn.innerText = '🔐 Authorize';
-  }
+  if (!statusEl) return;
+  const connected = await window.nexus.hasGitHubToken();
+  statusEl.innerText = connected ? '✅ Connected' : 'Not connected.';
 }
 
-// Run on load
-refreshGitHubStatus();
-// ============================================================
-// 🔐 GITHUB - FIXED VERSION (auto-retry on error)
-// ============================================================
+// ---------- AI Tools panel ----------
+// Thin UI over the AI Improvement Framework's IPC surface (aiFw* in
+// preload.js). Every button below calls a real main-process module - see
+// aiInventory.js, aiMetrics.js, aiGuardrailTester.js,
+// aiUpgradeOrchestrator.js, promptTesting.js, dependencyAuditor.js,
+// complianceMonitor.js, changelogGenerator.js, knowledgeBase.js, and
+// experimentationFramework.js. Output is just the JSON each call returns,
+// pretty-printed - nothing here is synthesized in the renderer.
 
-// Override the existing githubAuthorize function with a more robust version
-window.githubAuthorize = async function() {
-  const btn = document.getElementById('github-btn');
-  if (!btn) return;
-  
-  btn.disabled = true;
-  const originalText = btn.innerText;
-  btn.innerText = '⏳ Authorizing...';
-  
-  try {
-    // Check if nexus is ready
-    if (!window.nexus || typeof window.nexus.githubAuthorize !== 'function') {
-      console.log('Waiting for Nexus to load...');
-      await new Promise(r => setTimeout(r, 500));
-      if (!window.nexus || typeof window.nexus.githubAuthorize !== 'function') {
-        throw new Error('Nexus not ready. Please restart the app.');
-      }
-    }
-    
-    const result = await window.nexus.githubAuthorize();
-    
-    btn.disabled = false;
-    btn.innerText = '🔐 Authorize';
-    
-    if (result && result.ok) {
-      showToast('success', '✅ GitHub authorized!', 'You can now push/pull from the Code Editor.');
-    } else if (result && result.error !== 'Cancelled') {
-      showToast('error', 'Authorization failed', result.error || 'Unknown error');
-    }
-  } catch (err) {
-    btn.disabled = false;
-    btn.innerText = '🔐 Authorize';
-    showToast('error', 'Error', err.message || 'Please restart Nexus and try again');
-    console.error('GitHub auth error:', err);
-  }
-  
-  // Refresh status
-  try {
-    await refreshGitHubStatus();
-  } catch {}
-};
-
-// Auto-refresh status every 2 seconds until it works
-let githubRetryCount = 0;
-async function autoRefreshGitHubStatus() {
-  try {
-    if (window.nexus && typeof window.nexus.githubIsAuthorized === 'function') {
-      await refreshGitHubStatus();
-      githubRetryCount = 0;
-      return;
-    }
-  } catch {}
-  
-  githubRetryCount++;
-  if (githubRetryCount < 30) {
-    setTimeout(autoRefreshGitHubStatus, 1000);
-  }
+function toggleAIToolsPanel() {
+  const overlay = document.getElementById('aitools-overlay');
+  const isOpen = overlay.style.display === 'block';
+  if (isOpen) { closeAIToolsPanel(); return; }
+  overlay.style.display = 'block';
+  const p = projects.find((x) => x.id === activeProjectId);
+  document.getElementById('aitools-active-project').innerText = p ? p.name : 'none';
 }
 
-// Start auto-refresh
-setTimeout(autoRefreshGitHubStatus, 500);
+function closeAIToolsPanel() {
+  document.getElementById('aitools-overlay').style.display = 'none';
+}
+
+function aiToolsRequireFolder() {
+  const folder = activeProjectFolder();
+  if (!folder) alert('No active project. Launch one from the Projects tab first.');
+  return folder;
+}
+
+function aiToolsPrint(elId, data) {
+  document.getElementById(elId).innerText = JSON.stringify(data, null, 2);
+}
+
+async function aiToolsScanInventory() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-inventory', await window.nexus.aiFwScanInventory(folder));
+}
+
+async function aiToolsGetMetrics() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-metrics', await window.nexus.aiFwMetricsSummary(folder));
+}
+
+async function aiToolsRunGuardrails() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  document.getElementById('aitools-out-guardrails').innerText = 'Running…';
+  aiToolsPrint('aitools-out-guardrails', await window.nexus.aiFwRunGuardrails(folder));
+}
+
+async function aiToolsApplyUpgrade() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const configFile = document.getElementById('aitools-upgrade-file').value.trim();
+  const find = document.getElementById('aitools-upgrade-find').value;
+  const replace = document.getElementById('aitools-upgrade-replace').value;
+  if (!configFile || !find) { alert('Config file and text to find are required.'); return; }
+  if (!confirm(`This will edit ${configFile} in the active project (with an automatic rollback if guardrail tests or lint fail). Continue?`)) return;
+  document.getElementById('aitools-out-upgrade').innerText = 'Applying…';
+  aiToolsPrint('aitools-out-upgrade', await window.nexus.aiFwApplyUpgrade(folder, { configFile, find, replace }));
+}
+
+async function aiToolsSavePromptVariant() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const name = document.getElementById('aitools-prompt-name').value.trim();
+  const prompt = document.getElementById('aitools-prompt-text').value;
+  if (!name || !prompt) { alert('Variant name and prompt text are required.'); return; }
+  aiToolsPrint('aitools-out-prompts', await window.nexus.aiFwSavePromptVariant(folder, { name, prompt }));
+}
+
+async function aiToolsRecordPromptResult() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const variantName = document.getElementById('aitools-prompt-result-name').value.trim();
+  const score = parseFloat(document.getElementById('aitools-prompt-result-score').value);
+  if (!variantName || Number.isNaN(score)) { alert('Variant name and a numeric score are required.'); return; }
+  aiToolsPrint('aitools-out-prompts', await window.nexus.aiFwRecordPromptResult(folder, variantName, { score }));
+}
+
+async function aiToolsComparePrompts() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-prompts', await window.nexus.aiFwComparePrompts(folder));
+}
+
+async function aiToolsAuditDependencies() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  document.getElementById('aitools-out-deps').innerText = 'Auditing…';
+  aiToolsPrint('aitools-out-deps', await window.nexus.aiFwAuditDependencies(folder));
+}
+
+async function aiToolsComplianceStatus() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-compliance', await window.nexus.aiFwComplianceStatus(folder));
+}
+
+async function aiToolsGenerateChangelog() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-changelog', await window.nexus.aiFwGenerateChangelog(folder, 30));
+}
+
+async function aiToolsAddKnowledge() {
+  const title = document.getElementById('aitools-kb-title').value.trim();
+  const lesson = document.getElementById('aitools-kb-lesson').value.trim();
+  if (!title || !lesson) { alert('Title and lesson are required.'); return; }
+  const p = projects.find((x) => x.id === activeProjectId);
+  aiToolsPrint('aitools-out-kb', await window.nexus.aiFwKnowledgeAdd({ title, lesson, project: p ? p.name : null }));
+}
+
+async function aiToolsListKnowledge() {
+  aiToolsPrint('aitools-out-kb', await window.nexus.aiFwKnowledgeList());
+}
+
+async function aiToolsCreateExperiment() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const name = document.getElementById('aitools-exp-name').value.trim();
+  const variantA = document.getElementById('aitools-exp-a').value.trim();
+  const variantB = document.getElementById('aitools-exp-b').value.trim();
+  if (!name || !variantA || !variantB) { alert('Experiment name and both variant names are required.'); return; }
+  aiToolsPrint('aitools-out-experiments', await window.nexus.aiFwCreateExperiment(folder, { name, variantA, variantB }));
+}
+
+async function aiToolsRecordObservation() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const name = document.getElementById('aitools-obs-name').value.trim();
+  const variant = document.getElementById('aitools-obs-variant').value.trim();
+  const value = parseFloat(document.getElementById('aitools-obs-value').value);
+  if (!name || !variant || Number.isNaN(value)) { alert('Experiment name, variant name, and a numeric value are required.'); return; }
+  aiToolsPrint('aitools-out-experiments', await window.nexus.aiFwRecordObservation(folder, { name, variant, value }));
+}
+
+async function aiToolsAnalyzeExperiment() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const name = document.getElementById('aitools-analyze-name').value.trim();
+  if (!name) { alert('Experiment name is required.'); return; }
+  aiToolsPrint('aitools-out-experiments', await window.nexus.aiFwAnalyzeExperiment(folder, name));
+}
