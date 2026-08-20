@@ -357,6 +357,7 @@ function switchTab(tabId) {
     setTimeout(() => document.getElementById('term-input').focus(), 50);
     if (!currentAssistFolder) onTargetChange();
     refreshGitStatus();
+    refreshLanguageBreakdown();
     const p = projects.find((x) => x.id === activeProjectId);
     document.getElementById('deploy-command').value = p?.deployCommand || '';
   }
@@ -2165,7 +2166,36 @@ async function askGemini() {
   if (!prompt) return;
   const box = document.getElementById('gemini-response');
   box.innerText = 'Asking Gemini…';
-  const result = await window.nexus.geminiAsk(prompt);
+  const result = await window.nexus.geminiAsk(prompt, activeProjectFolder());
+  box.innerText = result.ok ? result.text : `Error: ${result.error}`;
+}
+
+async function saveOpenaiKey() {
+  const key = document.getElementById('openai-api-key').value.trim();
+  if (!key) return;
+  await window.nexus.saveOpenaiKey(key);
+  document.getElementById('openai-api-key').value = '';
+  refreshOpenAiStatus();
+}
+
+async function clearOpenaiKey() {
+  await window.nexus.clearOpenaiKey();
+  refreshOpenAiStatus();
+}
+
+async function refreshOpenAiStatus() {
+  const has = await window.nexus.hasOpenaiKey();
+  document.getElementById('openai-status').innerText = has
+    ? 'A key is saved (encrypted on disk).'
+    : 'No key saved yet.';
+}
+
+async function askOpenAi() {
+  const prompt = document.getElementById('openai-prompt').value.trim();
+  if (!prompt) return;
+  const box = document.getElementById('openai-response');
+  box.innerText = 'Asking OpenAI…';
+  const result = await window.nexus.openaiAsk(prompt, activeProjectFolder());
   box.innerText = result.ok ? result.text : `Error: ${result.error}`;
 }
 
@@ -2208,18 +2238,22 @@ function onAutonomousToggle() {
     const phrase = 'I APPROVE AUTONOMOUS EDITS';
     const typed = prompt(
       `Fully autonomous mode will let Nexus rewrite files WITHOUT showing you a diff first, for the rest of this session only.\n\n` +
-      `Backups (.bak) are still made, but you will not review changes before they're written.\n\n` +
+      `This applies to Bug Fix Assist AND Feature Builder's "Run Remaining Autonomously" button. Backups are still made, ` +
+      `and Feature Builder additionally runs this project's own guardrail tests afterward and auto-reverts every file it touched ` +
+      `if they fail - but you will not review changes before they're written.\n\n` +
       `Type exactly: ${phrase}`
     );
     if (typed !== phrase) {
       box.checked = false;
       autonomousMode = false;
+      renderFeaturePlan();
       return;
     }
     autonomousMode = true;
   } else {
     autonomousMode = false;
   }
+  renderFeaturePlan();
 }
 
 async function analyzeBug() {
@@ -2491,6 +2525,58 @@ function renderFeaturePlan() {
       </button>
     </div>
   `).join('');
+
+  const autoBtn = document.getElementById('feature-run-autonomous-btn');
+  if (autoBtn) {
+    const pending = featurePlan.some((item) => item.status !== 'done');
+    autoBtn.style.display = autonomousMode && pending ? 'inline-block' : 'none';
+  }
+}
+
+// Runs every still-pending file in the plan through the SAME autonomous
+// opt-in as Bug Fix Assist (autonomousMode - explicit "I APPROVE AUTONOMOUS
+// EDITS" phrase, session-only, resets on restart). Unlike the manual
+// Generate & Review path, this doesn't stop for a click per file - but it
+// still runs the project's own guardrail tests afterward and rolls back
+// every file this run touched if they fail, so "autonomous" means
+// "written and verified", not "written and hoped".
+async function runFeaturePlanAutonomously() {
+  if (!autonomousMode) { alert('Turn on "Fully autonomous" first.'); return; }
+  const folder = shipFolder();
+  if (!folder) { alert('No active project.'); return; }
+  const description = document.getElementById('feature-description').value.trim();
+  const pending = featurePlan.filter((item) => item.status !== 'done');
+  if (pending.length === 0) return;
+
+  if (!confirm(`Run all ${pending.length} remaining file(s) autonomously - no per-file review, but every file will be rolled back automatically if this project's guardrail tests fail afterward. Continue?`)) return;
+
+  const listEl = document.getElementById('feature-plan-list');
+  listEl.innerHTML = '<p class="muted small">Running autonomously - generating and applying each file, then verifying with guardrail tests…</p>';
+
+  const result = await window.nexus.runFeaturePlanAutonomous(folder, pending, description);
+
+  if (result.rolledBack) {
+    showToast('error', 'Autonomous run rolled back', `Guardrail tests failed after applying ${result.appliedThenRolledBack.length} file(s) - all reverted to their prior content.`);
+    renderFeaturePlan();
+    return;
+  }
+  if (!result.ok) {
+    showToast('error', 'Autonomous run failed', result.error || 'No files could be applied.');
+    renderFeaturePlan();
+    return;
+  }
+
+  for (const applied of result.appliedFiles) {
+    const item = featurePlan.find((p) => p.file === applied.file);
+    if (item) item.status = 'done';
+    recordChangelogEntry(applied.file, applied.explanation, 'feature');
+  }
+  if (result.errors && result.errors.length > 0) {
+    showToast('info', `${result.appliedFiles.length} file(s) applied, ${result.errors.length} failed to generate`, result.errors.map((e) => e.file).join(', '));
+  } else {
+    showToast('success', `Autonomously applied and verified ${result.appliedFiles.length} file(s)`, result.guardrailResult.hasGuardrails ? `Guardrails: ${result.guardrailResult.passed}/${result.guardrailResult.total} passed.` : 'No guardrail scripts found for this project.');
+  }
+  renderFeaturePlan();
 }
 
 async function generateFeatureFile(index) {
@@ -2590,6 +2676,100 @@ async function runDeploy() {
   document.getElementById('deploy-log-screen').innerText = '';
   const result = await window.nexus.runDeploy(p.id, p.folder, command);
   if (!result.ok) alert('Could not start deploy: ' + result.error);
+}
+
+// ---------- Project Capabilities: real Firebase/Capacitor script discovery
+// (fullStackSupport.js) - populates the existing Deploy command box and
+// reuses its confirm-then-run-and-stream-output flow rather than adding a
+// second execution path. Nexus doesn't run these itself. ----------
+// ---------- Languages (GitHub repository "Languages" bar equivalent) ----------
+async function refreshLanguageBreakdown() {
+  const p = projects.find((x) => x.id === activeProjectId);
+  const barEl = document.getElementById('languages-bar');
+  const legendEl = document.getElementById('languages-legend');
+  const summaryEl = document.getElementById('languages-summary');
+  if (!barEl || !legendEl || !summaryEl) return;
+  if (!p) { barEl.innerHTML = ''; legendEl.innerHTML = ''; summaryEl.innerText = ''; return; }
+
+  summaryEl.innerText = 'Scanning…';
+  const result = await window.nexus.scanLanguages(p.folder);
+
+  if (!result.ok) {
+    barEl.innerHTML = '';
+    legendEl.innerHTML = '';
+    summaryEl.innerText = result.error || 'Scan failed.';
+    return;
+  }
+  if (!result.hasData) {
+    barEl.innerHTML = '';
+    legendEl.innerHTML = '';
+    summaryEl.innerText = result.note || 'No source files found.';
+    return;
+  }
+
+  summaryEl.innerText = `${result.filesClassified} file${result.filesClassified === 1 ? '' : 's'} · ${formatBytes(result.totalBytes)}`;
+
+  barEl.innerHTML = result.languages.map((l) => `
+    <div class="lang-bar-segment" style="width:${l.percent}%; background:${l.color};" title="${escapeHtml(l.name)} ${l.percent}%"></div>
+  `).join('');
+
+  legendEl.innerHTML = result.languages.map((l) => `
+    <div class="lang-legend-item">
+      <span class="lang-legend-dot" style="background:${l.color};"></span>
+      <span class="lang-legend-name">${escapeHtml(l.name)}</span>
+      <span class="lang-legend-percent">${l.percent}%</span>
+    </div>
+  `).join('');
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function scanProjectCapabilities() {
+  const p = projects.find((x) => x.id === activeProjectId);
+  if (!p) { alert('No active project.'); return; }
+
+  const summaryEl = document.getElementById('capabilities-summary');
+  const commandsEl = document.getElementById('capabilities-commands');
+  summaryEl.innerText = 'Scanning…';
+  commandsEl.innerHTML = '';
+
+  const result = await window.nexus.scanFullStackConfig(p.folder);
+  if (!result.ok) { summaryEl.innerText = result.error || 'Scan failed.'; return; }
+
+  const t = result.projectType;
+  const traits = [];
+  if (t.isTypeScript) traits.push('TypeScript');
+  if (t.isReact) traits.push('React');
+  if (t.isVite) traits.push('Vite');
+  if (t.hasExpress) traits.push('Express');
+  if (t.hasFirebase) traits.push('Firebase');
+  if (t.hasCapacitor) traits.push('Capacitor (mobile)');
+  summaryEl.innerText = traits.length ? `Detected: ${traits.join(', ')} (${t.type})` : `No recognized stack detected (${t.type}).`;
+
+  const allCommands = [...(result.fullStackCommands || []), ...(result.mobileAndFirebaseCommands || [])];
+  if (allCommands.length === 0) {
+    commandsEl.innerHTML = '<p class="muted small">No matching npm scripts found in this project\'s package.json.</p>';
+    return;
+  }
+  commandsEl.innerHTML = allCommands.map((c, i) => `
+    <div class="suggestion-item">
+      <strong>${escapeHtml(c.label)}</strong> <code>${escapeHtml(c.command)}</code>
+      <p class="muted small" style="margin:4px 0;">${escapeHtml(c.description)}</p>
+      <button class="btn tiny btn-secondary" onclick="runCapabilityCommand(${i})">▶ Run via Deploy</button>
+    </div>
+  `).join('');
+  window.__nexusCapabilityCommands = allCommands;
+}
+
+function runCapabilityCommand(index) {
+  const c = (window.__nexusCapabilityCommands || [])[index];
+  if (!c) return;
+  document.getElementById('deploy-command').value = c.command;
+  runDeploy();
 }
 
 window.nexus.onDeployLog(({ id, text }) => {
@@ -2873,6 +3053,23 @@ async function runDetailedTests() {
 
   const result = await window.nexus.runTestsDetailed(folder);
 
+  if (result.multiScript) {
+    // No Jest/Vitest, but the project has its own real test:* npm scripts
+    // (e.g. Smoke Stack's test:chargpt-contract, test:firestore-rules) -
+    // real per-script pass/fail, not fabricated per-assertion detail.
+    const passed = result.scripts.filter((s) => s.ok).length;
+    summaryEl.innerText = `${passed}/${result.scripts.length} test scripts passed (no Jest/Vitest detected - per-script, not per-assertion, detail).`;
+    listEl.innerHTML = result.scripts.map((s, i) => `
+      <div class="tr-row">
+        <span class="tr-icon tr-icon-${s.ok ? 'pass' : 'fail'}">${s.ok ? '✓' : '✕'}</span>
+        <span class="tr-name" title="${escapeHtml(s.name)}" onclick="toggleMultiScriptOutput(${i})" style="cursor:pointer;">${escapeHtml(s.name)}</span>
+      </div>
+      <pre class="diff-box" id="tr-script-${i}" style="display:none; max-height:200px; margin:4px 0 8px;">${escapeHtml(s.output || '')}</pre>
+    `).join('');
+    lastTestResults = [];
+    return;
+  }
+
   if (!result.detailed) {
     summaryEl.innerText = result.error || (result.ok ? 'Tests passed.' : 'Tests failed.');
     listEl.innerHTML = `<pre class="diff-box" style="max-height:200px;">${escapeHtml(result.output || '')}</pre>`;
@@ -2904,6 +3101,11 @@ function renderTestResultsList() {
 
 function toggleTestFailureMessage(index) {
   document.getElementById(`tr-fail-${index}`)?.classList.toggle('open');
+}
+
+function toggleMultiScriptOutput(index) {
+  const el = document.getElementById(`tr-script-${index}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 async function rerunSingleTest(index, e) {
@@ -3094,6 +3296,7 @@ setInterval(async () => {
   refreshGeminiStatus();
   refreshNimStatus();
   refreshGitHubStatus();
+  refreshOpenAiStatus();
   const gcp = await window.nexus.getGcpProject();
   if (gcp) document.getElementById('gcp-project-id').value = gcp;
 

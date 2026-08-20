@@ -56,7 +56,8 @@
       "aiRecommendations.js",
       "aiAlerts.js",
       "aiCostOptimizer.js",
-      "aiPerformanceTuner.js"
+      "aiPerformanceTuner.js",
+      "languageBreakdown.js"
     ],
     "publish": {
       "provider": "github",

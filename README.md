@@ -103,7 +103,10 @@ npm run dist
   https://build.nvidia.com) — this powers Bug Fix Assist, Feature Builder,
   Feature Suggestions, Changelog generation, New Project generation, and
   Code Editor prompts. A Gemini key is optional, only for the separate
-  "Ask Gemini" box.
+  "Ask Gemini" box. An OpenAI key is also optional, only for the "Ask
+  OpenAI" box — it's there so Nexus's own AI tooling (and its metrics/cost
+  tracking) stays usable if a project's own AI features ever move to
+  OpenAI, not because anything else in Nexus depends on it.
 
 ## AI Code Assist tab (🩹)
 
@@ -116,6 +119,9 @@ npm run dist
   time you restart the app (it's never saved to disk). Turning it on
   requires typing an exact confirmation phrase. When on, Analyze writes the
   fix immediately without showing you the diff first — use with caution.
+  This same toggle also enables Feature Builder's "Run Remaining
+  Autonomously" button in the Ship tab (see below) — one opt-in covers
+  both, rather than two separate toggles to remember.
 - **Feature Suggestions (NVIDIA NIM)** — reads your project's file list and
   `package.json` and lists ideas. This is read-only: there is no "apply"
   button anywhere in the code for this feature, on purpose.
@@ -140,19 +146,29 @@ deploy script).
   and NIM proposes a plan: which files need to change or be created, and
   what each change does (up to 6 files). Click **Generate & Review** on
   each plan item to get an actual proposed diff for that one file — same
-  before/after review and Approve/Reject as Bug Fix Assist. Nothing is
-  written until you approve each file individually; there's no "approve
-  all" button on purpose.
+  before/after review and Approve/Reject as Bug Fix Assist.
+- **Run Remaining Autonomously** — appears once the "Fully autonomous"
+  toggle in AI Assist is on. Generates AND applies every still-pending
+  file in the plan with no per-file click, then runs the project's own
+  guardrail/contract tests for real against the result. If they fail
+  (and the project has any), every file this run touched is automatically
+  reverted — restored to its exact prior content, or deleted if it was
+  newly created — and reported as rolled back, never left half-applied or
+  reported as a success it didn't earn. If the project has no guardrail
+  scripts, the changes are kept (no guardrails to fail), same as
+  everywhere else in Nexus that treats "no guardrails configured" as "no
+  signal," not "passed."
 - **Deploy** — enter whatever command you already use to ship (an
   `npm run deploy` script, a `bash deploy.sh`, an upload script, etc.),
   save it per-project, then **Run Deploy**. It runs your real script and
   streams the output. Also asks for confirmation first, since this can
   reach production.
 
-What this does NOT do: there's no auto-deploy-on-push, no CI pipeline, and
-no autonomous mode for anything in this tab — git push and deploy always
-require an explicit click, regardless of the autonomous toggle in AI
-Assist (that toggle only affects local file writes in Bug Fix Assist).
+What this does NOT do: there's no auto-deploy-on-push and no CI pipeline —
+git push and deploy always require an explicit click regardless of the
+autonomous toggle. That toggle now covers Bug Fix Assist's single-file
+writes and Feature Builder's multi-file "Run Remaining Autonomously," but
+never git remote operations or your deploy script.
 
 ## Changelog (also in the Ship tab)
 
@@ -222,17 +238,51 @@ admin dashboard.
   project* itself uses — unrelated to which provider powers Nexus's own
   AI features.)
 
-## Pipeline: Audit → Repair → Test → Gate (in the Ship tab)
+## Pipeline: Audit → Repair → Test → Guardrails → Gate (in the Ship tab)
 
 Click **Run Pipeline** on the active project to run `npm audit`, offer to
 run `npm audit fix` if it finds issues (asks first — this modifies
-dependency files), then run the project's `npm test` script if one
-exists. The **Gate** pill turns green only if the audit passed (or was
-repaired) and tests passed or were legitimately skipped (no test script
-defined isn't treated as a failure). **Run Deploy** checks the gate first
-and asks you to confirm if it hasn't passed — it doesn't hard-block, since
-not every project has tests configured, but it won't let a failing gate
-slip by unnoticed.
+dependency files), run the project's `npm test` script if one exists, then
+run the project's own AI guardrail/contract/safety scripts (see AI Tools →
+Guardrail Testing below). The **Gate** pill turns green only if the audit
+passed (or was repaired), tests passed or were legitimately skipped (no
+test script defined isn't treated as a failure), and guardrails passed or
+were legitimately skipped (no matching scripts isn't treated as a
+failure either). **Run Deploy** checks the gate first and asks you to
+confirm if it hasn't passed — it doesn't hard-block, since not every
+project has tests or guardrails configured, but it won't let a failing
+gate slip by unnoticed.
+
+**Run Tests** (the per-test detail card) gives structured per-test
+pass/fail for Jest or Vitest projects. For a project that uses neither but
+still has its own real `test:*` npm scripts (e.g. a project with
+`test:contract`, `test:integration`, `test:firestore-rules` — whatever
+names it actually defines), Nexus runs each one separately and shows real
+per-script pass/fail instead of one opaque `npm test` blob. A project with
+no Jest/Vitest and no `test:*` scripts falls back to plain `npm test`
+output.
+
+**Project Capabilities** (also in the Ship tab, under Deploy) detects
+whether the active project is TypeScript/React/Vite/Express, uses
+Firebase, or has a Capacitor mobile build, and lists that project's own
+real npm scripts for each — nothing invented. Nexus has no dedicated
+Firebase ops panel (no emulator control) or Capacitor tooling (no
+Android/iOS emulator, no device preview); this only discovers what the
+project already defines and runs it through the same Deploy flow as
+everything else (confirm, then stream real output).
+
+**Languages** (top of the Ship tab, above Commit History) shows a real
+per-language byte breakdown of the active project's own source files —
+the same idea as GitHub's repository "Languages" bar, including the
+gray "Other" bucket for languages that individually make up less than
+1% (folded together the same way GitHub does it, not hidden). It walks
+the project's real files on disk and sums actual byte sizes per
+language; it never estimates from file count or line count. Dependency
+and build directories (`node_modules`, `dist`, `.git`, etc.) and
+machine-generated files (lockfiles, `.min.js`, source maps, `*.d.ts`,
+`*.generated.*`) are excluded, matching what GitHub's own Linguist
+excludes from language stats. Refreshes automatically when you open the
+Ship tab, or on demand via "↻ Scan Languages".
 
 ## Project Constitution (also in Project Config tab)
 

@@ -42,6 +42,8 @@ const aiRecommendations = require('./aiRecommendations');
 const aiAlerts = require('./aiAlerts');
 const aiCostOptimizer = require('./aiCostOptimizer');
 const aiPerformanceTuner = require('./aiPerformanceTuner');
+const fullStackSupport = require('./fullStackSupport');
+const languageBreakdown = require('./languageBreakdown');
 
 let mainWindow;
 
@@ -677,6 +679,44 @@ function getGeminiKey() {
   return cfg.geminiKeyPlain || null;
 }
 
+// --- OpenAI API key: same encrypted-at-rest pattern as Gemini/NIM. Added so
+// Nexus's own AI Assist tooling (and its metrics/cost/guardrail tracking)
+// stays usable if/when a project's own AI assistant migrates providers -
+// e.g. Smoke Stack's CharGPT is on Gemini today, but if it (or any project)
+// moves to OpenAI, Nexus already supports it as a first-class provider
+// rather than that being a gap discovered later. ---
+ipcMain.handle('save-openai-key', (_event, { key }) => {
+  const cfg = loadConfig();
+  if (safeStorage.isEncryptionAvailable()) {
+    cfg.openaiKeyEnc = safeStorage.encryptString(key).toString('base64');
+  } else {
+    cfg.openaiKeyPlain = key;
+  }
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+ipcMain.handle('has-openai-key', () => {
+  const cfg = loadConfig();
+  return Boolean(cfg.openaiKeyEnc || cfg.openaiKeyPlain);
+});
+
+ipcMain.handle('clear-openai-key', () => {
+  const cfg = loadConfig();
+  delete cfg.openaiKeyEnc;
+  delete cfg.openaiKeyPlain;
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+function getOpenAiKey() {
+  const cfg = loadConfig();
+  if (cfg.openaiKeyEnc && safeStorage.isEncryptionAvailable()) {
+    return safeStorage.decryptString(Buffer.from(cfg.openaiKeyEnc, 'base64'));
+  }
+  return cfg.openaiKeyPlain || null;
+}
+
 ipcMain.handle('save-gcp-project', (_event, { projectId }) => {
   const cfg = loadConfig();
   cfg.gcpProjectId = projectId;
@@ -933,6 +973,52 @@ async function callGemini(prompt, meta = {}) {
 
 ipcMain.handle('gemini-ask', async (_event, { prompt, folder }) => {
   const result = await callGemini(prompt, { folder, tag: 'ask-gemini' });
+  if (!result.ok) return result;
+  return { ok: true, text: result.text || '(empty response)' };
+});
+
+// --- Shared OpenAI call, used only by the general "Ask OpenAI" box for now -
+// same shape as callGemini/callNim (real timing, real metrics recording,
+// real error surfacing, no fabricated fallback text if the call fails). ---
+const OPENAI_MODEL = 'gpt-4o-mini';
+
+async function callOpenAI(prompt, meta = {}) {
+  const key = getOpenAiKey();
+  if (!key) return { ok: false, error: 'No OpenAI API key saved yet.' };
+
+  const startedAt = Date.now();
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const errMsg = data?.error?.message || `HTTP ${res.status}`;
+      recordAiCallMetric({ folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: false, error: errMsg });
+      return { ok: false, error: errMsg };
+    }
+    const text = data?.choices?.[0]?.message?.content || '';
+    recordAiCallMetric({
+      folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: true,
+      tokensIn: data?.usage?.prompt_tokens, tokensOut: data?.usage?.completion_tokens,
+    });
+    return { ok: true, text };
+  } catch (err) {
+    recordAiCallMetric({ folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: false, error: err.message });
+    return { ok: false, error: err.message };
+  }
+}
+
+ipcMain.handle('openai-ask', async (_event, { prompt, folder }) => {
+  const result = await callOpenAI(prompt, { folder, tag: 'ask-openai' });
   if (!result.ok) return result;
   return { ok: true, text: result.text || '(empty response)' };
 });
@@ -1332,7 +1418,11 @@ ipcMain.handle('revert-change', (_event, { filePath, backupPath }) => {
 });
 
 // The ONLY place a write happens. Always backs up first (if the file already exists).
-ipcMain.handle('apply-file-change', (_event, { filePath, newContent, source }) => {
+// Extracted so the autonomous multi-file orchestrator below can reuse the
+// exact same write path (backup + logChange) as the normal, human-approved
+// single-file apply - there is still only one place that ever writes an
+// AI-proposed change to disk.
+function applyFileChangeInternal(filePath, newContent, source) {
   try {
     let backupPath = null;
     if (fs.existsSync(filePath)) {
@@ -1347,6 +1437,10 @@ ipcMain.handle('apply-file-change', (_event, { filePath, newContent, source }) =
   } catch (err) {
     return { ok: false, error: err.message };
   }
+}
+
+ipcMain.handle('apply-file-change', (_event, { filePath, newContent, source }) => {
+  return applyFileChangeInternal(filePath, newContent, source);
 });
 
 // --- Linting/formatting on save: always runs the PROJECT'S OWN installed
@@ -1376,13 +1470,13 @@ function runCommand(cwd, command) {
 // (e.g. a test name pattern) - string-building a shell command from
 // untrusted text is a command-injection risk no amount of quote-escaping
 // fully closes (CodeQL: "Incomplete string escaping or encoding").
-function runCommandArgs(cwd, bin, args) {
+function runCommandArgs(cwd, bin, args, timeoutMs = 30_000) {
   return new Promise((resolve) => {
     let stdout = '';
     let stderr = '';
     let child;
     try {
-      child = execFile(bin, args, { cwd, timeout: 30_000, maxBuffer: 10 * 1024 * 1024 }, (error) => {
+      child = execFile(bin, args, { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }, (error) => {
         resolve({ ok: !error, stdout, stderr, error: error ? error.message : null });
       });
     } catch (err) {
@@ -1725,11 +1819,15 @@ ipcMain.handle('ai-plan-feature', async (_event, { folder, description }) => {
 });
 
 // One plan item -> a proposed change for that one file, same shape as ai-propose-fix
-// so the renderer can reuse the exact same review/approve panel.
-ipcMain.handle('ai-propose-feature-file', async (_event, { folder, filePath, description, planContext }) => {
+// so the renderer can reuse the exact same review/approve panel. Extracted
+// to a plain function so the autonomous multi-file orchestrator below can
+// call it directly without a round-trip through IPC.
+async function proposeFeatureFileChange(folder, filePath, description, planContext) {
   let oldContent;
+  let fileExistedBefore = false;
   try {
     oldContent = fs.readFileSync(filePath, 'utf8');
+    fileExistedBefore = true;
   } catch {
     oldContent = '';
   }
@@ -1760,7 +1858,117 @@ ipcMain.handle('ai-propose-feature-file', async (_event, { folder, filePath, des
   let newContent = result.text.slice(idx + marker.length);
   newContent = newContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
 
-  return { ok: true, oldContent, newContent, explanation, filePath };
+  return { ok: true, oldContent, newContent, explanation, filePath, fileExistedBefore };
+}
+
+ipcMain.handle('ai-propose-feature-file', async (_event, { folder, filePath, description, planContext }) => {
+  return proposeFeatureFileChange(folder, filePath, description, planContext);
+});
+
+// =======================================================================
+// Autonomous multi-file feature execution. This is the ONLY place besides
+// the single-file Bug Fix Assist autonomous path that ever writes an
+// AI-proposed change without a per-file human click - and it exists
+// specifically so "autonomous" means something real: every file in the
+// plan is proposed AND applied for real, then the project's own guardrail
+// tests are run for real, and if they fail, EVERY file this run touched is
+// rolled back for real (deleted if it was newly created, restored to its
+// exact prior content otherwise) - never left half-applied, never reported
+// as a success it didn't earn. Still gated behind the same explicit
+// session-only "I APPROVE AUTONOMOUS EDITS" opt-in as Bug Fix Assist -
+// nothing here runs unless the user turned that on for this session.
+// =======================================================================
+
+ipcMain.handle('run-feature-plan-autonomous', async (_event, { folder, plan, description }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+  if (!Array.isArray(plan) || plan.length === 0) return { ok: false, error: 'No plan to execute.' };
+
+  const applied = []; // { file, filePath, oldContent, newContent, explanation, fileExistedBefore }
+  const errors = [];
+
+  for (const item of plan) {
+    const targetFile = aiUpgradeOrchestrator.resolveInsideProject(folder, item.file);
+    if (!targetFile) {
+      errors.push({ file: item.file, error: 'Refused: path resolves outside the project folder.' });
+      continue;
+    }
+
+    const proposal = await proposeFeatureFileChange(folder, targetFile, description, plan);
+    if (!proposal.ok) {
+      errors.push({ file: item.file, error: proposal.error });
+      continue; // one file failing to generate doesn't stop the rest - each is independent
+    }
+
+    const writeResult = applyFileChangeInternal(targetFile, proposal.newContent, 'AI Feature Builder (autonomous)');
+    if (!writeResult.ok) {
+      errors.push({ file: item.file, error: writeResult.error });
+      continue;
+    }
+
+    applied.push({
+      file: item.file,
+      filePath: targetFile,
+      oldContent: proposal.oldContent,
+      newContent: proposal.newContent,
+      explanation: proposal.explanation,
+      fileExistedBefore: proposal.fileExistedBefore,
+    });
+  }
+
+  function rollbackApplied() {
+    const rollbackErrors = [];
+    for (const a of applied) {
+      try {
+        if (a.fileExistedBefore) {
+          fs.writeFileSync(a.filePath, a.oldContent, 'utf8');
+        } else {
+          fs.unlinkSync(a.filePath); // this run created it - remove it, don't leave an empty file behind
+        }
+      } catch (err) {
+        rollbackErrors.push({ file: a.file, error: err.message });
+      }
+    }
+    return rollbackErrors;
+  }
+
+  if (applied.length === 0) {
+    return { ok: false, error: 'No files could be applied.', errors };
+  }
+
+  // Real verification, not a rubber stamp: run this project's own
+  // guardrail/contract/safety scripts (same ones the Ship pipeline gate
+  // uses) against what was just written. A project with none is treated
+  // the same as everywhere else in Nexus - not a failure, just no signal -
+  // but a project that HAS guardrails and now fails them gets every file
+  // in this run rolled back automatically, no confirmation needed, because
+  // "autonomous" has to include "and verified", not just "and written".
+  const guardrailResult = await aiGuardrailTester.runGuardrailTests(folder);
+  const guardrailsFailed = guardrailResult.ok && guardrailResult.hasGuardrails && guardrailResult.passed !== guardrailResult.total;
+
+  if (guardrailsFailed) {
+    const rollbackErrors = rollbackApplied();
+    return {
+      ok: false,
+      rolledBack: true,
+      rollbackErrors,
+      guardrailResult,
+      appliedThenRolledBack: applied.map((a) => a.file),
+      errors,
+    };
+  }
+
+  // Changelog bookkeeping for these files happens back in the renderer,
+  // via the same real recordChangelogEntry()/pendingChangeLog path the
+  // manual-approval flow already uses - appliedFiles below is exactly what
+  // it needs to do that, so there's still only one changelog mechanism,
+  // not a second parallel one for the autonomous path.
+  return {
+    ok: true,
+    rolledBack: false,
+    guardrailResult,
+    appliedFiles: applied.map((a) => ({ file: a.file, explanation: a.explanation })),
+    errors,
+  };
 });
 
 // =======================================================================
@@ -2100,11 +2308,45 @@ ipcMain.handle('detect-test-framework', (_event, { folder }) => {
   return { framework: detectTestFramework(folder) };
 });
 
+// A project with no Jest/Vitest often still has real, separately-runnable
+// test coverage via its own npm scripts (e.g. Smoke Stack's own
+// "test:chargpt-contract", "test:firestore-rules", "test:database-harvesters" -
+// none of those are Jest/Vitest, but each is a real, individually meaningful
+// check). Rather than lumping them into one opaque "npm test" blob, run each
+// "test:*" script separately and report real per-script pass/fail - genuine
+// per-script granularity, not fabricated per-assertion detail we don't have.
+const NPM_BIN = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+function findTestScripts(folder) {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf8'));
+    return Object.keys(pkg.scripts || {}).filter((name) => name === 'test' || name.startsWith('test:'));
+  } catch {
+    return [];
+  }
+}
+
 ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern }) => {
   const framework = detectTestFramework(folder);
   if (!framework) {
-    // Honest fallback - no structured per-test data available, but still
-    // give real output rather than a dead end.
+    const testScripts = findTestScripts(folder).filter((s) => s !== 'test'); // 'test' itself is covered by the plain fallback below
+    if (testScripts.length > 0) {
+      const scripts = [];
+      for (const name of testScripts) {
+        const result = await runCommandArgs(folder, NPM_BIN, ['run', name], 120_000);
+        scripts.push({ name, ok: result.ok, output: (result.stdout + '\n' + result.stderr).trim().slice(-4000) });
+      }
+      const passed = scripts.filter((s) => s.ok).length;
+      return {
+        ok: passed === scripts.length,
+        detailed: false,
+        multiScript: true,
+        scripts,
+        error: null,
+      };
+    }
+    // Honest fallback - no structured per-test data and no separate test:*
+    // scripts either, but still give real output rather than a dead end.
     const plain = await runCommandForPipeline(folder, 'npm test');
     return { ok: plain.ok, detailed: false, output: plain.output, error: plain.ok ? null : 'No supported test framework (Jest or Vitest) detected - showing plain output instead.' };
   }
@@ -2705,3 +2947,23 @@ ipcMain.handle('ai-fw-set-pricing', wrapAsync(({ folder, model, pricePerMillionI
 ipcMain.handle('ai-fw-get-pricing', wrapAsync(({ folder }) => aiCostOptimizer.getPricing(folder)));
 ipcMain.handle('ai-fw-estimate-costs', wrapAsync(({ folder }) => aiCostOptimizer.estimateCosts(folder)));
 ipcMain.handle('ai-fw-performance-profile', wrapAsync(({ folder }) => aiPerformanceTuner.getPerformanceProfile(folder)));
+
+// --- Project capabilities: what this project actually is (TS/React/Vite/
+// Express, Firebase, Capacitor mobile), and the real npm scripts it defines
+// for each - was already written in fullStackSupport.js but never actually
+// wired up. Nexus still has no dedicated Capacitor/Firebase UI (no
+// emulator, no device preview) - this only ever surfaces real scripts that
+// exist in the project's own package.json for the user to run through the
+// existing Deploy flow, never invents one. ---
+ipcMain.handle('scan-full-stack-config', wrapAsync(({ folder }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+  return { ok: true, ...fullStackSupport.createFullStackConfig(folder) };
+}));
+
+// Real per-language byte breakdown for the active project - the GitHub
+// repository "Languages" bar equivalent. Walks the actual files on disk;
+// never estimates or reuses a cached figure. See languageBreakdown.js.
+ipcMain.handle('scan-languages', wrapAsync(({ folder }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+  return languageBreakdown.getLanguageBreakdown(folder);
+}));

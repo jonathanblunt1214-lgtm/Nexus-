@@ -81,7 +81,11 @@ contextBridge.exposeInMainWorld('nexus', {
   clearNimKey: () => ipcRenderer.invoke('clear-nim-key'),
   saveGcpProject: (projectId) => ipcRenderer.invoke('save-gcp-project', { projectId }),
   getGcpProject: () => ipcRenderer.invoke('get-gcp-project'),
-  geminiAsk: (prompt) => ipcRenderer.invoke('gemini-ask', { prompt }),
+  geminiAsk: (prompt, folder) => ipcRenderer.invoke('gemini-ask', { prompt, folder }),
+  saveOpenaiKey: (key) => ipcRenderer.invoke('save-openai-key', { key }),
+  hasOpenaiKey: () => ipcRenderer.invoke('has-openai-key'),
+  clearOpenaiKey: () => ipcRenderer.invoke('clear-openai-key'),
+  openaiAsk: (prompt, folder) => ipcRenderer.invoke('openai-ask', { prompt, folder }),
 
   // Code assist — proposals only pass through the renderer; the actual
   // write path (apply-file-change) is the single choke point for any
@@ -106,6 +110,8 @@ contextBridge.exposeInMainWorld('nexus', {
   aiPlanFeature: (folder, description) => ipcRenderer.invoke('ai-plan-feature', { folder, description }),
   aiProposeFeatureFile: (folder, filePath, description, planContext) =>
     ipcRenderer.invoke('ai-propose-feature-file', { folder, filePath, description, planContext }),
+  runFeaturePlanAutonomous: (folder, plan, description) =>
+    ipcRenderer.invoke('run-feature-plan-autonomous', { folder, plan, description }),
   aiGenerateChangelog: (changes) => ipcRenderer.invoke('ai-generate-changelog', { changes }),
   appendChangelog: (folder, devEntry, userEntry) =>
     ipcRenderer.invoke('append-changelog', { folder, devEntry, userEntry }),
@@ -185,4 +191,12 @@ contextBridge.exposeInMainWorld('nexus', {
   aiFwGetPricing: (folder) => ipcRenderer.invoke('ai-fw-get-pricing', { folder }),
   aiFwEstimateCosts: (folder) => ipcRenderer.invoke('ai-fw-estimate-costs', { folder }),
   aiFwPerformanceProfile: (folder) => ipcRenderer.invoke('ai-fw-performance-profile', { folder }),
+
+  // Project capabilities (TS/React/Vite/Express/Firebase/Capacitor
+  // detection + this project's own real mobile/Firebase npm scripts).
+  scanFullStackConfig: (folder) => ipcRenderer.invoke('scan-full-stack-config', { folder }),
+
+  // Real per-language byte breakdown for a project folder (GitHub
+  // repository "Languages" bar equivalent).
+  scanLanguages: (folder) => ipcRenderer.invoke('scan-languages', { folder }),
 });

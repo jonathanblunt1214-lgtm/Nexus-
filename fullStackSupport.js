@@ -32,6 +32,14 @@ function detectProjectType(projectPath) {
     const hasBackend = fs.existsSync(serverTsPath) || hasExpress;
     const hasEnvExample = fs.existsSync(envExamplePath);
 
+    // Capacitor-wrapped mobile companion app (e.g. an Android/iOS build
+    // alongside the web app) - detected the same way as everything else
+    // here: real config file or real dependency, never assumed.
+    const capacitorConfigPath1 = path.join(projectPath, 'capacitor.config.json');
+    const capacitorConfigPath2 = path.join(projectPath, 'capacitor.config.ts');
+    const hasCapacitor = fs.existsSync(capacitorConfigPath1) || fs.existsSync(capacitorConfigPath2) ||
+      !!(packageJson.dependencies?.['@capacitor/core'] || packageJson.devDependencies?.['@capacitor/core']);
+
     const isFullStack = hasTypeScript && hasReact && hasVite && hasBackend;
     const isModern = hasTypeScript && (hasReact || hasVite || hasExpress);
 
@@ -42,6 +50,7 @@ function detectProjectType(projectPath) {
       isVite: hasVite,
       hasExpress: hasExpress,
       hasFirebase: hasFirebase,
+      hasCapacitor: hasCapacitor,
       hasBackend: hasBackend,
       hasEnvExample: hasEnvExample,
       scripts: packageJson.scripts || {},
@@ -56,6 +65,54 @@ function detectProjectType(projectPath) {
     console.error('Error detecting project type:', err);
     return { type: 'error', isTypeScript: false, isReact: false, error: err.message };
   }
+}
+
+/**
+ * Surfaces this project's OWN real npm scripts for mobile (Capacitor) builds
+ * and Firebase operations - Nexus has no dedicated Capacitor/Firebase UI
+ * (no emulator, no device preview), so this is deliberately just discovery:
+ * find whatever real scripts the project already defines and hand back
+ * {label, command, description} for each, same shape as
+ * getFullStackCommands(). Never invents a script name that doesn't exist in
+ * this project's own package.json.
+ */
+function getMobileAndFirebaseCommands(projectPath, scripts, hasCapacitor, hasFirebase) {
+  const commands = [];
+  const scriptNames = Object.keys(scripts || {});
+
+  if (hasCapacitor) {
+    const capScripts = scriptNames.filter((name) => /\b(cap|capacitor|android|ios)\b/i.test(name));
+    for (const name of capScripts) {
+      commands.push({
+        label: `Mobile: ${name}`,
+        command: `npm run ${name}`,
+        description: `This project's own Capacitor/mobile script ("${scripts[name]}"). Nexus has no built-in Android/iOS emulator or device preview - this runs the project's real build/sync command and streams its output, same as Deploy.`,
+        category: 'mobile',
+      });
+    }
+    if (capScripts.length === 0) {
+      commands.push({
+        label: 'Mobile: sync (npx cap sync)',
+        command: 'npx cap sync',
+        description: 'Capacitor was detected (capacitor.config.* or @capacitor/core) but this project has no dedicated npm script for it - falling back to the standard Capacitor CLI command directly.',
+        category: 'mobile',
+      });
+    }
+  }
+
+  if (hasFirebase) {
+    const firebaseScripts = scriptNames.filter((name) => /\b(firebase|firestore|emulator)\b/i.test(name));
+    for (const name of firebaseScripts) {
+      commands.push({
+        label: `Firebase: ${name}`,
+        command: `npm run ${name}`,
+        description: `This project's own Firebase-related script ("${scripts[name]}"). Nexus has no dedicated Firebase ops panel beyond the GCP project ID field in Config - this runs the project's real script and streams its output.`,
+        category: 'firebase',
+      });
+    }
+  }
+
+  return commands;
 }
 
 /**
@@ -195,6 +252,7 @@ function createFullStackConfig(projectPath) {
   const envVars = parseEnvExample(projectPath);
   const tsStatus = getTypeScriptStatus(projectPath);
   const fullStackCommands = getFullStackCommands(projectPath, projectType.scripts);
+  const mobileAndFirebaseCommands = getMobileAndFirebaseCommands(projectPath, projectType.scripts, projectType.hasCapacitor, projectType.hasFirebase);
 
   return {
     projectPath,
@@ -202,6 +260,7 @@ function createFullStackConfig(projectPath) {
     envVars,
     tsStatus,
     fullStackCommands,
+    mobileAndFirebaseCommands,
     readyForDevelopment: projectType.isTypeScript && projectType.isReact && projectType.isVite,
     requiresSetup: envVars.length > 0 || !fs.existsSync(path.join(projectPath, '.env')),
     setupSteps: generateSetupSteps(projectPath, projectType, envVars)
@@ -255,6 +314,7 @@ module.exports = {
   parseEnvExample,
   getTypeScriptStatus,
   getFullStackCommands,
+  getMobileAndFirebaseCommands,
   createFullStackConfig,
   generateSetupSteps
 };

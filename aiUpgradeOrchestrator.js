@@ -150,4 +150,4 @@ function getUpgradeHistory(projectPath, limit = 50) {
   return loadRecords(projectPath).slice(-limit).reverse();
 }
 
-module.exports = { planUpgrade, applyUpgrade, getUpgradeHistory };
+module.exports = { planUpgrade, applyUpgrade, getUpgradeHistory, resolveInsideProject };
