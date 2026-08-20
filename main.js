@@ -8,7 +8,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session } = req
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { exec, spawn } = require('child_process');
+const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
 const { resolveProjectPath } = require('./projectCloner');
 const { getProjectsRoot } = require('./projectSettings');
@@ -1197,6 +1197,30 @@ function runCommand(cwd, command) {
   });
 }
 
+// Same as runCommand, but takes the binary and its arguments as a real
+// argv array and never goes through a shell. Use this instead of runCommand
+// whenever any part of the command line comes from user-controlled input
+// (e.g. a test name pattern) - string-building a shell command from
+// untrusted text is a command-injection risk no amount of quote-escaping
+// fully closes (CodeQL: "Incomplete string escaping or encoding").
+function runCommandArgs(cwd, bin, args) {
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    let child;
+    try {
+      child = execFile(bin, args, { cwd, timeout: 30_000, maxBuffer: 10 * 1024 * 1024 }, (error) => {
+        resolve({ ok: !error, stdout, stderr, error: error ? error.message : null });
+      });
+    } catch (err) {
+      resolve({ ok: false, stdout: '', stderr: '', error: err.message });
+      return;
+    }
+    child.stdout?.on('data', (d) => (stdout += d));
+    child.stderr?.on('data', (d) => (stderr += d));
+  });
+}
+
 ipcMain.handle('detect-lint-tools', (_event, { folder }) => {
   if (!folder || !fs.existsSync(folder)) return { hasEslint: false, hasPrettier: false };
   return {
@@ -1325,6 +1349,22 @@ function runGit(folder, args) {
   });
 }
 
+// Same as runGit, but for call sites that carry free-typed user input
+// (a commit message, a branch name). Passes a real argv array straight to
+// git with no shell involved, so there is nothing to escape and nothing to
+// inject - fixes CodeQL "Incomplete string escaping or encoding" for
+// git-commit, and closes the same (previously unflagged) hole in
+// git-create-branch, which interpolated branchName with no escaping at all.
+function runGitArgs(folder, args) {
+  return new Promise((resolve) => {
+    execFile('git', args, { cwd: folder, timeout: 30_000, maxBuffer: 10 * 1024 * 1024 },
+      (error, stdout, stderr) => {
+        const output = (stdout || '') + (stderr ? '\n' + stderr : '');
+        resolve({ ok: !error, output: output.trim(), error: error ? error.message : null });
+      });
+  });
+}
+
 ipcMain.handle('git-status', async (_event, { folder }) => {
   if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
   const branch = await runGit(folder, 'branch --show-current');
@@ -1427,13 +1467,13 @@ ipcMain.handle('git-show-commit', async (_event, { folder, hash }) => {
 });
 
 ipcMain.handle('git-create-branch', async (_event, { folder, branchName }) => {
-  return runGit(folder, `checkout -b "${branchName}"`);
+  return runGitArgs(folder, ['checkout', '-b', branchName]);
 });
 
 ipcMain.handle('git-commit', async (_event, { folder, message }) => {
   const add = await runGit(folder, 'add -A');
   if (!add.ok) return add;
-  return runGit(folder, `commit -m "${message.replace(/"/g, '\\"')}"`);
+  return runGitArgs(folder, ['commit', '-m', message]);
 });
 
 ipcMain.handle('git-push', async (_event, { folder }) => {
@@ -1898,16 +1938,19 @@ ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern })
 
   const bin = findLocalBin(folder, framework) || framework; // fall back to PATH/npx resolution if not locally installed
   const outFile = path.join(os.tmpdir(), `nexus-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
-  const namePart = testNamePattern ? ` -t "${testNamePattern.replace(/"/g, '\\"')}"` : '';
 
-  let command;
+  // Built as a real argv array (no shell) so a test name pattern can never
+  // be interpreted as shell syntax, regardless of what characters it
+  // contains - see runCommandArgs above.
+  let args;
   if (framework === 'jest') {
-    command = `"${bin}" --json --outputFile="${outFile}"${namePart}`;
+    args = ['--json', `--outputFile=${outFile}`];
   } else {
-    command = `"${bin}" run --reporter=json --outputFile="${outFile}"${namePart}`;
+    args = ['run', '--reporter=json', `--outputFile=${outFile}`];
   }
+  if (testNamePattern) args.push('-t', testNamePattern);
 
-  const runResult = await runCommand(folder, command);
+  const runResult = await runCommandArgs(folder, bin, args);
 
   let parsed = null;
   try {

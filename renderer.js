@@ -1947,14 +1947,39 @@ function clearLog() {
 }
 
 // ---------- Preview ----------
+// The preview URL box is free-typed input. Without a check here, whatever
+// text is in it gets handed straight to the <webview>'s src (or to the OS's
+// external-browser opener) and rendered/navigated as if it were a trusted
+// address - a "javascript:", "data:", or "file:" URL would then run in, or
+// read from, that context (CodeQL: "DOM text reinterpreted as HTML"). Only
+// plain http(s) addresses are allowed through.
+function isSafePreviewUrl(raw) {
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function loadPreview() {
   const url = document.getElementById('preview-url').value.trim();
-  if (url) document.getElementById('preview-frame').src = url;
+  if (!url) return;
+  if (!isSafePreviewUrl(url)) {
+    alert('Preview URL must be a plain http:// or https:// address.');
+    return;
+  }
+  document.getElementById('preview-frame').src = url;
 }
 
 function openInBrowser() {
   const url = document.getElementById('preview-url').value.trim();
-  if (url) window.nexus.openExternal(url);
+  if (!url) return;
+  if (!isSafePreviewUrl(url)) {
+    alert('Preview URL must be a plain http:// or https:// address.');
+    return;
+  }
+  window.nexus.openExternal(url);
 }
 
 function inspectPreview() {
