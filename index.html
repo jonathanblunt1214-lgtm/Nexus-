@@ -1754,3 +1754,12 @@ Measure-Object</pre>
   <script src="renderer.js"></script>
 </body>
 </html>
+<div class="card">
+  <label class="label">🔐 GitHub</label>
+  <p class="muted small">Click authorize, approve in browser, done.</p>
+  <div class="form-row" style="margin-top:8px;">
+    <button class="btn" onclick="githubAuthorize()" id="github-btn">🔐 Authorize</button>
+    <button class="btn btn-secondary" onclick="githubSignOut()">Sign Out</button>
+  </div>
+  <p class="muted small" id="github-status" style="margin-top:8px;">Not authorized.</p>
+</div>
