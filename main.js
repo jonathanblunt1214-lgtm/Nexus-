@@ -2295,4 +2295,92 @@ ipcMain.handle('export-secrets-to-env', (_event, { folder, projectUid }) => {
     return { ok: false, error: err.message };
   }
 });
+// Add these near the other key storage functions
 
+ipcMain.handle('save-github-token', (_event, { token }) => {
+  const cfg = loadConfig();
+  cfg.githubToken = token;
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+ipcMain.handle('has-github-token', () => {
+  const cfg = loadConfig();
+  return Boolean(cfg.githubToken);
+});
+
+ipcMain.handle('clear-github-token', () => {
+  const cfg = loadConfig();
+  delete cfg.githubToken;
+  saveConfig(cfg);
+  return { ok: true };
+});
+
+ipcMain.handle('github-list-repos', async () => {
+  const { listRepos } = require('./githubClient');
+  try {
+    return { ok: true, repos: await listRepos() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('github-get-file', async (_event, { owner, repo, path, ref }) => {
+  const { getFileContent } = require('./githubClient');
+  try {
+    const result = await getFileContent(owner, repo, path, ref);
+    return { ok: true, ...result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('github-put-file', async (_event, { owner, repo, path, content, message, branch, sha }) => {
+  const { createOrUpdateFile } = require('./githubClient');
+  try {
+    const result = await createOrUpdateFile(owner, repo, path, content, message, branch, sha);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('github-create-pr', async (_event, { owner, repo, title, body, head, base }) => {
+  const { createPullRequest } = require('./githubClient');
+  try {
+    const result = await createPullRequest(owner, repo, title, body, head, base);
+    return { ok: true, pr: result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('github-list-prs', async (_event, { owner, repo, state }) => {
+  const { getPullRequests } = require('./githubClient');
+  try {
+    const prs = await getPullRequests(owner, repo, state);
+    return { ok: true, prs };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('github-create-branch', async (_event, { owner, repo, branch, fromBranch }) => {
+  const { createBranch } = require('./githubClient');
+  try {
+    const result = await createBranch(owner, repo, branch, fromBranch);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('github-get-commits', async (_event, { owner, repo, branch, per_page }) => {
+  const { getCommits } = require('./githubClient');
+  try {
+    const commits = await getCommits(owner, repo, branch, per_page);
+    return { ok: true, commits };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
