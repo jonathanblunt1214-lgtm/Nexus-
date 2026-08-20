@@ -1,7 +1,7 @@
 {
   "name": "nexus-devos",
-  "version": "1.0.0",
-  "description": "Nexus Developer OS - a real desktop control panel for local dev projects",
+  "version": "1.1.0",
+  "description": "Nexus Developer OS - a real desktop control panel for local dev projects. Now with TypeScript, React, and Vite support.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -16,7 +16,10 @@
   },
   "devDependencies": {
     "electron": "^31.3.1",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "typescript": "~5.8.2",
+    "tsx": "^4.21.0",
+    "@types/node": "^26.2.0"
   },
   "build": {
     "appId": "com.nexus.devos",
@@ -35,7 +38,9 @@
       "projectCloner.js",
       "projectSettings.js",
       "projectRegistry.js",
-      "pureLogic.js"
+      "pureLogic.js",
+      "smokerSupport.js",
+      "processManager.js"
     ],
     "publish": {
       "provider": "github",
