@@ -62,8 +62,8 @@ contextBridge.exposeInMainWorld('nexus', {
   execCommand: (cmd) => ipcRenderer.invoke('exec-command', { cmd }),
   getCwd: () => ipcRenderer.invoke('get-cwd'),
 
-  launchProject: (id, folder, command, port, projectUid) =>
-    ipcRenderer.invoke('launch-project', { id, folder, command, port, projectUid }),
+  launchProject: (id, folder, command, port, projectUid, sandboxed) =>
+    ipcRenderer.invoke('launch-project', { id, folder, command, port, projectUid, sandboxed }),
   stopProject: (id) => ipcRenderer.invoke('stop-project', { id }),
   isProjectRunning: (id) => ipcRenderer.invoke('is-project-running', { id }),
   onProjectLog: (callback) =>

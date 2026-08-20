@@ -81,6 +81,20 @@ npm run dist
   computer, give it a name, set the start command (e.g. `npm run dev` for
   Vite/Next.js, or `npm start` for Create React App) and the port it runs
   on. Click **Save Project**, then **▶ Launch**.
+  - **🛡️ Sandboxed (Docker):** check this on a project card before
+    launching to run its start command inside an ephemeral Docker
+    container instead of directly on your machine. The container only
+    gets that project's own folder (plus a separate volume for
+    `node_modules`, so container-built native modules never collide with
+    host-installed ones) and the one port its dev server needs, published
+    back to `localhost` so Preview still works. It cannot read or write
+    anything else on your computer — not other projects, not Nexus
+    itself. Needs Docker Desktop installed and running; the first launch
+    is slower while it pulls the `node:20` image. This is a real boundary
+    against a project (including AI-generated/AI-run code inside it)
+    reaching outside its own folder — it is not a hardened security
+    sandbox against a determined container escape, and it doesn't
+    restrict network access by default.
 - **Preview tab:** Once a project is running, this shows the actual live
   page plus its console output underneath.
 - **Terminal tab:** A real terminal. Try `pwd`, `cd Desktop`, `dir` (or

@@ -87,6 +87,11 @@ let terminalCwd = os.homedir();
 // Map of projectId -> spawned child process, so we can stream output and
 // stop them later.
 const runningProcesses = new Map();
+// Map of projectId -> Docker container name, only set for sandboxed
+// launches (see launchProjectSandboxed) - lets stop-project issue a real
+// `docker stop` instead of just killing the local `docker run` CLI process,
+// which isn't guaranteed to stop the container itself.
+const sandboxedContainers = new Map();
 
 function killProcessTree(child) {
   if (!child || child.killed) return;
@@ -257,6 +262,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   // Make sure we don't leave dev servers running as orphaned processes.
+  for (const containerName of sandboxedContainers.values()) spawn('docker', ['stop', containerName]);
   for (const child of runningProcesses.values()) killProcessTree(child);
   for (const child of runningContainerLogs.values()) killProcessTree(child);
   for (const child of npmOperations.values()) killProcessTree(child);
@@ -486,7 +492,80 @@ ipcMain.handle('exec-command', async (_event, { cmd }) => {
 ipcMain.handle('get-cwd', () => terminalCwd);
 
 // --- Project launcher: spawn a real dev-server process ---
-ipcMain.handle('launch-project', (_event, { id, folder, command, port, projectUid }) => {
+async function checkDockerAvailable() {
+  const result = await runCommand(process.cwd(), 'docker version --format "{{.Server.Version}}"');
+  return result.ok;
+}
+
+// Runs the project's start command inside an ephemeral Docker container
+// instead of directly on the host, so a project (including one an AI agent
+// is generating/running code in) cannot read or write anything outside its
+// own folder - not other projects, not Nexus's own installation, not the
+// rest of the filesystem. The container only gets: the project folder
+// (read-write), a separate named volume for node_modules (so a container
+// built on Linux never collides with host-installed native binaries), and
+// the one port the dev server needs published back to localhost so Preview
+// keeps working exactly as it does for a non-sandboxed launch. Network
+// access is left on by default (most `npm install`/dev servers need it);
+// this is a real, meaningful boundary against a misbehaving or malicious
+// project touching the host - it is not a hardened security sandbox against
+// a determined container escape.
+function launchProjectSandboxed(id, folder, command, port, secretsEnv) {
+  return new Promise((resolve) => {
+    const containerName = `nexus-sandbox-${id}`;
+    const nodeModulesVolume = `nexus-sandbox-${id}-node-modules`;
+
+    const envArgs = [];
+    envArgs.push('-e', `PORT=${port || ''}`);
+    for (const [key, value] of Object.entries(secretsEnv || {})) envArgs.push('-e', `${key}=${value}`);
+
+    const portArgs = port ? ['-p', `${port}:${port}`] : [];
+
+    const args = [
+      'run', '--rm', '--name', containerName,
+      '-v', `${folder}:/workspace`,
+      '-v', `${nodeModulesVolume}:/workspace/node_modules`,
+      '-w', '/workspace',
+      ...envArgs,
+      ...portArgs,
+      'node:20',
+      'sh', '-c', command,
+    ];
+
+    // Best-effort cleanup of a stale container from a previous crashed run
+    // before starting a new one with the same name.
+    spawn('docker', ['rm', '-f', containerName]).on('close', () => {
+      let child;
+      try {
+        child = spawn('docker', args, { cwd: folder });
+      } catch (err) {
+        resolve({ ok: false, error: err.message });
+        return;
+      }
+
+      runningProcesses.set(id, child);
+      sandboxedContainers.set(id, containerName);
+
+      child.stdout.on('data', (data) => mainWindow?.webContents.send('project-log', { id, text: data.toString() }));
+      child.stderr.on('data', (data) => mainWindow?.webContents.send('project-log', { id, text: data.toString() }));
+      child.on('close', (code) => {
+        runningProcesses.delete(id);
+        sandboxedContainers.delete(id);
+        mainWindow?.webContents.send('project-closed', { id, code });
+      });
+      child.on('error', (err) => {
+        runningProcesses.delete(id);
+        sandboxedContainers.delete(id);
+        mainWindow?.webContents.send('project-log', { id, text: `\n[error] ${err.message}\n` });
+        mainWindow?.webContents.send('project-closed', { id, code: -1 });
+      });
+
+      resolve({ ok: true, sandboxed: true });
+    });
+  });
+}
+
+ipcMain.handle('launch-project', async (_event, { id, folder, command, port, projectUid, sandboxed }) => {
   if (runningProcesses.has(id)) {
     return { ok: false, error: 'Already running.' };
   }
@@ -495,6 +574,13 @@ ipcMain.handle('launch-project', (_event, { id, folder, command, port, projectUi
   }
 
   const secretsEnv = projectUid ? decryptAllProjectSecrets(projectUid) : {};
+
+  if (sandboxed) {
+    if (!(await checkDockerAvailable())) {
+      return { ok: false, error: 'Sandboxed launch needs Docker installed and running (Docker Desktop). Uncheck "Sandboxed" to run directly instead.' };
+    }
+    return launchProjectSandboxed(id, folder, command, port, secretsEnv);
+  }
 
   let child;
   try {
@@ -530,10 +616,18 @@ ipcMain.handle('launch-project', (_event, { id, folder, command, port, projectUi
 });
 
 ipcMain.handle('stop-project', (_event, { id }) => {
+  const containerName = sandboxedContainers.get(id);
+  if (containerName) {
+    // `docker stop` triggers container exit, which (via --rm) removes it and
+    // closes the `docker run` client's stdout - the existing 'close' handler
+    // does the runningProcesses/sandboxedContainers cleanup from there.
+    spawn('docker', ['stop', containerName]);
+  }
   const child = runningProcesses.get(id);
   if (child) {
     killProcessTree(child);
     runningProcesses.delete(id);
+    sandboxedContainers.delete(id);
   }
   return { ok: true };
 });

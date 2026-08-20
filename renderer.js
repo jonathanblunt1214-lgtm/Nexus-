@@ -552,7 +552,7 @@ async function toggleProject(id, e) {
     p.running = false;
     if (activeProjectId === id) setPreviewVisible(false);
   } else {
-    const result = await window.nexus.launchProject(id, p.folder, p.command, p.port);
+    const result = await window.nexus.launchProject(id, p.folder, p.command, p.port, p.projectUid, p.sandboxed);
     if (!result.ok) {
       alert('Could not launch: ' + result.error);
       return;
@@ -564,9 +564,21 @@ async function toggleProject(id, e) {
     document.getElementById('log-screen').innerText = '';
     setPreviewVisible(true);
     switchTab('workspace');
-    // Give the dev server a moment to boot before we point the webview at it.
-    setTimeout(loadPreview, 1500);
+    // Give the dev server a moment to boot before we point the webview at it
+    // (sandboxed launches pull the node:20 image on first run, which can
+    // take a bit longer than a direct host launch).
+    setTimeout(loadPreview, p.sandboxed ? 4000 : 1500);
   }
+  persistProjects();
+  renderProjects();
+}
+
+function toggleSandboxed(id, e) {
+  e.stopPropagation();
+  const p = projects.find((x) => x.id === id);
+  if (!p) return;
+  if (p.running) { alert('Stop the project first to change its sandbox setting.'); renderProjects(); return; }
+  p.sandboxed = !p.sandboxed;
   persistProjects();
   renderProjects();
 }
@@ -634,6 +646,10 @@ function renderProjects() {
         </div>
         <p class="path">${escapeHtml(p.folder)}</p>
         <p class="meta">${escapeHtml(p.command)} — port ${escapeHtml(p.port)}</p>
+        <label class="muted small" style="display:flex; align-items:center; gap:6px; margin-top:4px; cursor:pointer;" title="Run inside a Docker container that can only see this project's own folder - it can't read or write anything else on this machine, including Nexus itself.">
+          <input type="checkbox" ${p.sandboxed ? 'checked' : ''} ${p.running ? 'disabled' : ''} onclick="toggleSandboxed(${p.id}, event)">
+          🛡️ Sandboxed (Docker)
+        </label>
       </div>
       <div class="row">
         <button class="btn ${p.running ? 'btn-secondary' : ''}" style="flex:1;" onclick="toggleProject(${p.id}, event)">
@@ -643,6 +659,7 @@ function renderProjects() {
           ⚙️ ${isConfigOpen ? 'Hide Config' : 'Config'}
         </button>
         <span class="pill ${p.running ? 'on' : ''}">${p.running ? 'RUNNING' : 'STOPPED'}</span>
+        ${p.sandboxed ? '<span class="pill" style="background:var(--emerald); color:#0d1117;" title="Sandboxed">🛡️</span>' : ''}
       </div>
       <div class="project-config-slot" id="project-config-slot-${p.id}"></div>
     `;
