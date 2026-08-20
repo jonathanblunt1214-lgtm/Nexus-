@@ -3024,3 +3024,44 @@ setInterval(async () => {
 
   updateActivityDot();
 })();
+async function githubAuthorize() {
+  const btn = document.getElementById('github-btn');
+  btn.disabled = true;
+  btn.innerText = '⏳ Authorizing...';
+  
+  const result = await window.nexus.githubAuthorize();
+  
+  btn.disabled = false;
+  btn.innerText = '🔐 Authorize';
+  
+  if (result.ok) {
+    showToast('success', '✅ GitHub authorized!', 'You can now push/pull from the Code Editor.');
+  } else if (result.error !== 'Cancelled') {
+    showToast('error', 'Authorization failed', result.error);
+  }
+  refreshGitHubStatus();
+}
+
+async function githubSignOut() {
+  if (!confirm('Remove GitHub authorization?')) return;
+  await window.nexus.githubClearToken();
+  refreshGitHubStatus();
+  showToast('info', 'Signed out');
+}
+
+async function refreshGitHubStatus() {
+  const result = await window.nexus.githubIsAuthorized();
+  const statusEl = document.getElementById('github-status');
+  const btn = document.getElementById('github-btn');
+  
+  if (result.ok) {
+    statusEl.innerText = '✅ Authorized';
+    btn.innerText = '🔄 Re-authorize';
+  } else {
+    statusEl.innerText = '❌ Not authorized';
+    btn.innerText = '🔐 Authorize';
+  }
+}
+
+// Run on load
+refreshGitHubStatus();
