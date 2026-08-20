@@ -2384,3 +2384,11 @@ ipcMain.handle('github-get-commits', async (_event, { owner, repo, branch, per_p
     return { ok: false, error: err.message };
   }
 });
+// At the top with other requires
+const { authorize, getToken, clearToken, isAuthorized } = require('./github-oauth');
+
+// Add with other IPC handlers
+ipcMain.handle('github-authorize', async () => await authorize());
+ipcMain.handle('github-get-token', () => ({ ok: isAuthorized(), token: getToken() }));
+ipcMain.handle('github-clear-token', () => { clearToken(); return { ok: true }; });
+ipcMain.handle('github-is-authorized', () => ({ ok: isAuthorized() }));
