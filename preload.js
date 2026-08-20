@@ -134,3 +134,20 @@ contextBridge.exposeInMainWorld('nexus', {
   readConstitution: (folder) => ipcRenderer.invoke('read-constitution', { folder }),
   saveConstitution: (folder, content) => ipcRenderer.invoke('save-constitution', { folder, content }),
 });
+// Add these to the window.nexus exports
+
+// GitHub integration
+saveGitHubToken: (token) => ipcRenderer.invoke('save-github-token', { token }),
+hasGitHubToken: () => ipcRenderer.invoke('has-github-token'),
+clearGitHubToken: () => ipcRenderer.invoke('clear-github-token'),
+githubListRepos: () => ipcRenderer.invoke('github-list-repos'),
+githubGetFile: (owner, repo, path, ref) => ipcRenderer.invoke('github-get-file', { owner, repo, path, ref }),
+githubPutFile: (owner, repo, path, content, message, branch, sha) => 
+  ipcRenderer.invoke('github-put-file', { owner, repo, path, content, message, branch, sha }),
+githubCreatePR: (owner, repo, title, body, head, base) => 
+  ipcRenderer.invoke('github-create-pr', { owner, repo, title, body, head, base }),
+githubListPRs: (owner, repo, state) => ipcRenderer.invoke('github-list-prs', { owner, repo, state }),
+githubCreateBranch: (owner, repo, branch, fromBranch) => 
+  ipcRenderer.invoke('github-create-branch', { owner, repo, branch, fromBranch }),
+githubGetCommits: (owner, repo, branch, per_page) => 
+  ipcRenderer.invoke('github-get-commits', { owner, repo, branch, per_page }),
