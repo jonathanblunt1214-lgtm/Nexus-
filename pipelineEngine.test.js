@@ -3,7 +3,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { runPipeline, tokenize, PipelineError } = require('../pipelineEngine');
+const { runPipeline, tokenize, PipelineError } = require('./pipelineEngine');
 
 const sampleContext = {
   projects: [
@@ -51,7 +51,7 @@ test('runPipeline: Where-Object', async (t) => {
   });
 
   await t.test('-like does a case-insensitive substring match', () => {
-    const result = runPipeline('Get-Project | Where-Object name -like "stack"', sampleContext);
+    const result = runPipeline('Get-Project | Where-Object name -like "app"', sampleContext);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, 'Sample App');
   });
@@ -123,7 +123,7 @@ test('runPipeline: error handling', async (t) => {
   });
 
   await t.test('never touches fs, child_process, or any Node/Electron global - confirmed by construction: this module requires nothing but its own code', () => {
-    const rawSource = require('node:fs').readFileSync(require.resolve('../pipelineEngine'), 'utf8');
+    const rawSource = require('node:fs').readFileSync(require.resolve('./pipelineEngine'), 'utf8');
     // Strip comments first - the file's own documentation legitimately
     // mentions these terms when explaining what it does NOT do, which
     // would otherwise produce false positives in a naive text scan.

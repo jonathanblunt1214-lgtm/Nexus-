@@ -11,7 +11,7 @@ const {
   escapeRegex,
   parseUnifiedDiff,
   parseJestStyleResults,
-} = require('../pureLogic');
+} = require('./pureLogic');
 
 test('sanitizeProjectFolderName', async (t) => {
   await t.test('keeps a normal name unchanged apart from spacing', () => {

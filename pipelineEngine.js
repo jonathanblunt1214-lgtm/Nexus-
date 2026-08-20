@@ -97,6 +97,13 @@ const CMDLETS = {
   'get-gitstatusfile': (_input, _args, context) => context.gitStatusFiles || [],
   'get-recentchange': (_input, _args, context) => context.recentChanges || [],
   'get-runningprocess': (_input, _args, context) => (context.projects || []).filter((p) => p.running),
+  // Real, already-persisted AI Improvement Framework data for the active
+  // project (see aiGuardrailTester.js / aiMetrics.js) - this cmdlet is
+  // read-only like every other one here, it never triggers a new guardrail
+  // run or AI call itself. That keeps this module's "no side effects, only
+  // ever reads data handed to it via context" security property intact.
+  'get-guardrailresult': (_input, _args, context) => context.guardrailResults || [],
+  'get-aimetric': (_input, _args, context) => context.aiMetrics || [],
 
   'where-object': (input, args) => {
     if (args.length < 3) throw new PipelineError('Where-Object needs: <property> -operator <value> (e.g. Where-Object running -eq true)');

@@ -1685,6 +1685,48 @@ Measure-Object</pre>
             <pre class="aitools-output" id="aitools-out-experiments">—</pre>
           </div>
         </details>
+
+        <details class="aitools-section">
+          <summary>Recommendations</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Concrete suggestions derived from real thresholds on already-recorded metrics, compliance, and dependency data - never invented.</p>
+            <button class="btn" onclick="aiToolsGetRecommendations()">Get Recommendations</button>
+            <pre class="aitools-output" id="aitools-out-recommendations">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Trend Alerts</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Compares the most recent 10 recorded calls per model against the 10 before that - flags a real drop in success rate or jump in latency. Not a prediction, just real-number arithmetic.</p>
+            <button class="btn" onclick="aiToolsGetTrendAlerts()">Check Trend Alerts</button>
+            <pre class="aitools-output" id="aitools-out-alerts">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Cost Optimizer</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Set your own known price per model (from the provider's pricing page - Nexus never guesses this), then see real cost from real recorded token usage.</p>
+            <div class="form-row">
+              <input type="text" id="aitools-price-model" placeholder="Model name">
+              <input type="number" id="aitools-price-in" placeholder="$ / 1M input tokens" step="any">
+              <input type="number" id="aitools-price-out" placeholder="$ / 1M output tokens" step="any">
+              <button class="btn btn-secondary" onclick="aiToolsSetPricing()">Save Price</button>
+            </div>
+            <button class="btn" onclick="aiToolsEstimateCosts()">Estimate Costs</button>
+            <pre class="aitools-output" id="aitools-out-cost">—</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
+          <summary>Performance Tuner</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Real p50/p90 latency per model from actually recorded calls, and which reliable (≥90% success) model is currently fastest.</p>
+            <button class="btn" onclick="aiToolsPerformanceProfile()">Get Performance Profile</button>
+            <pre class="aitools-output" id="aitools-out-performance">—</pre>
+          </div>
+        </details>
       </div>
     </div>
   </div>

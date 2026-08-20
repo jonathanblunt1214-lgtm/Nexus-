@@ -805,7 +805,7 @@ function closePipelinePanel() {
 }
 
 async function gatherPipelineContext() {
-  const context = { projects, dockerContainers: [], gitStatusFiles: [], recentChanges: [] };
+  const context = { projects, dockerContainers: [], gitStatusFiles: [], recentChanges: [], guardrailResults: [], aiMetrics: [] };
 
   const dockerCheck = await window.nexus.dockerCheck();
   if (dockerCheck.installed && dockerCheck.running) {
@@ -817,6 +817,18 @@ async function gatherPipelineContext() {
   if (folder) {
     const diffResult = await window.nexus.gitDiff(folder);
     if (diffResult.ok) context.gitStatusFiles = diffResult.files.map((f) => ({ relPath: f.relPath, status: f.status }));
+
+    // Real, already-persisted AI Improvement Framework history for the
+    // active project - this only reads what's already on disk (past
+    // guardrail runs, past recorded AI calls), it does not trigger a new
+    // guardrail run or AI call just by opening the Pipeline panel.
+    // aiFwGuardrailHistory/aiFwMetricsHistory both resolve to a plain array
+    // (see aiGuardrailTester.getGuardrailHistory / aiMetrics.getMetricsHistory).
+    const guardrailHistory = await window.nexus.aiFwGuardrailHistory(folder, 50);
+    if (Array.isArray(guardrailHistory)) context.guardrailResults = guardrailHistory;
+
+    const metricsHistory = await window.nexus.aiFwMetricsHistory(folder, 200);
+    if (Array.isArray(metricsHistory)) context.aiMetrics = metricsHistory;
   }
 
   const changesResult = await window.nexus.getRecentChanges();
@@ -2951,8 +2963,28 @@ async function runPipeline() {
   stepsHtml += renderPipelineStep('Test', tests);
   stepsEl.innerHTML = stepsHtml;
 
+  // AI guardrail tests are now a real Ship-pipeline stage, not just a
+  // manual button in the AI Tools panel - the same npm-script-based guardrail
+  // suite (aiGuardrailTester.js) runs automatically here and its pass/fail
+  // feeds the gate, same as Audit and Test do. A project with no guardrail
+  // scripts is marked SKIPPED (not a fabricated pass) and doesn't block the
+  // gate - only a project that HAS guardrails and fails them does.
+  const guardrails = await window.nexus.aiFwRunGuardrails(folder);
+  const guardrailStep = !guardrails.ok
+    ? { ok: false, error: guardrails.error || 'Guardrail run failed.' }
+    : guardrails.hasGuardrails === false
+      ? { ok: true, skipped: true, output: guardrails.message || 'No guardrail/contract/safety scripts found in package.json.' }
+      : {
+          ok: guardrails.passed === guardrails.total,
+          output: `${guardrails.passed}/${guardrails.total} guardrail scripts passed (score ${guardrails.score}%).\n` +
+            guardrails.results.filter((r) => !r.passed).map((r) => `✕ ${r.script}: ${r.error || 'failed'}`).join('\n'),
+        };
+  stepsHtml += renderPipelineStep('AI Guardrails', guardrailStep);
+  stepsEl.innerHTML = stepsHtml;
+
   const auditGatePassed = audit.ok || (repairRan && repair && repair.ok);
-  pipelineGatePassed = auditGatePassed && tests.ok;
+  const guardrailsGatePassed = guardrailStep.skipped || guardrailStep.ok;
+  pipelineGatePassed = auditGatePassed && tests.ok && guardrailsGatePassed;
 
   gatePill.innerText = pipelineGatePassed ? 'GATE: PASSED' : 'GATE: FAILED';
   gatePill.className = 'pill' + (pipelineGatePassed ? ' on' : '');
@@ -3246,4 +3278,39 @@ async function aiToolsAnalyzeExperiment() {
   const name = document.getElementById('aitools-analyze-name').value.trim();
   if (!name) { alert('Experiment name is required.'); return; }
   aiToolsPrint('aitools-out-experiments', await window.nexus.aiFwAnalyzeExperiment(folder, name));
+}
+
+async function aiToolsGetRecommendations() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  document.getElementById('aitools-out-recommendations').innerText = 'Analyzing…';
+  aiToolsPrint('aitools-out-recommendations', await window.nexus.aiFwGetRecommendations(folder));
+}
+
+async function aiToolsGetTrendAlerts() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-alerts', await window.nexus.aiFwGetTrendAlerts(folder));
+}
+
+async function aiToolsSetPricing() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  const model = document.getElementById('aitools-price-model').value.trim();
+  const priceIn = parseFloat(document.getElementById('aitools-price-in').value);
+  const priceOut = parseFloat(document.getElementById('aitools-price-out').value);
+  if (!model || Number.isNaN(priceIn) || Number.isNaN(priceOut)) { alert('Model name and both prices ($ per 1M tokens) are required.'); return; }
+  aiToolsPrint('aitools-out-cost', await window.nexus.aiFwSetPricing(folder, model, priceIn, priceOut));
+}
+
+async function aiToolsEstimateCosts() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-cost', await window.nexus.aiFwEstimateCosts(folder));
+}
+
+async function aiToolsPerformanceProfile() {
+  const folder = aiToolsRequireFolder();
+  if (!folder) return;
+  aiToolsPrint('aitools-out-performance', await window.nexus.aiFwPerformanceProfile(folder));
 }

@@ -38,6 +38,10 @@ const complianceMonitor = require('./complianceMonitor');
 const changelogGenerator = require('./changelogGenerator');
 const knowledgeBase = require('./knowledgeBase');
 const experimentationFramework = require('./experimentationFramework');
+const aiRecommendations = require('./aiRecommendations');
+const aiAlerts = require('./aiAlerts');
+const aiCostOptimizer = require('./aiCostOptimizer');
+const aiPerformanceTuner = require('./aiPerformanceTuner');
 
 let mainWindow;
 
@@ -407,7 +411,7 @@ ipcMain.handle('generate-new-project', async (_event, { name, description }) => 
     `DESCRIPTION: ${description}`,
   ].join('\n');
 
-  const result = await callNimForProjectGeneration(prompt);
+  const result = await callNimForProjectGeneration(prompt, { tag: 'project-generation' });
   if (!result.ok) return result;
 
   const files = parseGeneratedFiles(result.text);
@@ -730,11 +734,46 @@ function getNimKey() {
 const NIM_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const NIM_MODEL = 'qwen/qwen3-coder-next';
 
+// --- Live AI-metrics auto-instrumentation --------------------------------
+// Every real AI call Nexus itself makes (NIM, Gemini) is timed and recorded
+// here automatically, so the AI Tools metrics dashboard has real data
+// without anything having to call aiMetrics.recordMetric() by hand. Falls
+// back to Nexus's own userData folder (the same place nexus-config.json
+// lives) when no project folder is open yet - so calls that happen before a
+// project exists (project generation) or that aren't tied to one project
+// (the general Ask Gemini box, changelog generation) still get recorded
+// instead of silently dropped. Recording is best-effort: a metrics-write
+// failure never affects the actual AI call's result.
+const NEXUS_GLOBAL_METRICS_DIR = app.getPath('userData');
+
+function metricsProjectPath(folder) {
+  return folder && fs.existsSync(folder) ? folder : NEXUS_GLOBAL_METRICS_DIR;
+}
+
+function recordAiCallMetric({ folder, model, tag, startedAt, ok, error, tokensIn, tokensOut }) {
+  try {
+    aiMetrics.recordMetric(metricsProjectPath(folder), {
+      model,
+      tag: tag || null,
+      latencyMs: Date.now() - startedAt,
+      success: ok,
+      errorMessage: ok ? null : (error || 'unknown error'),
+      tokensIn: Number.isFinite(tokensIn) ? tokensIn : null,
+      tokensOut: Number.isFinite(tokensOut) ? tokensOut : null,
+    });
+  } catch {
+    // Metrics are best-effort - never let a recording failure surface to the user.
+  }
+}
+
 // --- Shared NIM call. Used by Bug Fix Assist and Feature Suggestions. ---
-async function callNim(prompt) {
+// meta: { folder, tag } - folder is the open project (for per-project metrics),
+// tag identifies which Nexus feature made the call (e.g. 'bug-fix-assist').
+async function callNim(prompt, meta = {}) {
   const key = getNimKey();
   if (!key) return { ok: false, error: 'No NVIDIA NIM API key saved yet. Add one in the Cloud tab (get one free at build.nvidia.com).' };
 
+  const startedAt = Date.now();
   try {
     const res = await fetch(NIM_API_URL, {
       method: 'POST',
@@ -750,11 +789,18 @@ async function callNim(prompt) {
     });
     const data = await res.json();
     if (!res.ok) {
-      return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+      const errMsg = data?.error?.message || `HTTP ${res.status}`;
+      recordAiCallMetric({ folder: meta.folder, model: NIM_MODEL, tag: meta.tag, startedAt, ok: false, error: errMsg });
+      return { ok: false, error: errMsg };
     }
     const text = data?.choices?.[0]?.message?.content || '';
+    recordAiCallMetric({
+      folder: meta.folder, model: NIM_MODEL, tag: meta.tag, startedAt, ok: true,
+      tokensIn: data?.usage?.prompt_tokens, tokensOut: data?.usage?.completion_tokens,
+    });
     return { ok: true, text };
   } catch (err) {
+    recordAiCallMetric({ folder: meta.folder, model: NIM_MODEL, tag: meta.tag, startedAt, ok: false, error: err.message });
     return { ok: false, error: err.message };
   }
 }
@@ -762,10 +808,11 @@ async function callNim(prompt) {
 // Same as callNim, but with a much higher token ceiling - generating a
 // whole starter project (multiple real files) needs far more room than a
 // single bug-fix diff does.
-async function callNimForProjectGeneration(prompt) {
+async function callNimForProjectGeneration(prompt, meta = {}) {
   const key = getNimKey();
   if (!key) return { ok: false, error: 'No NVIDIA NIM API key saved yet. Add one in the Cloud tab (get one free at build.nvidia.com).' };
 
+  const startedAt = Date.now();
   try {
     const res = await fetch(NIM_API_URL, {
       method: 'POST',
@@ -781,11 +828,18 @@ async function callNimForProjectGeneration(prompt) {
     });
     const data = await res.json();
     if (!res.ok) {
-      return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+      const errMsg = data?.error?.message || `HTTP ${res.status}`;
+      recordAiCallMetric({ folder: meta.folder, model: NIM_MODEL, tag: meta.tag || 'project-generation', startedAt, ok: false, error: errMsg });
+      return { ok: false, error: errMsg };
     }
     const text = data?.choices?.[0]?.message?.content || '';
+    recordAiCallMetric({
+      folder: meta.folder, model: NIM_MODEL, tag: meta.tag || 'project-generation', startedAt, ok: true,
+      tokensIn: data?.usage?.prompt_tokens, tokensOut: data?.usage?.completion_tokens,
+    });
     return { ok: true, text };
   } catch (err) {
+    recordAiCallMetric({ folder: meta.folder, model: NIM_MODEL, tag: meta.tag || 'project-generation', startedAt, ok: false, error: err.message });
     return { ok: false, error: err.message };
   }
 }
@@ -842,12 +896,15 @@ ipcMain.handle('save-constitution', (_event, { folder, content }) => {
 });
 
 // --- Shared Gemini call, used only by the general "Ask Gemini" box now ---
-async function callGemini(prompt) {
+const GEMINI_MODEL = 'gemini-1.5-flash';
+
+async function callGemini(prompt, meta = {}) {
   const key = getGeminiKey();
   if (!key) return { ok: false, error: 'No Gemini API key saved yet.' };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
 
+  const startedAt = Date.now();
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -858,17 +915,24 @@ async function callGemini(prompt) {
     });
     const data = await res.json();
     if (!res.ok) {
-      return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+      const errMsg = data?.error?.message || `HTTP ${res.status}`;
+      recordAiCallMetric({ folder: meta.folder, model: GEMINI_MODEL, tag: meta.tag || 'ask-gemini', startedAt, ok: false, error: errMsg });
+      return { ok: false, error: errMsg };
     }
     const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
+    recordAiCallMetric({
+      folder: meta.folder, model: GEMINI_MODEL, tag: meta.tag || 'ask-gemini', startedAt, ok: true,
+      tokensIn: data?.usageMetadata?.promptTokenCount, tokensOut: data?.usageMetadata?.candidatesTokenCount,
+    });
     return { ok: true, text };
   } catch (err) {
+    recordAiCallMetric({ folder: meta.folder, model: GEMINI_MODEL, tag: meta.tag || 'ask-gemini', startedAt, ok: false, error: err.message });
     return { ok: false, error: err.message };
   }
 }
 
-ipcMain.handle('gemini-ask', async (_event, { prompt }) => {
-  const result = await callGemini(prompt);
+ipcMain.handle('gemini-ask', async (_event, { prompt, folder }) => {
+  const result = await callGemini(prompt, { folder, tag: 'ask-gemini' });
   if (!result.ok) return result;
   return { ok: true, text: result.text || '(empty response)' };
 });
@@ -1157,7 +1221,7 @@ ipcMain.handle('ai-propose-fix', async (_event, { filePath, errorText, folder })
     errorText || '(no error text provided — look for obvious bugs)',
   ].join('\n');
 
-  const result = await callNim(prompt);
+  const result = await callNim(prompt, { folder, tag: 'bug-fix-assist' });
   if (!result.ok) return result;
 
   const marker = '---NEWFILE---';
@@ -1205,7 +1269,7 @@ ipcMain.handle('ai-edit-file-with-prompt', async (_event, { filePath, instructio
     instruction,
   ].join('\n');
 
-  const editResult = await callNim(editPrompt);
+  const editResult = await callNim(editPrompt, { folder, tag: 'bug-fix-assist-edit' });
   if (!editResult.ok) return editResult;
 
   const editMarker = '---NEWFILE---';
@@ -1428,7 +1492,7 @@ ipcMain.handle('ai-suggest-features', async (_event, { folder }) => {
     files.slice(0, 200).join('\n'),
   ].join('\n');
 
-  const result = await callNim(prompt);
+  const result = await callNim(prompt, { folder, tag: 'feature-suggestions' });
   if (!result.ok) return result;
 
   try {
@@ -1648,7 +1712,7 @@ ipcMain.handle('ai-plan-feature', async (_event, { folder, description }) => {
     description,
   ].join('\n');
 
-  const result = await callNim(prompt);
+  const result = await callNim(prompt, { folder, tag: 'feature-plan' });
   if (!result.ok) return result;
 
   try {
@@ -1686,7 +1750,7 @@ ipcMain.handle('ai-propose-feature-file', async (_event, { folder, filePath, des
     oldContent,
   ].join('\n');
 
-  const result = await callNim(prompt);
+  const result = await callNim(prompt, { folder, tag: 'feature-file-proposal' });
   if (!result.ok) return result;
 
   const marker = '---NEWFILE---';
@@ -1722,7 +1786,7 @@ ipcMain.handle('ai-generate-changelog', async (_event, { changes }) => {
     JSON.stringify(changes, null, 2),
   ].join('\n');
 
-  const result = await callNim(prompt);
+  const result = await callNim(prompt, { tag: 'changelog-generation' });
   if (!result.ok) return result;
 
   const marker = '---USER---';
@@ -2631,3 +2695,13 @@ ipcMain.handle('ai-fw-create-experiment', wrapAsync(({ folder, experiment }) => 
 ipcMain.handle('ai-fw-record-observation', wrapAsync(({ folder, observation }) => experimentationFramework.recordObservation(folder, observation || {})));
 ipcMain.handle('ai-fw-analyze-experiment', wrapAsync(({ folder, name }) => experimentationFramework.analyzeExperiment(folder, name)));
 ipcMain.handle('ai-fw-list-experiments', wrapAsync(({ folder }) => ({ ok: true, experiments: experimentationFramework.listExperiments(folder) })));
+
+// --- Recommendations, trend alerts, cost, and performance tuning - all built
+// on top of the real data the modules above already record. See each
+// module's own header comment for exactly what real numbers drive it. ---
+ipcMain.handle('ai-fw-get-recommendations', wrapAsync(({ folder }) => aiRecommendations.getRecommendations(folder)));
+ipcMain.handle('ai-fw-get-trend-alerts', wrapAsync(({ folder }) => aiAlerts.getTrendAlerts(folder)));
+ipcMain.handle('ai-fw-set-pricing', wrapAsync(({ folder, model, pricePerMillionIn, pricePerMillionOut }) => aiCostOptimizer.setPricing(folder, model, pricePerMillionIn, pricePerMillionOut)));
+ipcMain.handle('ai-fw-get-pricing', wrapAsync(({ folder }) => aiCostOptimizer.getPricing(folder)));
+ipcMain.handle('ai-fw-estimate-costs', wrapAsync(({ folder }) => aiCostOptimizer.estimateCosts(folder)));
+ipcMain.handle('ai-fw-performance-profile', wrapAsync(({ folder }) => aiPerformanceTuner.getPerformanceProfile(folder)));

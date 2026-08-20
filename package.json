@@ -52,7 +52,11 @@
       "complianceMonitor.js",
       "changelogGenerator.js",
       "knowledgeBase.js",
-      "experimentationFramework.js"
+      "experimentationFramework.js",
+      "aiRecommendations.js",
+      "aiAlerts.js",
+      "aiCostOptimizer.js",
+      "aiPerformanceTuner.js"
     ],
     "publish": {
       "provider": "github",

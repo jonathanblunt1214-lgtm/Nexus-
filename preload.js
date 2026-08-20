@@ -176,4 +176,13 @@ contextBridge.exposeInMainWorld('nexus', {
   aiFwRecordObservation: (folder, observation) => ipcRenderer.invoke('ai-fw-record-observation', { folder, observation }),
   aiFwAnalyzeExperiment: (folder, name) => ipcRenderer.invoke('ai-fw-analyze-experiment', { folder, name }),
   aiFwListExperiments: (folder) => ipcRenderer.invoke('ai-fw-list-experiments', { folder }),
+
+  // Recommendations, trend alerts, cost, and performance tuning - built on
+  // top of the real data recorded by the modules above.
+  aiFwGetRecommendations: (folder) => ipcRenderer.invoke('ai-fw-get-recommendations', { folder }),
+  aiFwGetTrendAlerts: (folder) => ipcRenderer.invoke('ai-fw-get-trend-alerts', { folder }),
+  aiFwSetPricing: (folder, model, pricePerMillionIn, pricePerMillionOut) => ipcRenderer.invoke('ai-fw-set-pricing', { folder, model, pricePerMillionIn, pricePerMillionOut }),
+  aiFwGetPricing: (folder) => ipcRenderer.invoke('ai-fw-get-pricing', { folder }),
+  aiFwEstimateCosts: (folder) => ipcRenderer.invoke('ai-fw-estimate-costs', { folder }),
+  aiFwPerformanceProfile: (folder) => ipcRenderer.invoke('ai-fw-performance-profile', { folder }),
 });
