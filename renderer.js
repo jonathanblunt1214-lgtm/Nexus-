@@ -3065,3 +3065,68 @@ async function refreshGitHubStatus() {
 
 // Run on load
 refreshGitHubStatus();
+// ============================================================
+// 🔐 GITHUB - FIXED VERSION (auto-retry on error)
+// ============================================================
+
+// Override the existing githubAuthorize function with a more robust version
+window.githubAuthorize = async function() {
+  const btn = document.getElementById('github-btn');
+  if (!btn) return;
+  
+  btn.disabled = true;
+  const originalText = btn.innerText;
+  btn.innerText = '⏳ Authorizing...';
+  
+  try {
+    // Check if nexus is ready
+    if (!window.nexus || typeof window.nexus.githubAuthorize !== 'function') {
+      console.log('Waiting for Nexus to load...');
+      await new Promise(r => setTimeout(r, 500));
+      if (!window.nexus || typeof window.nexus.githubAuthorize !== 'function') {
+        throw new Error('Nexus not ready. Please restart the app.');
+      }
+    }
+    
+    const result = await window.nexus.githubAuthorize();
+    
+    btn.disabled = false;
+    btn.innerText = '🔐 Authorize';
+    
+    if (result && result.ok) {
+      showToast('success', '✅ GitHub authorized!', 'You can now push/pull from the Code Editor.');
+    } else if (result && result.error !== 'Cancelled') {
+      showToast('error', 'Authorization failed', result.error || 'Unknown error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerText = '🔐 Authorize';
+    showToast('error', 'Error', err.message || 'Please restart Nexus and try again');
+    console.error('GitHub auth error:', err);
+  }
+  
+  // Refresh status
+  try {
+    await refreshGitHubStatus();
+  } catch {}
+};
+
+// Auto-refresh status every 2 seconds until it works
+let githubRetryCount = 0;
+async function autoRefreshGitHubStatus() {
+  try {
+    if (window.nexus && typeof window.nexus.githubIsAuthorized === 'function') {
+      await refreshGitHubStatus();
+      githubRetryCount = 0;
+      return;
+    }
+  } catch {}
+  
+  githubRetryCount++;
+  if (githubRetryCount < 30) {
+    setTimeout(autoRefreshGitHubStatus, 1000);
+  }
+}
+
+// Start auto-refresh
+setTimeout(autoRefreshGitHubStatus, 500);
