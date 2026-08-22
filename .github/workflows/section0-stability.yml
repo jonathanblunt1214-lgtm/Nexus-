@@ -5,8 +5,7 @@ on:
   push:
     branches:
       - main
-      - upgrade/section-0-stabilization
-      - upgrade/section-1-context-engineering
+      - upgrade/nexus-overhaul
 
 jobs:
   verify:
