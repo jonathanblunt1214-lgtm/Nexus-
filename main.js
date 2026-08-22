@@ -3463,6 +3463,80 @@ async function getGoogleAccessToken() {
 }
 
 ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')) }; });
+
+const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiKey', 'glmApiKey', 'deepseekApiKey'];
+const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([
+  'nexus_workspace_col_fraction', 'nexus_workspace_row_fraction',
+  'nexus_github_auto_sync_enabled', 'nexus_github_auto_sync_seconds',
+]);
+
+function sanitizeAccountPreferences(value) {
+  const result = {};
+  for (const [key, item] of Object.entries(value || {})) {
+    if (ACCOUNT_VAULT_PREFERENCE_KEYS.has(key) && typeof item === 'string' && item.length <= 100) result[key] = item;
+  }
+  return result;
+}
+
+function collectAccountVaultSecrets() {
+  const cfg = loadConfig();
+  return Object.fromEntries(ACCOUNT_VAULT_SECRET_KEYS.map((key) => [key, encryptedConfigValue(cfg, key)]).filter(([, value]) => value));
+}
+
+async function saveEncryptedAccountVault(encrypted, providers) {
+  const results = {};
+  if (providers.github) {
+    const token = getGithubToken();
+    if (!token) results.github = { ok: false, error: 'Connect GitHub first.' };
+    else try { await require('./githubClient').saveAccountVaultGist(token, encrypted); results.github = { ok: true }; } catch (error) { results.github = { ok: false, error: error.message }; }
+  }
+  if (providers.google) {
+    try {
+      const token = await getGoogleAccessToken();
+      if (!token) results.google = { ok: false, error: 'Connect Google first.' };
+      else { await require('./googleDriveClient').saveAccountVaultFile(token, encrypted); results.google = { ok: true }; }
+    } catch (error) { results.google = { ok: false, error: error.message }; }
+  }
+  return results;
+}
+
+ipcMain.handle('account-vault:status', () => {
+  const cfg = loadConfig();
+  return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), lastSyncedAt: cfg.accountVaultLastSyncedAt || null };
+});
+
+ipcMain.handle('account-vault:sync', async (_event, value = {}) => {
+  try {
+    const providers = { github: value.providers?.github !== false, google: value.providers?.google !== false };
+    if (!providers.github && !providers.google) return { ok: false, error: 'Choose GitHub, Google Drive, or both.' };
+    const plugins = Array.isArray(value.plugins) ? value.plugins.slice(0, 250).map((item) => ({ id: String(item.id || '').slice(0, 150), version: item.version ? String(item.version).slice(0, 50) : null, enabled: item.status === 'ACTIVE', signed: item.signed === true })).filter((item) => item.id) : [];
+    const payload = { schemaVersion: 1, updatedAt: new Date().toISOString(), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins };
+    const encrypted = require('./accountVault').encryptVault(payload, value.passphrase);
+    const results = await saveEncryptedAccountVault(encrypted, providers);
+    const ok = Object.values(results).some((result) => result.ok);
+    if (ok) { const cfg = loadConfig(); cfg.accountVaultLastSyncedAt = payload.updatedAt; await saveConfig(cfg); }
+    return { ok, results, updatedAt: ok ? payload.updatedAt : null, error: ok ? null : Object.values(results).map((r) => r.error).filter(Boolean).join(' ') };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('account-vault:restore', async (_event, value = {}) => {
+  try {
+    const candidates = [];
+    const token = getGithubToken();
+    if (token) { try { const vault = await require('./githubClient').loadAccountVaultGist(token); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `GitHub: ${error.message}` }); } }
+    const googleToken = await getGoogleAccessToken().catch(() => null);
+    if (googleToken) { try { const vault = await require('./googleDriveClient').loadAccountVaultFile(googleToken); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `Google: ${error.message}` }); } }
+    const available = candidates.filter((item) => item.content).sort((a, b) => Date.parse(b.modifiedTime || 0) - Date.parse(a.modifiedTime || 0));
+    if (!available.length) return { ok: false, error: candidates.map((item) => item.error).filter(Boolean).join(' ') || 'No Nexus account vault was found in the connected accounts.' };
+    const payload = require('./accountVault').decryptVault(available[0].content, value.passphrase);
+    if (payload?.schemaVersion !== 1 || typeof payload.apiKeys !== 'object') throw new Error('The unlocked vault data is not supported.');
+    const cfg = loadConfig();
+    for (const key of ACCOUNT_VAULT_SECRET_KEYS) if (typeof payload.apiKeys[key] === 'string' && payload.apiKeys[key]) setEncryptedConfigValue(cfg, key, payload.apiKeys[key]);
+    cfg.accountVaultLastRestoredAt = new Date().toISOString();
+    await saveConfig(cfg);
+    return { ok: true, source: available[0].source, updatedAt: payload.updatedAt || available[0].modifiedTime, preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
 ipcMain.handle('drive:list', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; return { ok: true, files: await require('./googleDriveClient').listFiles(token) }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('drive:upload', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showOpenDialog(mainWindow, { title: 'Upload a file to Google Drive', properties: ['openFile'] }); if (selected.canceled) return { ok: false, canceled: true }; const filePath = selected.filePaths[0]; const file = await require('./googleDriveClient').uploadFile(token, path.basename(filePath), 'application/octet-stream', fs.readFileSync(filePath)); return { ok: true, file }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('drive:download', async (_event, { id, name }) => { try { if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) return { ok: false, error: 'Invalid Drive file ID.' }; const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showSaveDialog(mainWindow, { title: 'Save Google Drive file', defaultPath: path.basename(String(name || 'drive-file')) }); if (selected.canceled) return { ok: false, canceled: true }; fs.writeFileSync(selected.filePath, await require('./googleDriveClient').downloadFile(token, id)); return { ok: true, path: selected.filePath }; } catch (error) { return { ok: false, error: error.message }; } });

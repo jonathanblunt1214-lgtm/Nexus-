@@ -198,6 +198,9 @@ contextBridge.exposeInMainWorld('nexus', {
   googleDriveList: () => ipcRenderer.invoke('drive:list'),
   googleDriveUpload: () => ipcRenderer.invoke('drive:upload'),
   googleDriveDownload: (id, name) => ipcRenderer.invoke('drive:download', { id, name }),
+  accountVaultStatus: () => ipcRenderer.invoke('account-vault:status'),
+  accountVaultSync: (value) => ipcRenderer.invoke('account-vault:sync', value),
+  accountVaultRestore: (value) => ipcRenderer.invoke('account-vault:restore', value),
   githubGetFile: (owner, repo, path, ref) => ipcRenderer.invoke('github-get-file', { owner, repo, path, ref }),
   githubPutFile: (owner, repo, path, content, message, branch, sha) =>
     ipcRenderer.invoke('github-put-file', { owner, repo, path, content, message, branch, sha }),

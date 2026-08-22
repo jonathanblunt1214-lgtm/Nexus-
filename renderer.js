@@ -4003,6 +4003,7 @@ setInterval(async () => {
   refreshNimStatus();
   refreshGitHubStatus();
   refreshOAuthServices();
+  refreshAccountVaultStatus();
   loadOAuthConfiguration();
   refreshOpenAiStatus();
   renderGitHubAutoSyncSettings();
@@ -4038,6 +4039,63 @@ async function refreshOAuthServices() {
   document.getElementById('oauth-service-status').innerText = `GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'}`;
 }
 
+const ACCOUNT_VAULT_PREFERENCE_KEYS = [
+  'nexus_workspace_col_fraction', 'nexus_workspace_row_fraction',
+  'nexus_github_auto_sync_enabled', 'nexus_github_auto_sync_seconds',
+];
+
+function accountVaultPreferences() {
+  return Object.fromEntries(ACCOUNT_VAULT_PREFERENCE_KEYS.map((key) => [key, localStorage.getItem(key)]).filter(([, value]) => value !== null));
+}
+
+async function accountVaultPlugins() {
+  const folder = activeProjectFolder();
+  if (!folder) return [];
+  try { return await window.nexus.pluginsList(folder); } catch { return []; }
+}
+
+async function refreshAccountVaultStatus() {
+  const result = await window.nexus.accountVaultStatus();
+  const panel = document.getElementById('account-vault-status');
+  if (!panel || !result.ok) return;
+  const linked = result.github && result.google ? 'GitHub and Google are connected.' : result.github || result.google ? 'One cloud account is connected; connect both for two-location backup.' : 'Connect GitHub or Google before syncing.';
+  panel.innerText = `${linked}${result.lastSyncedAt ? ` Last synced ${new Date(result.lastSyncedAt).toLocaleString()}.` : ''} The passphrase is never saved.`;
+}
+
+function accountVaultFormValue() {
+  return {
+    passphrase: document.getElementById('account-vault-passphrase').value,
+    providers: { github: document.getElementById('account-vault-github').checked, google: document.getElementById('account-vault-google').checked },
+  };
+}
+
+async function syncAccountVault() {
+  const value = accountVaultFormValue();
+  if (value.passphrase.length < 12) { showToast('error', 'Choose a longer sync passphrase', 'Use at least 12 characters. It cannot be recovered by Nexus.'); return; }
+  document.getElementById('account-vault-status').innerText = 'Encrypting and syncing the account vault…';
+  const result = await window.nexus.accountVaultSync({ ...value, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() });
+  const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : 'Google Drive').join(' and ');
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Account vault synced' : 'Account vault sync failed', result.ok ? `Encrypted backup saved to ${destinations}.` : result.error);
+  document.getElementById('account-vault-passphrase').value = '';
+  refreshAccountVaultStatus();
+}
+
+async function restoreAccountVault() {
+  const value = accountVaultFormValue();
+  if (value.passphrase.length < 12) { showToast('error', 'Enter your sync passphrase', 'Use the same passphrase used when the vault was created.'); return; }
+  if (!confirm('Restore API keys and preferences from the newest connected account vault? Existing matching settings on this PC will be replaced.')) return;
+  document.getElementById('account-vault-status').innerText = 'Downloading and unlocking the newest account vault…';
+  const result = await window.nexus.accountVaultRestore(value);
+  if (result.ok) {
+    for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
+    const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
+    renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
+    showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
+  } else showToast('error', 'Account vault restore failed', result.error);
+  document.getElementById('account-vault-passphrase').value = '';
+  refreshAccountVaultStatus(); refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
+}
+
 async function connectGitHubOAuth() {
   const status = document.getElementById('oauth-service-status');
   const start = await window.nexus.githubOAuthStart();
@@ -4046,6 +4104,7 @@ async function connectGitHubOAuth() {
   const result = await window.nexus.githubOAuthComplete();
   showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub connected' : 'GitHub sign-in failed', result.error || 'Private repositories and GitHub tools are ready.');
   refreshOAuthServices(); refreshGitHubStatus();
+  refreshAccountVaultStatus();
 }
 
 async function connectGoogleOAuth() {
@@ -4053,6 +4112,7 @@ async function connectGoogleOAuth() {
   const result = await window.nexus.googleOAuthConnect();
   showToast(result.ok ? 'success' : 'error', result.ok ? 'Google connected' : 'Google sign-in failed', result.error || 'Google Drive storage is ready.');
   refreshOAuthServices();
+  refreshAccountVaultStatus();
 }
 
 async function disconnectGoogleOAuth() {
