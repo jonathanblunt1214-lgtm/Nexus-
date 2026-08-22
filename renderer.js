@@ -392,9 +392,20 @@ function persistProjects() {
 
 let editingProjectId = null;
 
+const projectTemplatePlaceholders = {
+  website: 'Describe the website you want to create',
+  app: 'Describe the app, its users, and what they should be able to do',
+  api: 'Describe the data and operations the API should provide',
+};
+
+function selectProjectTemplate(templateId) {
+  document.getElementById('new-project-description').placeholder = projectTemplatePlaceholders[templateId] || projectTemplatePlaceholders.website;
+}
+
 async function generateNewProjectUI(e) {
   const name = document.getElementById('new-project-name').value.trim();
   const description = document.getElementById('new-project-description').value.trim();
+  const templateId = document.querySelector('input[name="new-project-template"]:checked')?.value;
   const progressEl = document.getElementById('new-project-progress');
 
   if (!name || !description) {
@@ -406,7 +417,7 @@ async function generateNewProjectUI(e) {
   btn.disabled = true;
   progressEl.innerText = 'Asking NVIDIA NIM to generate the starter project… this can take up to a minute for a real, complete file set.';
 
-  const result = await window.nexus.generateNewProject(name, description);
+  const result = await window.nexus.generateNewProject(name, description, templateId);
 
   btn.disabled = false;
 
@@ -430,7 +441,8 @@ async function generateNewProjectUI(e) {
     name,
     folder: result.path,
     command: result.suggestedCommand,
-    port: '3000',
+    port: result.suggestedPort || '',
+    templateId: result.templateId,
     running: false,
   };
   projects.push(newProject);

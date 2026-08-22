@@ -157,6 +157,12 @@
     .ce-library-item:hover { border-color:#58a6ff; }
     .ce-library-ready { color:#3fb950; }
     .ce-library-missing { color:#d29922; }
+    .project-template-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+    .project-template { display:block; padding:12px; border:1px solid var(--border); border-radius:9px; cursor:pointer; background:var(--bg-dark); }
+    .project-template:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+    .project-template input { margin-right:7px; }
+    .project-template-description { display:block; margin:6px 0 0 22px; }
+    @media (max-width:760px) { .project-template-grid { grid-template-columns:1fr; } }
     #ce-library-preview-overlay { display:none; position:absolute; inset:0; z-index:12; background:#0d1117; padding:18px; overflow:hidden; }
     #ce-library-preview-panel { display:flex; flex-direction:column; width:100%; min-width:0; }
     #ce-library-preview-code { flex:1; overflow:auto; white-space:pre; background:#010409; border:1px solid #30363d; border-radius:7px; padding:12px; color:#c9d1d9; }
@@ -1146,6 +1152,11 @@
       <div class="card">
         <label class="label">Add a Project</label>
         <div class="form-grid">
+          <div class="project-template-grid" role="radiogroup" aria-label="Project template">
+            <label class="project-template"><input type="radio" name="new-project-template" value="website" checked onchange="selectProjectTemplate('website')"><strong>Website</strong><span class="project-template-description muted small">Responsive pages, navigation, and accessible public content.</span></label>
+            <label class="project-template"><input type="radio" name="new-project-template" value="app" onchange="selectProjectTemplate('app')"><strong>App</strong><span class="project-template-description muted small">Interactive screens, reusable components, and saved data.</span></label>
+            <label class="project-template"><input type="radio" name="new-project-template" value="api" onchange="selectProjectTemplate('api')"><strong>API</strong><span class="project-template-description muted small">Validated endpoints, documentation, health checks, and tests.</span></label>
+          </div>
           <div class="form-row">
             <input type="text" id="project-name" placeholder="Display name (e.g. my-web-app)">
           </div>
@@ -1170,7 +1181,7 @@
             <input type="text" id="new-project-name" placeholder="New project name (e.g. recipe-tracker)">
           </div>
           <div class="form-row">
-            <input type="text" id="new-project-description" placeholder="Describe what it should do (e.g. a React app that tracks recipes with local storage)">
+            <input type="text" id="new-project-description" placeholder="Describe the website you want to create">
           </div>
           <div class="form-row">
             <button class="btn" onclick="generateNewProjectUI(event)">Generate Project</button>
