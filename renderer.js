@@ -3261,8 +3261,8 @@ function renderGitHubAutoSyncSettings() {
   document.getElementById('github-auto-sync-enabled').checked = settings.enabled;
   document.getElementById('github-auto-sync-seconds').value = String(settings.seconds);
   document.getElementById('github-auto-sync-status').innerText = settings.enabled
-    ? `Auto-sync runs every ${settings.seconds} seconds.`
-    : 'Auto-sync is off.';
+    ? `Auto Push runs every ${settings.seconds} seconds.`
+    : 'Auto Push is off.';
 }
 
 function scheduleGitHubAutoSync() {
@@ -3482,8 +3482,14 @@ async function githubConnect() {
 
   const result = await window.nexus.saveGitHubToken(token);
   if (result && result.ok) {
-    input.value = '';
-    showToast('success', '✅ GitHub connected', 'Ship-tab GitHub actions and the AI Changelog can now use it.');
+    const validation = await window.nexus.githubListRepos();
+    if (validation?.ok) {
+      input.value = '';
+      showToast('success', 'Logged in to GitHub', 'GitHub actions and Auto Push can now use this encrypted connection.');
+    } else {
+      await window.nexus.clearGitHubToken();
+      showToast('error', 'GitHub login failed', validation?.error || 'GitHub rejected the token.');
+    }
   } else {
     showToast('error', 'Could not save token', result?.error || 'Unknown error');
   }
@@ -3494,14 +3500,16 @@ async function githubDisconnect() {
   if (!confirm('Remove the saved GitHub token?')) return;
   await window.nexus.clearGitHubToken();
   refreshGitHubStatus();
-  showToast('info', 'Disconnected');
+  showToast('info', 'Logged out of GitHub');
 }
 
 async function refreshGitHubStatus() {
   const statusEl = document.getElementById('github-status');
   if (!statusEl) return;
   const connected = await window.nexus.hasGitHubToken();
-  statusEl.innerText = connected ? '✅ Connected' : 'Not connected.';
+  statusEl.innerText = connected ? 'Connected to GitHub.' : 'Logged out.';
+  document.getElementById('github-login-btn').disabled = connected;
+  document.getElementById('github-logout-btn').disabled = !connected;
 }
 
 // ---------- AI Tools panel ----------
