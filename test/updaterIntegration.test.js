@@ -54,9 +54,11 @@ test('release configuration publishes GitHub updater metadata', () => {
 
   const workflow = read('.github/workflows/release.yml');
   assert.match(workflow, /tags:\s*\n\s*- ["']v\*["']/);
+  assert.match(workflow, /workflow_call:/);
   assert.match(workflow, /npm run dist:publish/);
   assert.match(workflow, /GH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
   assert.match(workflow, /contents:\s*write/);
+  assert.equal(pkg.build.releaseInfo.releaseNotesFile, 'release-notes.md');
 });
 test('local Windows builds use and verify the trusted Nexus certificate', () => {
   const pkg = JSON.parse(read('package.json'));

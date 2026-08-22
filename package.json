@@ -110,8 +110,12 @@
       "aiCostOptimizer.js",
       "aiPerformanceTuner.js",
       "languageBreakdown.js",
-      "languageIntelligence.js"
+      "languageIntelligence.js",
+      "release-notes.md"
     ],
+    "releaseInfo": {
+      "releaseNotesFile": "release-notes.md"
+    },
     "publish": {
       "provider": "github",
       "owner": "jonathanblunt1214-lgtm",

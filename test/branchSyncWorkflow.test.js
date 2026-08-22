@@ -10,8 +10,19 @@ test('main pushes evaluate whether the upgrade branch reached the synchronizatio
   assert.match(workflow, /permissions:\s*\n\s*contents: write/);
   assert.match(workflow, /ahead_count="\$\(git rev-list --count "\$upgrade_sha\.\.\$main_sha"\)"/);
   assert.match(workflow, /if \[ "\$ahead_count" -lt 100 \]/);
-  assert.match(workflow, /Waiting until it is at least 100 commits ahead/);
+  assert.match(workflow, /Waiting for 100 before publishing and synchronizing/);
   assert.match(workflow, /git push origin "\$main_sha:refs\/heads\/upgrade\/nexus-overhaul"/);
+});
+
+test('a versioned automatic update is published before upgrade synchronization', () => {
+  assert.match(workflow, /npm version patch --no-git-tag-version/);
+  assert.match(workflow, /release-notes\.md/);
+  assert.match(workflow, /uses: \.\/\.github\/workflows\/release\.yml/);
+  assert.match(workflow, /if: needs\.publish-update\.result == 'success'/);
+
+  const publishJob = workflow.indexOf('publish-update:');
+  const synchronizeJob = workflow.indexOf('synchronize-upgrade:');
+  assert.ok(publishJob >= 0 && synchronizeJob > publishJob);
 });
 
 test('branch synchronization waits at 99 commits and proceeds at 100', () => {
