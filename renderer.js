@@ -440,7 +440,7 @@ async function generateNewProjectUI(e) {
 
   const btn = e.target;
   btn.disabled = true;
-  progressEl.innerText = 'Asking NVIDIA NIM to generate the starter project… this can take up to a minute for a real, complete file set.';
+  progressEl.innerText = 'Asking your selected coding model to generate the starter project… this can take up to a minute for a real, complete file set.';
 
   const result = await window.nexus.generateNewProject(name, description, templateId);
 
@@ -2190,6 +2190,58 @@ function shorten(p) {
 }
 
 // ---------- Cloud / Gemini ----------
+let codingModelProviderState = null;
+
+async function refreshCodingModels() {
+  codingModelProviderState = await window.nexus.codingModelsStatus();
+  if (!codingModelProviderState.ok) return;
+  document.getElementById('coding-model-provider').value = codingModelProviderState.selected;
+  renderCodingModelProvider();
+}
+
+function renderCodingModelProvider() {
+  if (!codingModelProviderState?.ok) return;
+  const id = document.getElementById('coding-model-provider').value;
+  const item = codingModelProviderState.providers.find((provider) => provider.id === id);
+  const selected = codingModelProviderState.selected === id ? 'Active' : 'Available';
+  document.getElementById('coding-model-key').disabled = id === 'nim';
+  document.getElementById('coding-model-key').placeholder = id === 'nim' ? 'Use NVIDIA key setting above' : `API key for ${item?.name || id}`;
+  document.getElementById('coding-model-status').innerText = `${selected} · ${item?.model || ''} · ${item?.configured ? 'key saved' : 'no key saved'}`;
+}
+
+async function saveCodingModelProviderKey() {
+  const id = document.getElementById('coding-model-provider').value;
+  const key = document.getElementById('coding-model-key').value.trim();
+  if (!key) { alert('Enter the provider API key first.'); return; }
+  const result = await window.nexus.saveCodingModelKey(id, key);
+  if (result.ok) document.getElementById('coding-model-key').value = '';
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Model key saved' : 'Could not save key', result.error || '');
+  refreshCodingModels();
+}
+
+async function clearCodingModelProviderKey() {
+  const id = document.getElementById('coding-model-provider').value;
+  const result = await window.nexus.clearCodingModelKey(id);
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Model key cleared' : 'Could not clear key', result.error || '');
+  refreshCodingModels();
+}
+
+async function activateCodingModelProvider() {
+  const id = document.getElementById('coding-model-provider').value;
+  const result = await window.nexus.selectCodingModel(id);
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Coding model changed' : 'Could not change model', result.error || '');
+  refreshCodingModels();
+}
+
+async function askCodingModel() {
+  const prompt = document.getElementById('coding-model-prompt').value.trim();
+  if (!prompt) return;
+  const box = document.getElementById('coding-model-response'); box.innerText = 'Asking selected coding model…';
+  const project = projects.find((item) => item.id === activeProjectId);
+  const result = await window.nexus.askCodingModel(prompt, project?.folder || null);
+  box.innerText = result.ok ? result.text : `Error: ${result.error}`;
+}
+
 async function saveGeminiKey() {
   const key = document.getElementById('gemini-api-key').value.trim();
   if (!key) return;
@@ -2216,6 +2268,7 @@ async function saveNimKey() {
   await window.nexus.saveNimKey(key);
   document.getElementById('nim-api-key').value = '';
   refreshNimStatus();
+  refreshCodingModels();
 }
 
 async function clearNimKey() {

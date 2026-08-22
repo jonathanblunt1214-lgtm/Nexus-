@@ -1177,7 +1177,7 @@
       </div>
 
       <div class="card">
-        <label class="label">✨ Create New Project from a Prompt (NVIDIA NIM generates real starter code)</label>
+        <label class="label">✨ Create New Project from a Prompt (your selected coding model generates real starter code)</label>
         <div class="form-grid">
           <div class="form-row">
             <input type="text" id="new-project-name" placeholder="New project name (e.g. recipe-tracker)">
@@ -1301,7 +1301,7 @@ Type "help" for tips.
       </div>
 
       <div class="card" style="flex-shrink:0;">
-        <label class="label">Feature Builder (NVIDIA NIM) — plans across files, you approve each one (or run autonomously below if that mode is on)</label>
+        <label class="label">Feature Builder (selected coding model) — plans across files, you approve each one (or run autonomously below if that mode is on)</label>
         <div class="form-row" style="margin-top:8px;">
           <input type="text" id="feature-description" placeholder="Describe the feature in plain language">
           <button class="btn" onclick="planFeature()">Plan Feature</button>
@@ -1413,7 +1413,7 @@ Type "help" for tips.
           <div class="workspace-panel-title">🩹 AI Code Assist</div>
           <div class="workspace-panel-body">
       <div class="card" style="flex-shrink:0;">
-        <label class="label">Bug Fix Assist (NVIDIA NIM) — every change requires your approval</label>
+        <label class="label">Bug Fix Assist (selected coding model) — every change requires your approval</label>
         <div class="form-grid">
           <div class="form-row">
             <label class="target-label"><input type="radio" name="assist-target" value="project" checked onchange="onTargetChange()"> Active project</label>
@@ -1595,6 +1595,15 @@ Type "help" for tips.
           <button class="btn btn-secondary" onclick="clearNimKey()">Clear</button>
         </div>
         <p class="muted small" id="nim-status" style="margin-top:8px;">No key saved yet.</p>
+      </div>
+
+      <div class="card">
+        <label class="label">Coding Model Provider</label>
+        <p class="muted small" style="margin-top:6px;">Choose which model powers project generation, Code Editor prompts, bug fixes, feature planning, suggestions, and changelogs. API keys are Windows-encrypted.</p>
+        <div class="form-row" style="margin-top:8px;"><select id="coding-model-provider" onchange="renderCodingModelProvider()"><option value="nim">NVIDIA NIM · Qwen3 Coder Next</option><option value="kimi">Kimi K3</option><option value="glm">GLM 5.2</option><option value="deepseek">DeepSeek V4 Pro</option></select><input type="password" id="coding-model-key" placeholder="API key for selected provider"><button class="btn" onclick="saveCodingModelProviderKey()">Save key</button><button class="btn btn-secondary" onclick="activateCodingModelProvider()">Use this model</button><button class="btn btn-secondary" onclick="clearCodingModelProviderKey()">Clear key</button></div>
+        <p id="coding-model-status" class="muted small" style="margin-top:8px;">Loading model providers…</p>
+        <div class="form-row" style="margin-top:8px;"><input id="coding-model-prompt" placeholder="Ask the selected coding model…"><button class="btn" onclick="askCodingModel()">Send</button></div>
+        <pre id="coding-model-response" class="response-box"></pre>
       </div>
 
       <div class="card">
@@ -2160,7 +2169,7 @@ Measure-Object</pre>
                 <div class="ce-plus-item" onclick="ceOpenFeatureBuilder()">🧩 Multi-file feature → Feature Builder</div>
               </div>
             </div>
-            <textarea id="ce-prompt-instruction" rows="1" placeholder="Ask NVIDIA NIM to write or change this file…" oninput="ceAutoResize(this)" onkeydown="ceHandleKeydown(event)"></textarea>
+            <textarea id="ce-prompt-instruction" rows="1" placeholder="Ask your selected coding model to write or change this file…" oninput="ceAutoResize(this)" onkeydown="ceHandleKeydown(event)"></textarea>
             <button id="ce-send-btn" onclick="submitEditorPrompt()" title="Send (Enter)">↑</button>
           </div>
         </div>

@@ -59,6 +59,7 @@
       "githubGitAuth.js",
       "oauthIntegrations.js",
       "googleDriveClient.js",
+      "codingModelProviders.js",
       "gitWorkflow.js",
       "debugAdapter.js",
       "portableProjectConfig.js",
