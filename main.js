@@ -2092,7 +2092,7 @@ async function cacheBackgroundGitSync(project, error) {
       folder: project.folder,
       createdAt: new Date().toISOString(),
       lastError: error,
-    });
+    }, { githubToken: getGithubToken() });
     const helper = spawn(process.execPath, [path.join(__dirname, 'backgroundGitSync.js'), jobPath], {
       detached: true,
       stdio: 'ignore',

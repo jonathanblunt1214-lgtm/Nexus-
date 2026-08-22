@@ -14,6 +14,7 @@ const { spawn } = require('child_process');
 const { detectProjectPort } = require('./projectPortDetector');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
+const { authenticatedGitEnvironment } = require('./githubGitAuth');
 
 // --- Detection ----------------------------------------------------------
 
@@ -51,7 +52,7 @@ function repoNameFromUrl(url) {
  * Rejects with a clear Error (never a silent/masked failure) if git isn't
  * available, the destination already exists and isn't empty, or clone fails.
  */
-function cloneProject(gitUrl, onLog = () => {}) {
+function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
   return new Promise((resolve, reject) => {
     if (!isGitUrl(gitUrl)) {
       reject(new Error(`Not a recognized git URL: ${gitUrl}`));
@@ -75,7 +76,9 @@ function cloneProject(gitUrl, onLog = () => {}) {
 
     onLog(`Cloning ${gitUrl} into ${destPath} …`);
 
-    const gitProcess = spawn('git', ['clone', gitUrl, destPath]);
+    const gitProcess = spawn('git', ['clone', gitUrl, destPath], {
+      env: authenticatedGitEnvironment(gitUrl, githubToken),
+    });
 
     gitProcess.stdout.on('data', (data) => onLog(data.toString().trim()));
     gitProcess.stderr.on('data', (data) => onLog(data.toString().trim())); // git writes progress to stderr
@@ -110,9 +113,9 @@ function cloneProject(gitUrl, onLog = () => {}) {
  * cloning first if necessary. This is the function the existing
  * "open project" flow should call before it does npm install / spawn.
  */
-async function resolveProjectPath(input, onLog = () => {}) {
+async function resolveProjectPath(input, onLog = () => {}, options = {}) {
   if (isGitUrl(input)) {
-    return cloneProject(input, onLog);
+    return cloneProject(input, onLog, options);
   }
 
   // Not a URL - validate it's actually a real local directory before
