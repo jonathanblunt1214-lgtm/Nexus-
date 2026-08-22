@@ -1,8 +1,26 @@
 // Nexus bootstrap: registers narrowly scoped upgrade IPC before loading the legacy main process.
+const fs = require('fs');
+const path = require('path');
 const { ipcMain, webContents } = require('electron');
 const { registerSection7Ipc } = require('./section7Ipc');
 const { registerSection8Ipc } = require('./section8Ipc');
+const { listProjects } = require('./projectRegistry');
+
+function canonicalProjectPath(value) {
+  try {
+    const resolved = fs.realpathSync(path.resolve(value));
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  } catch {
+    return null;
+  }
+}
+
+function isAuthorizedProjectRoot(projectRoot) {
+  const candidate = canonicalProjectPath(projectRoot);
+  if (!candidate) return false;
+  return listProjects().some((project) => canonicalProjectPath(project.localPath) === candidate);
+}
 
 registerSection7Ipc({ ipcMain, webContents });
-registerSection8Ipc({ ipcMain });
+registerSection8Ipc({ ipcMain, isAuthorizedProjectRoot });
 require('./main.js');
