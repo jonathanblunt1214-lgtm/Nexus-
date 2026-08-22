@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /pluginPackages/{ownerUid}/{packageFile} {
+      allow read: if resource.metadata.visibility == 'public'
+        || (request.auth != null && request.auth.uid == ownerUid);
+      allow create, update: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.uid == ownerUid
+        && request.resource.size <= 22 * 1024 * 1024
+        && request.resource.contentType == 'application/vnd.nexus.plugin+json'
+        && request.resource.metadata.ownerUid == ownerUid
+        && request.resource.metadata.visibility in ['public', 'private'];
+      allow delete: if request.auth != null && request.auth.uid == ownerUid;
+    }
+  }
+}
