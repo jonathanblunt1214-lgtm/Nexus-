@@ -1,5 +1,5 @@
 // scripts/verifyArchitecture.js
-// Regression gate for the stabilized control plane and Section 1 context engine.
+// Regression gate for the consolidated Nexus upgrade through Section 6.
 
 const fs = require('fs');
 const path = require('path');
@@ -27,7 +27,6 @@ let failures = 0;
 for (const check of checks) {
   const fullPath = path.join(__dirname, '..', check.file);
   const source = fs.readFileSync(fullPath, 'utf8');
-
   for (const pattern of check.forbidden) {
     if (!pattern.test(source)) continue;
     failures += 1;
@@ -43,6 +42,12 @@ const requiredFiles = [
   ['workspaceIndexer.js', 'incremental SHA-256 workspace indexing'],
   ['semanticWorker.js', 'off-main-thread semantic context generation'],
   ['semanticContext.js', 'semantic worker request lifecycle management'],
+  ['agentOrchestrator.js', 'closed-loop orchestration'],
+  ['toolRegistry.js', 'capability-scoped tool standardization'],
+  ['CONSTITUTION.md', 'AI operational governance'],
+  ['governanceEngine.js', 'truthful lifecycle and cost governance'],
+  ['evalsEngine.js', 'evaluation gates'],
+  ['memoryEngine.js', 'project-scoped semantic memory'],
 ];
 
 for (const [file, purpose] of requiredFiles) {
@@ -63,9 +68,33 @@ if (!/indexWorkspace/.test(semanticWorkerSource) || !/buildRepositoryMap/.test(s
   console.error('[FAIL] semanticWorker.js must produce an incremental index and bounded repository map.');
 }
 
+const agentSource = fs.readFileSync(path.join(__dirname, '..', 'agentOrchestrator.js'), 'utf8');
+if (!/approvalGate\.request/.test(agentSource) || !/maxCorrections\s*=\s*3/.test(agentSource)) {
+  failures += 1;
+  console.error('[FAIL] agentOrchestrator.js must preserve human approval and the three-failure correction limit.');
+}
+
+const governanceSource = fs.readFileSync(path.join(__dirname, '..', 'governanceEngine.js'), 'utf8');
+if (!/RUNNING_UNVERIFIED/.test(governanceSource) || !/hardKillUsd\s*=\s*5/.test(governanceSource)) {
+  failures += 1;
+  console.error('[FAIL] governanceEngine.js must preserve truthful unverified state and hard cost cutoff.');
+}
+
+const evalSource = fs.readFileSync(path.join(__dirname, '..', 'evalsEngine.js'), 'utf8');
+if (!/passThreshold\s*=\s*0\.8/.test(evalSource) || !/securityThreshold\s*=\s*0\.9/.test(evalSource)) {
+  failures += 1;
+  console.error('[FAIL] evalsEngine.js must preserve composite/security thresholds.');
+}
+
+const memorySource = fs.readFileSync(path.join(__dirname, '..', 'memoryEngine.js'), 'utf8');
+if (!/sourceCommitHash/.test(memorySource) || !/security\/constitution constraints override/.test(memorySource)) {
+  failures += 1;
+  console.error('[FAIL] memoryEngine.js must require accepted commit provenance and security precedence.');
+}
+
 if (failures > 0) {
   console.error(`Architecture audit failed with ${failures} violation(s).`);
   process.exit(1);
 }
 
-console.log('[PASS] Section 0/1 architecture guardrails verified.');
+console.log('[PASS] Consolidated Section 0-6 architecture guardrails verified.');
