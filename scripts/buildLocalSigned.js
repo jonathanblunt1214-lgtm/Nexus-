@@ -6,10 +6,15 @@ const { build, Platform } = require('electron-builder');
 const CERTIFICATE_SUBJECT = 'Nexus Local Development';
 
 function findCertificate() {
-  const output = execFileSync('certutil.exe', ['-user', '-store', 'My', CERTIFICATE_SUBJECT], { encoding: 'utf8' });
-  const match = output.match(/Cert Hash\(sha1\):\s*([0-9a-f]+)/i);
-  if (!match) throw new Error(`The ${CERTIFICATE_SUBJECT} certificate was not found in the current user's Personal store.`);
-  return match[1].toUpperCase();
+  const command = [
+    `$cert = Get-ChildItem Cert:\\CurrentUser\\My | Where-Object {`,
+    `  $_.Subject -eq 'CN=${CERTIFICATE_SUBJECT}' -and $_.HasPrivateKey -and $_.NotAfter -gt (Get-Date)`,
+    `} | Sort-Object NotAfter -Descending | Select-Object -First 1;`,
+    `if (-not $cert) { exit 2 }; $cert.Thumbprint`,
+  ].join(' ');
+  return execFileSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', command], {
+    encoding: 'utf8',
+  }).trim().toUpperCase();
 }
 
 function verifySignature(filePath, expectedThumbprint) {

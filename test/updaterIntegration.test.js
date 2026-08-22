@@ -71,3 +71,13 @@ test('local Windows builds use and verify the trusted Nexus certificate', () => 
   assert.match(signer, /'\/sha1', thumbprint, '\/s', 'My'/);
   assert.match(signer, /timestamp\.acs\.microsoft\.com/);
 });
+
+test('local signing certificate has a safe one-command renewal path', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const renewal = read('scripts/renew-local-signing.ps1');
+  assert.equal(pkg.scripts['signing:renew-local'], 'pwsh -NoProfile -File scripts/renew-local-signing.ps1');
+  assert.match(renewal, /RenewWithinDays = 180/);
+  assert.match(renewal, /KeyExportPolicy NonExportable/);
+  assert.match(renewal, /Cert:\\CurrentUser\\Root/);
+  assert.match(renewal, /Previous certificates were retained/);
+});
