@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('nexus', {
   dockerStreamLogs: (containerName) => ipcRenderer.invoke('docker-stream-logs', { containerName }),
   dockerStopLogStream: (containerName) => ipcRenderer.invoke('docker-stop-log-stream', { containerName }),
   getBuildInfo: () => ipcRenderer.invoke('get-build-info'),
+  approveNextBuildNumber: () => ipcRenderer.invoke('build-number:approve', { approved: true }),
   checkForSourceUpdates: () => ipcRenderer.invoke('check-for-source-updates'),
   pullSourceUpdates: () => ipcRenderer.invoke('pull-source-updates'),
   restartNexus: () => ipcRenderer.invoke('restart-nexus'),

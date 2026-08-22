@@ -76,6 +76,7 @@
       "aiInventory.js",
       "inventoryWorker.js",
       "atomicWrite.js",
+      "buildNumber.js",
       "astEngine.js",
       "workspaceIndexer.js",
       "semanticWorker.js",

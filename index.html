@@ -1623,6 +1623,14 @@ Type "help" for tips.
         </div>
       </div>
 
+      <div class="card" aria-labelledby="build-number-title">
+        <label class="label" id="build-number-title">Approved Build Number</label>
+        <p class="muted small" id="approved-build-current" style="margin-top:6px;">No build number has been approved yet.</p>
+        <p class="muted small" id="approved-build-next" style="margin-top:6px;">The first approved build will be 0.0.01.</p>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" id="approve-build-number-btn" onclick="approveBuildNumber()">Approve next build number</button></div>
+        <p class="muted small" style="margin-top:8px;">Numbers are assigned only after this confirmation. Approval records the current source commit and time; opening Nexus or editing code does not increment it.</p>
+      </div>
+
       <div class="card">
         <label class="label">NVIDIA NIM API Key — powers Bug Fix Assist, Feature Builder, Feature Suggestions, Changelog, New Project generation, and Code Editor prompts</label>
         <p class="muted small" style="margin-top:6px;">This is NVIDIA's hosted API (build.nvidia.com), not a self-hosted deployment — get a free key there, no local GPU needed. Currently calling <code>qwen/qwen3-coder-next</code>.</p>
