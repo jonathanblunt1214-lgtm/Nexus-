@@ -3293,6 +3293,95 @@ ipcMain.handle('github-list-repos', async () => {
   }
 });
 
+let pendingGitHubDevice = null;
+
+function encryptedConfigValue(cfg, key) {
+  const value = cfg[`${key}Enc`];
+  if (value && safeStorage.isEncryptionAvailable()) return safeStorage.decryptString(Buffer.from(value, 'base64'));
+  return cfg[key] || null;
+}
+
+function setEncryptedConfigValue(cfg, key, value) {
+  delete cfg[key]; delete cfg[`${key}Enc`];
+  if (!value) return;
+  if (safeStorage.isEncryptionAvailable()) cfg[`${key}Enc`] = safeStorage.encryptString(value).toString('base64');
+  else cfg[key] = value;
+}
+
+function oauthConfiguration() {
+  const cfg = loadConfig();
+  return {
+    githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID || cfg.githubOAuthClientId || '',
+    googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID || cfg.googleOAuthClientId || '',
+    googleClientSecret: process.env.NEXUS_GOOGLE_CLIENT_SECRET || encryptedConfigValue(cfg, 'googleOAuthClientSecret') || '',
+  };
+}
+
+ipcMain.handle('oauth:configuration', () => { const c = oauthConfiguration(); return { ok: true, githubConfigured: Boolean(c.githubClientId), googleConfigured: Boolean(c.googleClientId), githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID ? '' : c.githubClientId, googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID ? '' : c.googleClientId }; });
+ipcMain.handle('oauth:configure', async (_event, value) => {
+  const cfg = loadConfig();
+  cfg.githubOAuthClientId = String(value.githubClientId || '').trim();
+  cfg.googleOAuthClientId = String(value.googleClientId || '').trim();
+  if (value.googleClientSecret !== undefined) setEncryptedConfigValue(cfg, 'googleOAuthClientSecret', String(value.googleClientSecret || '').trim());
+  await saveConfig(cfg); return { ok: true };
+});
+
+ipcMain.handle('oauth:github-start', async () => {
+  try {
+    const config = oauthConfiguration();
+    const device = await require('./oauthIntegrations').startGitHubDeviceFlow(config.githubClientId);
+    pendingGitHubDevice = device;
+    await shell.openExternal(device.verification_uri);
+    return { ok: true, userCode: device.user_code, verificationUri: device.verification_uri, expiresIn: device.expires_in };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('oauth:github-complete', async () => {
+  if (!pendingGitHubDevice) return { ok: false, error: 'Start GitHub sign-in first.' };
+  try {
+    const token = await require('./oauthIntegrations').pollGitHubDeviceFlow(oauthConfiguration().githubClientId, pendingGitHubDevice);
+    pendingGitHubDevice = null;
+    const cfg = loadConfig(); setEncryptedConfigValue(cfg, 'githubToken', token.access_token); await saveConfig(cfg);
+    return { ok: true };
+  } catch (error) { pendingGitHubDevice = null; return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('oauth:google-connect', async () => {
+  try {
+    const config = oauthConfiguration();
+    const tokens = await require('./oauthIntegrations').authorizeGoogle({ clientId: config.googleClientId, clientSecret: config.googleClientSecret, openExternal: (url) => shell.openExternal(url) });
+    const cfg = loadConfig();
+    setEncryptedConfigValue(cfg, 'googleAccessToken', tokens.access_token);
+    if (tokens.refresh_token) setEncryptedConfigValue(cfg, 'googleRefreshToken', tokens.refresh_token);
+    cfg.googleAccessTokenExpiresAt = Date.now() + Number(tokens.expires_in || 3600) * 1000;
+    await saveConfig(cfg); return { ok: true };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('oauth:google-disconnect', async () => {
+  const cfg = loadConfig();
+  const token = encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken');
+  if (token) fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, { method: 'POST' }).catch(() => {});
+  for (const key of ['googleAccessToken', 'googleRefreshToken']) { delete cfg[key]; delete cfg[`${key}Enc`]; }
+  delete cfg.googleAccessTokenExpiresAt; await saveConfig(cfg); return { ok: true };
+});
+
+async function getGoogleAccessToken() {
+  const cfg = loadConfig();
+  let accessToken = encryptedConfigValue(cfg, 'googleAccessToken');
+  if (accessToken && Number(cfg.googleAccessTokenExpiresAt || 0) > Date.now() + 60_000) return accessToken;
+  const refreshToken = encryptedConfigValue(cfg, 'googleRefreshToken');
+  if (!refreshToken) return null;
+  const config = oauthConfiguration();
+  const refreshed = await require('./oauthIntegrations').refreshGoogleToken(config.googleClientId, config.googleClientSecret, refreshToken);
+  accessToken = refreshed.access_token; setEncryptedConfigValue(cfg, 'googleAccessToken', accessToken);
+  cfg.googleAccessTokenExpiresAt = Date.now() + Number(refreshed.expires_in || 3600) * 1000; await saveConfig(cfg);
+  return accessToken;
+}
+
+ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')) }; });
+ipcMain.handle('drive:list', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; return { ok: true, files: await require('./googleDriveClient').listFiles(token) }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('drive:upload', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showOpenDialog(mainWindow, { title: 'Upload a file to Google Drive', properties: ['openFile'] }); if (selected.canceled) return { ok: false, canceled: true }; const filePath = selected.filePaths[0]; const file = await require('./googleDriveClient').uploadFile(token, path.basename(filePath), 'application/octet-stream', fs.readFileSync(filePath)); return { ok: true, file }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('drive:download', async (_event, { id, name }) => { try { if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) return { ok: false, error: 'Invalid Drive file ID.' }; const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showSaveDialog(mainWindow, { title: 'Save Google Drive file', defaultPath: path.basename(String(name || 'drive-file')) }); if (selected.canceled) return { ok: false, canceled: true }; fs.writeFileSync(selected.filePath, await require('./googleDriveClient').downloadFile(token, id)); return { ok: true, path: selected.filePath }; } catch (error) { return { ok: false, error: error.message }; } });
+
 ipcMain.handle('github-get-file', async (_event, { owner, repo, path, ref }) => {
   const token = getGithubToken();
   if (!token) return { ok: false, error: NOT_CONNECTED_ERROR };
