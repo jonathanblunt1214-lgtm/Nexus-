@@ -48,3 +48,17 @@ test('unsaved local editor files are forced to disk before exit sync', () => {
   assert.match(main, /const saveResult = await requestRendererSaveBeforeExit\(\)/);
   assert.match(main, /local project files could not be saved/);
 });
+
+test('shutdown retries, repairs Git, and caches offline pushes in a background helper', () => {
+  const main = read('main.js');
+  const helper = read('backgroundGitSync.js');
+  const pkg = JSON.parse(read('package.json'));
+  assert.match(main, /setTimeout\(resolve, 20_000\)/);
+  assert.match(main, /async function repairAndPushProject/);
+  assert.match(main, /\['pull', '--rebase', 'origin'/);
+  assert.match(main, /function isNetworkGitError/);
+  assert.match(main, /ELECTRON_RUN_AS_NODE: '1'/);
+  assert.match(helper, /setTimeout\(attempt, 30_000\)/);
+  assert.match(helper, /\['push', '-u', 'origin', 'HEAD'\]/);
+  assert.ok(pkg.build.files.includes('backgroundGitSync.js'));
+});

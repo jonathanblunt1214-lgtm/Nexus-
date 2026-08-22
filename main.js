@@ -1818,6 +1818,49 @@ async function autoSyncProject(folder, projectName) {
   return { ok: true, changed: hadChanges, output: push.output };
 }
 
+function isNetworkGitError(message) {
+  return /could not resolve host|unable to access|failed to connect|connection (?:timed out|reset|refused)|network is unreachable|enetunreach|eai_again|enotfound/i.test(String(message || ''));
+}
+
+async function repairAndPushProject(folder) {
+  const branch = await runGitArgs(folder, ['branch', '--show-current']);
+  if (!branch.ok || !branch.output.trim()) return { ok: false, error: branch.output || 'Cannot repair a detached Git branch.' };
+  const fetch = await runGitArgs(folder, ['fetch', 'origin']);
+  if (!fetch.ok) return { ok: false, error: fetch.output || 'Could not refresh the GitHub remote.' };
+  const rebase = await runGitArgs(folder, ['pull', '--rebase', 'origin', branch.output.trim()]);
+  if (!rebase.ok) {
+    await runGitArgs(folder, ['rebase', '--abort']);
+    return { ok: false, error: rebase.output || 'Automatic rebase repair failed.' };
+  }
+  const push = await runGitArgs(folder, ['push', '-u', 'origin', 'HEAD']);
+  return push.ok ? { ok: true } : { ok: false, error: push.output || 'Push still failed after automatic repair.' };
+}
+
+async function cacheBackgroundGitSync(project, error) {
+  try {
+    const cacheFolder = path.join(app.getPath('userData'), 'pending-github-sync');
+    await fs.promises.mkdir(cacheFolder, { recursive: true });
+    const safeName = String(project.name || 'project').replace(/[^a-z0-9._-]/gi, '-');
+    const jobPath = path.join(cacheFolder, `${safeName}-${Date.now()}.json`);
+    await writeJsonAtomic(jobPath, {
+      projectName: project.name,
+      folder: project.folder,
+      createdAt: new Date().toISOString(),
+      lastError: error,
+    });
+    const helper = spawn(process.execPath, [path.join(__dirname, 'backgroundGitSync.js'), jobPath], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    });
+    helper.unref();
+    return { ok: true };
+  } catch (cacheError) {
+    return { ok: false, error: cacheError.message };
+  }
+}
+
 ipcMain.handle('git-auto-sync', async (_event, { folder, projectName }) => {
   return autoSyncProject(folder, projectName);
 });
@@ -1844,8 +1887,34 @@ async function syncProjectsBeforeExit() {
   }
 
   for (const project of projectsForExitSync) {
-    const result = await autoSyncProject(project.folder, project.name);
-    if (!result.ok && !result.skipped) failures.push(`${project.name}: ${result.error}`);
+    let result = await autoSyncProject(project.folder, project.name);
+    if (result.ok || result.skipped) continue;
+
+    mainWindow?.webContents.send('exit-sync-status', {
+      state: 'syncing',
+      message: `${project.name} did not sync. Nexus will retry in 20 seconds.`,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20_000));
+    result = await autoSyncProject(project.folder, project.name);
+    if (result.ok || result.skipped) continue;
+
+    if (isNetworkGitError(result.error)) {
+      const cached = await cacheBackgroundGitSync(project, result.error);
+      if (!cached.ok) failures.push(`${project.name}: offline retry could not be cached (${cached.error})`);
+      continue;
+    }
+
+    mainWindow?.webContents.send('exit-sync-status', {
+      state: 'syncing',
+      message: `${project.name} still failed. Nexus is attempting an automatic Git repair.`,
+    });
+    const repaired = await repairAndPushProject(project.folder);
+    if (!repaired.ok && isNetworkGitError(repaired.error)) {
+      const cached = await cacheBackgroundGitSync(project, repaired.error);
+      if (!cached.ok) failures.push(`${project.name}: offline retry could not be cached (${cached.error})`);
+    } else if (!repaired.ok) {
+      failures.push(`${project.name}: ${repaired.error}`);
+    }
   }
 
   exitSyncInProgress = false;
