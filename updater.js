@@ -10,7 +10,7 @@
 // for the exact block to add) pointing at your GitHub repo.
 
 const { autoUpdater } = require('electron-updater');
-const { BrowserWindow } = require('electron');
+const { app } = require('electron');
 
 // Don't auto-install the moment a download finishes - let the user choose
 // when to restart, so it never yanks the app out from under active work.
@@ -18,14 +18,24 @@ autoUpdater.autoInstallOnAppQuit = true;
 autoUpdater.autoDownload = false;
 
 let mainWindow = null;
+let initialized = false;
+let updateState = {
+  state: 'idle',
+  currentVersion: app.getVersion(),
+  availableVersion: null,
+  percent: 0,
+  message: null,
+  canCheck: app.isPackaged,
+};
 
 /**
  * Sends a status update to the renderer so the UI can show it
  * (e.g. in a small "Update available" banner).
  */
 function notifyRenderer(channel, payload) {
+  updateState = { ...updateState, ...payload };
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(channel, payload);
+    mainWindow.webContents.send(channel, updateState);
   }
 }
 
@@ -36,20 +46,32 @@ function notifyRenderer(channel, payload) {
 function initUpdater(win) {
   mainWindow = win;
 
+  if (initialized) return;
+  initialized = true;
+
+  if (!app.isPackaged) {
+    notifyRenderer('updater:status', {
+      state: 'development',
+      message: 'Release updates are available in installed builds. This development copy can still pull source updates.',
+      canCheck: false,
+    });
+    return;
+  }
+
   autoUpdater.on('checking-for-update', () => {
-    notifyRenderer('updater:status', { state: 'checking' });
+    notifyRenderer('updater:status', { state: 'checking', message: null });
   });
 
   autoUpdater.on('update-available', (info) => {
     notifyRenderer('updater:status', {
       state: 'available',
-      version: info.version,
+      availableVersion: info.version,
       releaseNotes: info.releaseNotes || null,
     });
   });
 
   autoUpdater.on('update-not-available', () => {
-    notifyRenderer('updater:status', { state: 'up-to-date' });
+    notifyRenderer('updater:status', { state: 'up-to-date', availableVersion: null, percent: 0 });
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -63,7 +85,8 @@ function initUpdater(win) {
   autoUpdater.on('update-downloaded', (info) => {
     notifyRenderer('updater:status', {
       state: 'ready',
-      version: info.version,
+      availableVersion: info.version,
+      percent: 100,
     });
   });
 
@@ -79,17 +102,29 @@ function initUpdater(win) {
 
 /** Checks GitHub Releases for a newer version. Does not download. */
 function checkForUpdates() {
+  if (!app.isPackaged) return Promise.resolve(getUpdaterState());
   return autoUpdater.checkForUpdates();
 }
 
 /** Downloads the update that was found by checkForUpdates(). */
 function downloadUpdate() {
+  if (!app.isPackaged) return Promise.resolve(getUpdaterState());
+  if (updateState.state !== 'available') {
+    return Promise.reject(new Error('No update is ready to download. Check for updates first.'));
+  }
   return autoUpdater.downloadUpdate();
 }
 
 /** Quits Nexus and installs the downloaded update. */
 function installUpdateAndRestart() {
+  if (!app.isPackaged) return false;
+  if (updateState.state !== 'ready') return false;
   autoUpdater.quitAndInstall();
+  return true;
+}
+
+function getUpdaterState() {
+  return { ...updateState };
 }
 
 module.exports = {
@@ -97,6 +132,7 @@ module.exports = {
   checkForUpdates,
   downloadUpdate,
   installUpdateAndRestart,
+  getUpdaterState,
 };
 
 // -----------------------------------------------------------------------

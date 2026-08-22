@@ -23,7 +23,7 @@ const {
   parseUnifiedDiff,
   parseJestStyleResults,
 } = require('./pureLogic');
-const { initUpdater, checkForUpdates, downloadUpdate, installUpdateAndRestart } = require('./updater');
+const { initUpdater, checkForUpdates, downloadUpdate, installUpdateAndRestart, getUpdaterState } = require('./updater');
 
 // AI Improvement Framework - real, working modules for inventorying,
 // measuring, testing, and safely upgrading the AI parts of whatever project
@@ -269,9 +269,9 @@ app.whenReady().then(async () => {
   setupPreviewSession();
   setupPopupAllowlist();
   initUpdater(mainWindow);
-  checkForUpdates().catch((err) => {
-    console.error('Update check failed:', err.message);
-  });
+  if (app.isPackaged) {
+    checkForUpdates().catch((err) => console.error('Update check failed:', err.message));
+  }
 
   const buildInfo = await computeBuildInfo();
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -482,6 +482,7 @@ ipcMain.handle('resolve-project-path', async (_event, { input }) => {
 ipcMain.handle('updater:check', () => checkForUpdates());
 ipcMain.handle('updater:download', () => downloadUpdate());
 ipcMain.handle('updater:install', () => installUpdateAndRestart());
+ipcMain.handle('updater:status', () => getUpdaterState());
 
 // --- Terminal: run a real shell command in the tracked cwd ---
 ipcMain.handle('exec-command', async (_event, { cmd }) => {

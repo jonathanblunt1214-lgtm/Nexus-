@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('nexus', {
   checkForUpdates: () => ipcRenderer.invoke('updater:check'),
   downloadUpdate: () => ipcRenderer.invoke('updater:download'),
   installUpdateAndRestart: () => ipcRenderer.invoke('updater:install'),
+  getUpdaterStatus: () => ipcRenderer.invoke('updater:status'),
   onUpdaterStatus: (callback) => ipcRenderer.on('updater:status', (_e, payload) => callback(payload)),
 
   execCommand: (cmd) => ipcRenderer.invoke('exec-command', { cmd }),
