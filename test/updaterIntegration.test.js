@@ -77,7 +77,18 @@ test('local signing certificate has a safe one-command renewal path', () => {
   const renewal = read('scripts/renew-local-signing.ps1');
   assert.equal(pkg.scripts['signing:renew-local'], 'pwsh -NoProfile -File scripts/renew-local-signing.ps1');
   assert.match(renewal, /RenewWithinDays = 180/);
-  assert.match(renewal, /KeyExportPolicy NonExportable/);
+  assert.match(renewal, /KeyExportPolicy Exportable/);
+  assert.match(renewal, /Export-PfxCertificate/);
+  assert.match(renewal, /AES256_SHA256/);
   assert.match(renewal, /Cert:\\CurrentUser\\Root/);
   assert.match(renewal, /Previous certificates were retained/);
+});
+
+test('portable signing identity can be restored without putting its password on the command line', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const restore = read('scripts/restore-local-signing.ps1');
+  assert.equal(pkg.scripts['signing:restore-local'], 'pwsh -NoProfile -File scripts/restore-local-signing.ps1');
+  assert.match(restore, /Read-Host 'Enter the PFX recovery password' -AsSecureString/);
+  assert.match(restore, /Import-PfxCertificate/);
+  assert.match(restore, /Cert:\\CurrentUser\\Root/);
 });

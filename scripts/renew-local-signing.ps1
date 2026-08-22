@@ -5,6 +5,8 @@ param(
   [ValidateRange(1, 10)]
   [int]$ValidYears = 5,
 
+  [string]$BackupDirectory = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Nexus Signing Backup'),
+
   [switch]$Force
 )
 
@@ -31,18 +33,32 @@ $replacement = New-SelfSignedCertificate `
   -KeyAlgorithm RSA `
   -KeyLength 3072 `
   -HashAlgorithm SHA256 `
-  -KeyExportPolicy NonExportable `
+  -KeyExportPolicy Exportable `
   -NotAfter $now.AddYears($ValidYears)
 
-$temporaryCertificate = Join-Path ([System.IO.Path]::GetTempPath()) "nexus-local-signing-$($replacement.Thumbprint).cer"
-try {
-  Export-Certificate -Cert $replacement -FilePath $temporaryCertificate -Force | Out-Null
-  Import-Certificate -FilePath $temporaryCertificate -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
-} finally {
-  Remove-Item -LiteralPath $temporaryCertificate -Force -ErrorAction SilentlyContinue
-}
+New-Item -ItemType Directory -Path $BackupDirectory -Force | Out-Null
+$alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*_-+='
+$bytes = New-Object byte[] 40
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$passwordText = -join ($bytes | ForEach-Object { $alphabet[$_ % $alphabet.Length] })
+$securePassword = ConvertTo-SecureString $passwordText -AsPlainText -Force
+$stamp = $now.ToString('yyyyMMdd-HHmmss')
+$pfxPath = Join-Path $BackupDirectory "Nexus-Local-Signing-$stamp.pfx"
+$publicPath = Join-Path $BackupDirectory "Nexus-Local-Signing-$stamp.cer"
+$passwordPath = Join-Path $BackupDirectory "Nexus-Local-Signing-$stamp-Recovery-Password.txt"
+Export-PfxCertificate -Cert $replacement -FilePath $pfxPath -Password $securePassword -CryptoAlgorithmOption AES256_SHA256 -ChainOption EndEntityCertOnly -Force | Out-Null
+Export-Certificate -Cert $replacement -FilePath $publicPath -Force | Out-Null
+Import-Certificate -FilePath $publicPath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
+[System.IO.File]::WriteAllLines($passwordPath, @(
+  'Nexus portable signing certificate recovery password',
+  'Keep this file separate from its matching .pfx after copying both to secure storage.',
+  '',
+  $passwordText
+), [System.Text.UTF8Encoding]::new($false))
 
 Write-Host "Renewed Nexus local signing certificate."
 Write-Host "Thumbprint: $($replacement.Thumbprint)"
 Write-Host "Expires: $($replacement.NotAfter.ToString('yyyy-MM-dd'))"
+Write-Host "PFX backup: $pfxPath"
+Write-Host "Password recovery: $passwordPath"
 Write-Host 'Previous certificates were retained so existing signatures remain verifiable.'

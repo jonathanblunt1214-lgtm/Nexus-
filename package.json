@@ -11,6 +11,7 @@
     "dist": "electron-builder --win nsis",
     "dist:local-signed": "node scripts/buildLocalSigned.js",
     "signing:renew-local": "pwsh -NoProfile -File scripts/renew-local-signing.ps1",
+    "signing:restore-local": "pwsh -NoProfile -File scripts/restore-local-signing.ps1",
     "dist:publish": "electron-builder --win nsis --publish always"
   },
   "author": "",
