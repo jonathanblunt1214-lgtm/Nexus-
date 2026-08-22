@@ -63,10 +63,15 @@ test('local Windows builds use and verify the trusted Nexus certificate', () => 
   const script = read('scripts/buildLocalSigned.js');
   const signer = read('scripts/signLocalWindows.js');
   assert.equal(pkg.scripts['dist:local-signed'], 'node scripts/buildLocalSigned.js');
+  assert.match(script, /signtoolOptions:\s*\{/);
   assert.match(script, /sign:\s*path\.join\(__dirname, 'signLocalWindows\.js'\)/);
+  assert.match(script, /X509Store\]\:\:new\('Root', 'CurrentUser'\)/);
+  assert.match(script, /\$root\.Add\(\$cert\)/);
   assert.match(script, /Get-AuthenticodeSignature/);
   assert.match(script, /result\.Status !== 'Valid'/);
   assert.match(script, /publish:\s*'never'/);
+  assert.match(signer, /getSignToolPath/);
+  assert.doesNotMatch(signer, /getSignVendorPath/);
   assert.match(signer, /'\/sha1', thumbprint, '\/s', 'My'/);
   assert.match(signer, /timestamp\.acs\.microsoft\.com/);
 });

@@ -10,7 +10,11 @@ function findCertificate() {
     `$cert = Get-ChildItem Cert:\\CurrentUser\\My | Where-Object {`,
     `  $_.Subject -eq 'CN=${CERTIFICATE_SUBJECT}' -and $_.HasPrivateKey -and $_.NotAfter -gt (Get-Date)`,
     `} | Sort-Object NotAfter -Descending | Select-Object -First 1;`,
-    `if (-not $cert) { exit 2 }; $cert.Thumbprint`,
+    `if (-not $cert) { exit 2 };`,
+    `$root = [System.Security.Cryptography.X509Certificates.X509Store]::new('Root', 'CurrentUser');`,
+    `$root.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);`,
+    `try { if (-not ($root.Certificates | Where-Object Thumbprint -eq $cert.Thumbprint)) { $root.Add($cert) } } finally { $root.Close() };`,
+    `$cert.Thumbprint`,
   ].join(' ');
   return execFileSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', command], {
     encoding: 'utf8',
@@ -40,9 +44,11 @@ async function main() {
     publish: 'never',
     config: {
       win: {
-        sign: path.join(__dirname, 'signLocalWindows.js'),
-        publisherName: CERTIFICATE_SUBJECT,
-        signingHashAlgorithms: ['sha256'],
+        signtoolOptions: {
+          sign: path.join(__dirname, 'signLocalWindows.js'),
+          publisherName: CERTIFICATE_SUBJECT,
+          signingHashAlgorithms: ['sha256'],
+        },
       },
     },
   });

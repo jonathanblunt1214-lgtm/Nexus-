@@ -1,7 +1,6 @@
-const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
-const { getSignVendorPath } = require('app-builder-lib/out/codeSign/windowsCodeSign');
+const { getSignToolPath } = require('app-builder-lib/out/toolsets/windows');
 
 const execFileAsync = promisify(execFile);
 
@@ -11,12 +10,11 @@ module.exports = async function signLocalWindows(configuration) {
     throw new Error('NEXUS_LOCAL_SIGNING_THUMBPRINT is missing or invalid.');
   }
 
-  const vendorPath = await getSignVendorPath();
-  const signTool = path.join(vendorPath, 'windows-10', 'x64', 'signtool.exe');
+  const signTool = await getSignToolPath(null, true);
   const args = [
     'sign', '/sha1', thumbprint, '/s', 'My', '/fd', 'SHA256',
     '/tr', 'http://timestamp.acs.microsoft.com', '/td', 'SHA256',
     '/d', configuration.name || 'Nexus', '/debug', configuration.path,
   ];
-  await execFileAsync(signTool, args, { timeout: 10 * 60 * 1000, windowsHide: true });
+  await execFileAsync(signTool.path, args, { env: { ...process.env, ...(signTool.env || {}) }, timeout: 10 * 60 * 1000, windowsHide: true });
 };
