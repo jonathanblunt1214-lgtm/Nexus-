@@ -1,0 +1,15 @@
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+function walk(folder, relative = '', output = []) { if (output.length > 5000) return output; for (const entry of fs.readdirSync(path.join(folder, relative), { withFileTypes: true })) { if (['node_modules', '.git', 'dist', 'coverage'].includes(entry.name)) continue; const rel = path.join(relative, entry.name); if (entry.isDirectory()) walk(folder, rel, output); else if (/((^|\.)test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) output.push(rel.replaceAll('\\', '/')); } return output; }
+function discover(folder) { const files = walk(folder); return { ok: true, files, count: files.length }; }
+function snapshots(folder) { const files = []; function visit(relative = '') { for (const entry of fs.readdirSync(path.join(folder, relative), { withFileTypes: true })) { if (['node_modules', '.git'].includes(entry.name)) continue; const rel = path.join(relative, entry.name); if (entry.isDirectory()) visit(rel); else if (entry.name.endsWith('.snap')) files.push({ file: rel.replaceAll('\\', '/'), size: fs.statSync(path.join(folder, rel)).size }); } } visit(); return { ok: true, files }; }
+class TestHistory {
+  constructor(root) { this.file = path.join(root, 'test-history.json'); }
+  read() { try { return JSON.parse(fs.readFileSync(this.file, 'utf8')); } catch { return {}; } }
+  record(project, tests) { const data = this.read(); const key = crypto.createHash('sha256').update(path.resolve(project)).digest('hex'); data[key] ||= {}; for (const test of tests || []) { const row = data[key][test.name] ||= { runs: 0, failures: 0, durations: [] }; row.runs += 1; if (test.status === 'fail') row.failures += 1; if (test.duration != null) row.durations.push(test.duration); row.durations = row.durations.slice(-50); row.lastStatus = test.status; row.lastRun = new Date().toISOString(); } fs.writeFileSync(this.file, JSON.stringify(data, null, 2)); return this.summary(project); }
+  summary(project) { const data = this.read(); const key = crypto.createHash('sha256').update(path.resolve(project)).digest('hex'); return Object.entries(data[key] || {}).map(([name, row]) => ({ name, runs: row.runs, failures: row.failures, flakiness: row.runs ? row.failures / row.runs : 0, averageDuration: row.durations.length ? Math.round(row.durations.reduce((a, b) => a + b, 0) / row.durations.length) : null, lastStatus: row.lastStatus, lastRun: row.lastRun })); }
+}
+function readCoverage(folder) { try { const data = JSON.parse(fs.readFileSync(path.join(folder, 'coverage', 'coverage-summary.json'), 'utf8')); return { ok: true, files: Object.entries(data).map(([file, metrics]) => ({ file: file === 'total' ? 'Total' : path.relative(folder, file).replaceAll('\\', '/'), lines: metrics.lines?.pct, statements: metrics.statements?.pct, functions: metrics.functions?.pct, branches: metrics.branches?.pct })) }; } catch (error) { return { ok: false, error: 'Coverage summary was not generated.' }; } }
+module.exports = { discover, snapshots, TestHistory, readCoverage };
