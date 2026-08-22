@@ -1,0 +1,48 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+const client = require('../firebaseAccountClient');
+
+function response(data, ok = true, status = 200) { return { ok, status, json: async () => data }; }
+
+test('email sign-up and sign-in use Firebase Authentication without local password storage', async () => {
+  const originalFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, options) => { calls.push({ url, options }); return response({ localId:'uid-1', email:'person@example.com', idToken:'id-token', refreshToken:'refresh-token', expiresIn:'3600' }); };
+  try {
+    const signedUp = await client.signUp('A'.repeat(24), 'person@example.com', 'password-123');
+    const signedIn = await client.signIn('A'.repeat(24), 'person@example.com', 'password-123');
+    assert.equal(signedUp.localId, 'uid-1'); assert.equal(signedIn.idToken, 'id-token');
+    assert.match(calls[0].url, /accounts:signUp/); assert.match(calls[1].url, /accounts:signInWithPassword/);
+  } finally { global.fetch = originalFetch; }
+  const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  assert.doesNotMatch(main, /setEncryptedConfigValue\(cfg, ['"]firebasePassword/);
+});
+
+test('refresh tokens are exchanged using the documented secure token endpoint', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options) => { assert.match(url, /securetoken\.googleapis\.com/); assert.match(String(options.body), /grant_type=refresh_token/); return response({ id_token:'new-id', refresh_token:'new-refresh', user_id:'uid-1', expires_in:'3600' }); };
+  try { assert.deepEqual(await client.refreshSession('A'.repeat(24), 'refresh'), { idToken:'new-id', refreshToken:'new-refresh', uid:'uid-1', expiresIn:'3600' }); }
+  finally { global.fetch = originalFetch; }
+});
+
+test('Firestore vault path is UID-scoped and contains only encrypted vault data', async () => {
+  const originalFetch = global.fetch;
+  let captured;
+  global.fetch = async (url, options) => { captured = { url, options }; return response({}); };
+  try { await client.saveAccountVault({ apiKey:'A'.repeat(24), projectId:'nexus-account-test', uid:'uid-123', idToken:'firebase-id', encryptedVault:'ciphertext-envelope' }); }
+  finally { global.fetch = originalFetch; }
+  assert.match(captured.url, /nexusAccountVaults\/uid-123/);
+  assert.equal(captured.options.headers.Authorization, 'Bearer firebase-id');
+  assert.match(captured.options.body, /ciphertext-envelope/);
+  assert.doesNotMatch(captured.options.body, /apiKeys|password|refreshToken/);
+});
+
+test('Firestore rules isolate verified users to their own bounded vault document', () => {
+  const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+  assert.match(rules, /request\.auth\.uid == userId/);
+  assert.match(rules, /email_verified == true/);
+  assert.match(rules, /hasOnly\(\['encryptedVault', 'updatedAt', 'schemaVersion'\]\)/);
+  assert.match(rules, /size\(\) <= 2097152/);
+});
