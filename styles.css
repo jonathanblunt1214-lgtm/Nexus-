@@ -19,7 +19,7 @@
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
-  --sidebar-width: 248px;
+  --sidebar-width: 236px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -87,6 +87,7 @@ body {
   letter-spacing: 0;
 }
 .nav-btn {
+  grid-template-columns: 30px 1fr;
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
@@ -148,7 +149,7 @@ header .btn[title="Command Palette"]::after { content: "Search  Ctrl+K"; font-si
 .view-pane { flex: 1; display: none; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .view-pane.active { display: flex; }
 #view-projects::before {
-  content: "Start a project\AChoose a project below, press Launch, then open Run & Preview.";
+  content: "Start a project\A1. Open an existing project\A2. Press Launch\A3. Open Run & Preview";
   white-space: pre-line;
   display: block;
   flex-shrink: 0;

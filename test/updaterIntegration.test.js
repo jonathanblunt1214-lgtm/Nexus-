@@ -33,4 +33,10 @@ test('release configuration publishes GitHub updater metadata', () => {
   });
   assert.ok(pkg.dependencies['electron-updater']);
   assert.ok(pkg.scripts['dist:publish'].includes('--publish always'));
+
+  const workflow = read('.github/workflows/release.yml');
+  assert.match(workflow, /tags:\s*\n\s*- ["']v\*["']/);
+  assert.match(workflow, /npm run dist:publish/);
+  assert.match(workflow, /GH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
+  assert.match(workflow, /contents:\s*write/);
 });
