@@ -1476,6 +1476,13 @@ Type "help" for tips.
 
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
+      <div class="card" aria-labelledby="plugin-security-title">
+        <label class="label" id="plugin-security-title">Plug-ins &amp; Security Screening</label>
+        <p class="muted small" style="margin-top:6px;">Upload a plug-in folder for quiet pre-install screening. Nexus never runs the uploaded code during inspection. Microsoft Defender and Nexus’s behavioral risk engine must both clear it; blocked uploads are not installed.</p>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="uploadScreenedPlugin()">Upload plug-in</button><button class="btn btn-secondary" onclick="refreshPluginSecurityList()">Refresh installed plug-ins</button></div>
+        <p id="plugin-security-status" class="muted small" style="margin-top:8px;">Open a project first. Plug-ins are installed only for the active project and start disabled.</p>
+        <div id="plugin-security-list" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto;"></div>
+      </div>
       <div class="card" aria-labelledby="diagnostics-settings-title">
         <label class="label" id="diagnostics-settings-title">Diagnostics &amp; Privacy</label>
         <p class="muted small" style="margin-top:6px">Nexus keeps redacted structured logs and local crash dumps so failures survive a restart. Nothing is uploaded unless you explicitly enable privacy-controlled telemetry.</p>

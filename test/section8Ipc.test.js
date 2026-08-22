@@ -14,7 +14,7 @@ test('registers only the intended plugin IPC channels', () => {
     managerFactory: () => ({ discover:()=>[], list:()=>[], enable:()=>({}), disable:()=>({}), listSlots:()=>[], health:()=>[], invokeSlot:()=>[] }),
   });
   assert.deepEqual([...handlers.keys()].sort(), [
-    'plugins:disable','plugins:enable','plugins:health','plugins:invoke-slot','plugins:list','plugins:scan','plugins:slots'
+    'plugins:disable','plugins:enable','plugins:health','plugins:import','plugins:invoke-slot','plugins:list','plugins:scan','plugins:slots'
   ]);
 });
 
