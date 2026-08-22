@@ -5,6 +5,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const asyncWriteQueues = new Map();
 
 function validateTargetPath(targetPath) {
   if (!targetPath || typeof targetPath !== 'string') {
@@ -15,7 +17,7 @@ function validateTargetPath(targetPath) {
 function writeJsonAtomicSync(targetPath, data, options = {}) {
   validateTargetPath(targetPath);
   const fsImpl = options.fs || fs;
-  const tempPath = options.tempPath || `${targetPath}.tmp`;
+  const tempPath = options.tempPath || `${targetPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
   const payload = JSON.stringify(data, null, 2);
 
   fsImpl.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -33,10 +35,10 @@ function writeJsonAtomicSync(targetPath, data, options = {}) {
   }
 }
 
-async function writeJsonAtomic(targetPath, data, options = {}) {
+async function writeJsonAtomicOnce(targetPath, data, options = {}) {
   validateTargetPath(targetPath);
   const fsPromises = options.fsPromises || fs.promises;
-  const tempPath = options.tempPath || `${targetPath}.tmp`;
+  const tempPath = options.tempPath || `${targetPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
   const payload = JSON.stringify(data, null, 2);
 
   await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
@@ -51,6 +53,20 @@ async function writeJsonAtomic(targetPath, data, options = {}) {
       // Cleanup failure must not hide the original persistence error.
     }
     throw new Error(`Atomic JSON persistence failed for ${targetPath}: ${err.message}`);
+  }
+}
+
+async function writeJsonAtomic(targetPath, data, options = {}) {
+  validateTargetPath(targetPath);
+  const resolved = path.resolve(targetPath);
+  const key = process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  const previous = asyncWriteQueues.get(key) || Promise.resolve();
+  const operation = previous.catch(() => undefined).then(() => writeJsonAtomicOnce(targetPath, data, options));
+  asyncWriteQueues.set(key, operation);
+  try {
+    return await operation;
+  } finally {
+    if (asyncWriteQueues.get(key) === operation) asyncWriteQueues.delete(key);
   }
 }
 
