@@ -24,7 +24,7 @@ test('loads, activates, and invokes declared slots without Node globals', async 
 });
 
 test('rejects undeclared slots and capability calls', async () => {
-  const root = makePlugin(`register({ slots: { status-panel: () => 'x' } });`);
+  const root = makePlugin(`register({ slots: { 'status-panel': () => 'x' } });`);
   const runtime = new PluginRuntime();
   assert.throws(() => runtime.load({ manifest, pluginRoot: root }), /undeclared slot/);
 
