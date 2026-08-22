@@ -64,7 +64,14 @@ if (exists('package-lock.json')) {
 const mainSource = read('main.js');
 if (/webPreferences:\s*\{[\s\S]*?nodeIntegration:\s*true/.test(mainSource)) fail('Electron renderer must not enable nodeIntegration.');
 if (!/contextIsolation:\s*true/.test(mainSource)) fail('Electron renderer must keep contextIsolation enabled.');
-if (!/function saveConfig\([\s\S]{0,300}writeJsonAtomicSync/.test(mainSource)) fail('main.js saveConfig must use atomic persistence.');
+const configStart = mainSource.indexOf('// Where we persist small bits of config');
+const configEnd = mainSource.indexOf('// ---- Terminal state', configStart);
+const configSource = configStart >= 0 && configEnd > configStart ? mainSource.slice(configStart, configEnd) : '';
+if (!configSource) fail('main.js config persistence section could not be located.');
+if (!/await fs\.promises\.readFile\(CONFIG_PATH/.test(configSource)) fail('main.js must initialize nexus-config.json asynchronously.');
+if (!/writeJsonAtomic\(CONFIG_PATH/.test(configSource)) fail('main.js saveConfig must use asynchronous atomic persistence.');
+if (/readFileSync\(CONFIG_PATH|writeFileSync\(CONFIG_PATH|writeJsonAtomicSync\(CONFIG_PATH/.test(configSource)) fail('main.js must not use synchronous nexus-config.json persistence.');
+if (!/await initializeConfig\(\)/.test(mainSource)) fail('main.js must initialize config before creating the renderer window.');
 
 const pluginRuntime = read('pluginRuntime.js');
 const pluginWorker = exists('pluginWorker.js') ? read('pluginWorker.js') : '';
