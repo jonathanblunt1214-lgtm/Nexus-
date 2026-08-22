@@ -60,6 +60,7 @@
       "oauthIntegrations.js",
       "googleDriveClient.js",
       "codingModelProviders.js",
+      "providerDiscovery.js",
       "gitWorkflow.js",
       "debugAdapter.js",
       "portableProjectConfig.js",

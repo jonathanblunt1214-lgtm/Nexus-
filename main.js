@@ -890,12 +890,13 @@ function getNimKey() {
 
 function getCodingProviderKey(id) {
   if (id === 'nim') return getNimKey();
+  if (require('./codingModelProviders').provider(id)?.keyless) return null;
   return encryptedConfigValue(loadConfig(), `${id}ApiKey`);
 }
 
 ipcMain.handle('coding-models:status', () => {
   const cfg = loadConfig(); const { PROVIDERS } = require('./codingModelProviders');
-  return { ok:true, selected:PROVIDERS[cfg.codingModelProvider] ? cfg.codingModelProvider : 'nim', providers:Object.values(PROVIDERS).map((item) => ({ id:item.id, name:item.name, model:item.model, configured:Boolean(getCodingProviderKey(item.id)) })) };
+  return { ok:true, selected:PROVIDERS[cfg.codingModelProvider] ? cfg.codingModelProvider : 'nim', providers:Object.values(PROVIDERS).map((item) => ({ id:item.id, name:item.name, model:item.keyless ? (cfg[`${item.id}Model`] || item.model) : item.model, keyless:Boolean(item.keyless), configured:item.keyless ? Boolean(cfg[`${item.id}Model`]) : Boolean(getCodingProviderKey(item.id)) })) };
 });
 ipcMain.handle('coding-models:save-key', async (_event, { id, key }) => {
   if (!require('./codingModelProviders').provider(id) || id === 'nim') return { ok:false, error:'Unknown or separately managed provider.' };
@@ -906,8 +907,9 @@ ipcMain.handle('coding-models:clear-key', async (_event, { id }) => {
   const cfg = loadConfig(); setEncryptedConfigValue(cfg, `${id}ApiKey`, null); await saveConfig(cfg); return { ok:true };
 });
 ipcMain.handle('coding-models:select', async (_event, { id }) => {
-  if (!require('./codingModelProviders').provider(id)) return { ok:false, error:'Unknown coding model provider.' };
-  if (!getCodingProviderKey(id)) return { ok:false, error:'Save an API key for this provider first.' };
+  const selected = require('./codingModelProviders').provider(id);
+  if (!selected) return { ok:false, error:'Unknown coding model provider.' };
+  if (selected.keyless ? !loadConfig()[`${id}Model`] : !getCodingProviderKey(id)) return { ok:false, error:selected.keyless ? 'Discover and choose a local model first.' : 'Save an API key for this provider first.' };
   const cfg = loadConfig(); cfg.codingModelProvider = id; await saveConfig(cfg); return { ok:true };
 });
 
@@ -956,12 +958,29 @@ async function callSelectedCodingModel(prompt, meta = {}, maxTokens = 4000) {
   const cfg = loadConfig();
   const id = require('./codingModelProviders').provider(cfg.codingModelProvider) ? cfg.codingModelProvider : 'nim';
   const startedAt = Date.now();
-  const result = await require('./codingModelProviders').callProvider(id, getCodingProviderKey(id), prompt, maxTokens);
+  const result = await require('./codingModelProviders').callProvider(id, getCodingProviderKey(id), prompt, maxTokens, cfg[`${id}Model`] || '');
   recordAiCallMetric({ folder:meta.folder, model:result.model || id, tag:meta.tag, startedAt, ok:result.ok, error:result.error, tokensIn:result.usage?.prompt_tokens, tokensOut:result.usage?.completion_tokens });
   return result;
 }
 
 ipcMain.handle('coding-models:ask', async (_event, { prompt, folder }) => callSelectedCodingModel(prompt, { folder, tag:'ask-coding-model' }, 4000));
+
+ipcMain.handle('provider-discovery:scan', async () => ({ ok:true, localServices:await require('./providerDiscovery').detectLocalServices(), environmentKeys:require('./providerDiscovery').detectedEnvironmentKeys() }));
+ipcMain.handle('provider-discovery:import-environment', async (_event, { env }) => {
+  const allowed = require('./providerDiscovery').ENVIRONMENT_KEYS.find((item) => item.env === env);
+  const value = allowed ? process.env[allowed.env] : null;
+  if (!allowed || !value) return { ok:false, error:'That environment key is no longer available.' };
+  const cfg = loadConfig();
+  const storageKey = allowed.provider === 'nim' ? 'nimKey' : allowed.provider === 'openai' ? 'openaiKey' : allowed.provider === 'gemini' ? 'geminiKey' : `${allowed.provider}ApiKey`;
+  setEncryptedConfigValue(cfg, storageKey, value); await saveConfig(cfg);
+  return { ok:true, provider:allowed.provider, name:allowed.name };
+});
+ipcMain.handle('provider-discovery:use-local', async (_event, { id, model }) => {
+  if (!['ollama','lmstudio'].includes(id) || !model) return { ok:false, error:'Choose a detected local model.' };
+  const service = (await require('./providerDiscovery').detectLocalServices()).find((item) => item.id === id);
+  if (!service || !service.models.includes(model)) return { ok:false, error:'That local service or model is no longer available.' };
+  const cfg = loadConfig(); cfg[`${id}Model`] = model; cfg.codingModelProvider = id; await saveConfig(cfg); return { ok:true };
+});
 
 // --- Shared NIM call. Used by Bug Fix Assist and Feature Suggestions. ---
 // meta: { folder, tag } - folder is the open project (for per-project metrics),

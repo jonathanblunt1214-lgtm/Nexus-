@@ -1607,10 +1607,17 @@ Type "help" for tips.
       <div class="card">
         <label class="label">Coding Model Provider</label>
         <p class="muted small" style="margin-top:6px;">Choose which model powers project generation, Code Editor prompts, bug fixes, feature planning, suggestions, and changelogs. API keys are Windows-encrypted.</p>
-        <div class="form-row" style="margin-top:8px;"><select id="coding-model-provider" onchange="renderCodingModelProvider()"><option value="nim">NVIDIA NIM · Qwen3 Coder Next</option><option value="kimi">Kimi K3</option><option value="glm">GLM 5.2</option><option value="deepseek">DeepSeek V4 Pro</option></select><input type="password" id="coding-model-key" placeholder="API key for selected provider"><button class="btn" onclick="saveCodingModelProviderKey()">Save key</button><button class="btn btn-secondary" onclick="activateCodingModelProvider()">Use this model</button><button class="btn btn-secondary" onclick="clearCodingModelProviderKey()">Clear key</button></div>
+        <div class="form-row" style="margin-top:8px;"><select id="coding-model-provider" onchange="renderCodingModelProvider()"><option value="nim">NVIDIA NIM · Qwen3 Coder Next</option><option value="kimi">Kimi K3</option><option value="glm">GLM 5.2</option><option value="deepseek">DeepSeek V4 Pro</option><option value="ollama">Ollama · Local</option><option value="lmstudio">LM Studio · Local</option></select><input type="password" id="coding-model-key" placeholder="API key for selected provider"><button class="btn" onclick="saveCodingModelProviderKey()">Save key</button><button class="btn btn-secondary" onclick="activateCodingModelProvider()">Use this model</button><button class="btn btn-secondary" onclick="clearCodingModelProviderKey()">Clear key</button></div>
         <p id="coding-model-status" class="muted small" style="margin-top:8px;">Loading model providers…</p>
         <div class="form-row" style="margin-top:8px;"><input id="coding-model-prompt" placeholder="Ask the selected coding model…"><button class="btn" onclick="askCodingModel()">Send</button></div>
         <pre id="coding-model-response" class="response-box"></pre>
+      </div>
+
+      <div class="card">
+        <label class="label">Safe Provider Discovery</label>
+        <p class="muted small" style="margin-top:6px;">Checks only Ollama and LM Studio on this computer and the names of supported environment variables. Key values stay in the main process and are imported only after you approve each one. Nexus never scans projects, websites, or public datasets for credentials.</p>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="discoverSafeProviders()">Detect local models and my keys</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://platform.kimi.ai')">Get Kimi key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://startup.z.ai/apiportal')">Get Z.ai key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://www.deepseek.com/platform/')">Get DeepSeek key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://build.nvidia.com/models?api-key=true&label=Chat')">Get NVIDIA key</button></div>
+        <div id="provider-discovery-results" class="suggestions-list" style="margin-top:8px;"></div>
       </div>
 
       <div class="card">
