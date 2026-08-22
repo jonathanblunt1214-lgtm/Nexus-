@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_call:
+    inputs:
+      release_ref:
+        description: Version tag to build and publish
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,6 +20,8 @@ jobs:
     steps:
       - name: Check out release source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_ref || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -35,8 +43,9 @@ jobs:
         shell: pwsh
         run: |
           $packageVersion = node -p "require('./package.json').version"
-          if ("v$packageVersion" -ne "${{ github.ref_name }}") {
-            throw "Tag ${{ github.ref_name }} does not match package version v$packageVersion"
+          $releaseRef = "${{ inputs.release_ref || github.ref_name }}"
+          if ("v$packageVersion" -ne $releaseRef) {
+            throw "Tag $releaseRef does not match package version v$packageVersion"
           }
 
       - name: Build and publish updater artifacts

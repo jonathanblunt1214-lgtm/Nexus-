@@ -1,4 +1,4 @@
-name: Keep upgrade branch even with main
+name: Publish update before synchronizing upgrade branch
 
 on:
   push:
@@ -14,39 +14,101 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  fast-forward-upgrade:
+  prepare-update:
     runs-on: ubuntu-latest
+    outputs:
+      publish_update: ${{ steps.prepare.outputs.publish_update }}
+      release_ref: ${{ steps.prepare.outputs.release_ref }}
     steps:
       - name: Check out confirmed main
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
-
-      - name: Fast-forward upgrade branch without discarding work
+      - name: Prepare an automatic Nexus update at the synchronization threshold
+        id: prepare
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main upgrade/nexus-overhaul
-
+          git fetch origin main upgrade/nexus-overhaul --tags
           main_sha="$(git rev-parse origin/main)"
           upgrade_sha="$(git rev-parse origin/upgrade/nexus-overhaul)"
-
           if [ "$main_sha" = "$upgrade_sha" ]; then
-            echo "upgrade/nexus-overhaul is already even with main at $main_sha."
+            echo "publish_update=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
           if ! git merge-base --is-ancestor "$upgrade_sha" "$main_sha"; then
-            echo "::error::upgrade/nexus-overhaul contains work that is not in main. Refusing to force-push or discard it."
+            echo "::error::upgrade/nexus-overhaul diverged. Refusing to force-push or discard it."
             exit 1
           fi
-
           ahead_count="$(git rev-list --count "$upgrade_sha..$main_sha")"
           if [ "$ahead_count" -lt 100 ]; then
-            echo "main is $ahead_count commit(s) ahead. Waiting until it is at least 100 commits ahead before synchronizing."
+            echo "main is $ahead_count commit(s) ahead. Waiting for 100 before publishing and synchronizing."
+            echo "publish_update=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          existing_tag="$(git tag --points-at "$main_sha" --list 'v*' | sort -V | tail -n 1)"
+          if [ -n "$existing_tag" ]; then
+            echo "release_ref=$existing_tag" >> "$GITHUB_OUTPUT"
+            echo "publish_update=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npm version patch --no-git-tag-version
+          release_ref="v$(node -p "require('./package.json').version")"
+          {
+            echo "# Nexus $release_ref"
+            echo
+            echo "Automatic Nexus update published before the 100-commit upgrade-branch synchronization."
+            echo
+            echo "## Changes"
+            git log --pretty='- %s (%h)' "$upgrade_sha..$main_sha"
+          } > release-notes.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json release-notes.md
+          git commit -m "Release $release_ref before upgrade synchronization"
+          git tag -a "$release_ref" -m "Nexus $release_ref"
+          git push origin HEAD:main "refs/tags/$release_ref"
+          echo "release_ref=$release_ref" >> "$GITHUB_OUTPUT"
+          echo "publish_update=true" >> "$GITHUB_OUTPUT"
 
+  publish-update:
+    needs: prepare-update
+    if: needs.prepare-update.outputs.publish_update == 'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      release_ref: ${{ needs.prepare-update.outputs.release_ref }}
+    secrets: inherit
+
+  synchronize-upgrade:
+    needs: [prepare-update, publish-update]
+    if: needs.publish-update.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Fast-forward upgrade only after the update is published
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main upgrade/nexus-overhaul "refs/tags/${{ needs.prepare-update.outputs.release_ref }}"
+          main_sha="$(git rev-parse origin/main)"
+          upgrade_sha="$(git rev-parse origin/upgrade/nexus-overhaul)"
+          release_sha="$(git rev-parse '${{ needs.prepare-update.outputs.release_ref }}^{commit}')"
+          if [ "$main_sha" != "$release_sha" ]; then
+            echo "::error::main moved after publication. A later run will reassess it safely."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$upgrade_sha" "$main_sha"; then
+            echo "::error::upgrade/nexus-overhaul diverged while publishing. Refusing to force-push."
+            exit 1
+          fi
+          ahead_count="$(git rev-list --count "$upgrade_sha..$main_sha")"
+          if [ "$ahead_count" -lt 100 ]; then
+            echo "::error::The branch gap fell below 100 commits before synchronization."
+            exit 1
+          fi
           git push origin "$main_sha:refs/heads/upgrade/nexus-overhaul"
-          echo "main was $ahead_count commits ahead; upgrade/nexus-overhaul now matches confirmed main at $main_sha."
+          echo "Published ${{ needs.prepare-update.outputs.release_ref }} and synchronized upgrade/nexus-overhaul."
