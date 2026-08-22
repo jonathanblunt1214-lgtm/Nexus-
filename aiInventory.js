@@ -1,12 +1,13 @@
 // aiInventory.js
 // Main-process facade for repository inventory scanning.
-// Heavy traversal and file inspection execute in inventoryWorker.js so the
-// Electron main event loop remains responsive on large workspaces.
+// Heavy traversal, file inspection, and semantic parsing execute in workers so
+// the Electron main event loop remains responsive on large workspaces.
 
 const path = require('path');
 const { Worker } = require('worker_threads');
+const { getSemanticContext } = require('./semanticContext');
 
-function scanProject(projectPath) {
+function scanInventoryWorker(projectPath) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(path.join(__dirname, 'inventoryWorker.js'), {
       workerData: { projectPath },
@@ -38,4 +39,21 @@ function scanProject(projectPath) {
   });
 }
 
-module.exports = { scanProject };
+async function scanProject(projectPath) {
+  const inventory = await scanInventoryWorker(projectPath);
+
+  try {
+    const semanticContext = await getSemanticContext(projectPath);
+    return { ...inventory, semanticContext };
+  } catch (err) {
+    // Inventory remains useful even if structural parsing fails. Surface the
+    // failure explicitly rather than fabricating an empty semantic result.
+    return {
+      ...inventory,
+      semanticContext: null,
+      semanticContextError: err.message,
+    };
+  }
+}
+
+module.exports = { scanProject, getSemanticContext };
