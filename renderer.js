@@ -758,6 +758,8 @@ let codeEditorCurrentRelPath = null;
 let codeEditorExpandedFolders = new Set();
 let codeEditorFolder = null;
 let languageDiagnosticsTimer = null;
+let codeLibraryEntries = [];
+let selectedCodeLibraryEntry = null;
 
 function editorAbsPath(folder, relPath) {
   return folder.replace(/[\\/]+$/, '') + '/' + relPath.replace(/\\/g, '/');
@@ -1499,6 +1501,7 @@ function closeCodeEditor() {
     return;
   }
   document.getElementById('code-editor-overlay').style.display = 'none';
+  closeCodeLibraryPreview();
 }
 
 async function refreshCodeEditorTree() {
@@ -1821,15 +1824,19 @@ function closeCeFilePicker() {
 function showCodeEditorFileTree() {
   document.getElementById('cet-mode-files-btn').classList.add('active');
   document.getElementById('cet-mode-search-btn').classList.remove('active');
+  document.getElementById('cet-mode-library-btn').classList.remove('active');
   document.getElementById('code-editor-filetree').style.display = 'block';
   document.getElementById('code-editor-search-panel').style.display = 'none';
+  document.getElementById('code-editor-library-panel').style.display = 'none';
 }
 
 function showCodeEditorSearch() {
   document.getElementById('cet-mode-files-btn').classList.remove('active');
   document.getElementById('cet-mode-search-btn').classList.add('active');
+  document.getElementById('cet-mode-library-btn').classList.remove('active');
   document.getElementById('code-editor-filetree').style.display = 'none';
   document.getElementById('code-editor-search-panel').style.display = 'flex';
+  document.getElementById('code-editor-library-panel').style.display = 'none';
   setTimeout(() => document.getElementById('ce-search-query').focus(), 30);
 }
 
@@ -2442,6 +2449,71 @@ async function refreshGitStatus() {
   protectionEl.innerText = protection.ok ? (protection.protected ? `protected · ${protection.reviewsRequired || 0} review(s)` : 'not protected') : (protection.authRequired ? 'GitHub login required' : 'protection unavailable');
   await refreshGitDiff(folder);
   await refreshGitStashes();
+}
+
+async function showCodeLibrary() {
+  document.getElementById('cet-mode-files-btn').classList.remove('active');
+  document.getElementById('cet-mode-search-btn').classList.remove('active');
+  document.getElementById('cet-mode-library-btn').classList.add('active');
+  document.getElementById('code-editor-filetree').style.display = 'none';
+  document.getElementById('code-editor-search-panel').style.display = 'none';
+  document.getElementById('code-editor-library-panel').style.display = 'flex';
+  await searchCodeLibraryUI();
+  setTimeout(() => document.getElementById('ce-library-query').focus(), 30);
+}
+
+async function searchCodeLibraryUI() {
+  if (!codeEditorFolder) return;
+  const result = await window.nexus.searchCodeLibrary(codeEditorFolder, {
+    query: document.getElementById('ce-library-query').value.trim(),
+    language: document.getElementById('ce-library-language').value,
+    category: document.getElementById('ce-library-category').value,
+    currentFile: codeEditorCurrentRelPath || '',
+  });
+  if (!result.ok) { document.getElementById('ce-library-summary').innerText = result.error || 'Library unavailable.'; return; }
+  const populate = (id, values, label) => {
+    const select = document.getElementById(id);
+    if (select.options.length === 1) values.forEach((value) => select.add(new Option(value, value)));
+  };
+  populate('ce-library-language', result.facets.languages);
+  populate('ce-library-category', result.facets.categories);
+  codeLibraryEntries = result.entries;
+  document.getElementById('ce-library-summary').innerText = `${result.entries.length} of ${result.facets.count} patterns`;
+  document.getElementById('ce-library-results').innerHTML = result.entries.map((entry, index) => {
+    const compatibility = entry.compatible ? '<span class="ce-library-ready">Ready for this project</span>' : `<span class="ce-library-missing">Needs ${escapeHtml(entry.missingDependencies.join(', '))}</span>`;
+    return `<div class="ce-library-item" onclick="previewCodeLibraryEntry(${index})"><div class="bold">${escapeHtml(entry.title)}</div><div class="muted small">${escapeHtml(entry.language)} · ${escapeHtml(entry.category)}</div><div class="small" style="margin-top:4px;">${escapeHtml(entry.summary)}</div><div class="small" style="margin-top:5px;">${compatibility}</div></div>`;
+  }).join('') || '<p class="muted small" style="padding:8px;">No matching patterns.</p>';
+}
+
+function previewCodeLibraryEntry(index) {
+  selectedCodeLibraryEntry = codeLibraryEntries[index];
+  if (!selectedCodeLibraryEntry) return;
+  const entry = selectedCodeLibraryEntry;
+  document.getElementById('ce-library-preview-title').innerText = entry.title;
+  document.getElementById('ce-library-preview-summary').innerText = entry.summary;
+  document.getElementById('ce-library-preview-compatibility').innerText = entry.compatible ? 'Compatible with the detected project.' : `Install first: ${entry.missingDependencies.join(', ')}`;
+  document.getElementById('ce-library-preview-usage').innerText = `How to use: ${entry.usage}`;
+  document.getElementById('ce-library-preview-code').innerText = entry.code;
+  document.getElementById('ce-library-preview-overlay').style.display = 'flex';
+}
+
+function closeCodeLibraryPreview() {
+  const overlay = document.getElementById('ce-library-preview-overlay');
+  if (overlay) overlay.style.display = 'none';
+  selectedCodeLibraryEntry = null;
+}
+
+function insertCodeLibraryEntry(mode) {
+  if (!selectedCodeLibraryEntry || !codeEditorCM || !codeEditorCurrentRelPath) { alert('Open a file before inserting a library pattern.'); return; }
+  if (mode === 'selection') {
+    if (!codeEditorCM.somethingSelected()) { alert('Select code to replace first.'); return; }
+    codeEditorCM.replaceSelection(selectedCodeLibraryEntry.code, 'end', 'code-library');
+  } else {
+    const cursor = codeEditorCM.getCursor('head');
+    codeEditorCM.replaceRange(selectedCodeLibraryEntry.code, cursor, cursor, 'code-library');
+  }
+  closeCodeLibraryPreview();
+  showToast('success', 'Code inserted', 'Review the pattern and save the file when ready.');
 }
 
 function renderGitWorkflowFiles(workflow) {

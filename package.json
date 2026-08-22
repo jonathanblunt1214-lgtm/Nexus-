@@ -63,6 +63,7 @@
       "secretScanner.js",
       "advancedTesting.js",
       "gameProjectDetector.js",
+      "codeLibrary.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",

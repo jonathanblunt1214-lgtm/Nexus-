@@ -143,13 +143,23 @@
     .cet-mode-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
     .cet-mode-tab:hover:not(.active) { color: #c9d1d9; }
 
-    #code-editor-search-panel {
+    #code-editor-search-panel, #code-editor-library-panel {
       flex: 1;
       display: flex;
       flex-direction: column;
       min-height: 0;
       overflow: hidden;
     }
+    .ce-library-filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:0 10px 8px; }
+    .ce-library-filters select { background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:6px; padding:5px; }
+    #ce-library-results { overflow:auto; padding:6px; }
+    .ce-library-item { padding:9px; margin-bottom:6px; border:1px solid #30363d; border-radius:7px; cursor:pointer; background:#161b22; }
+    .ce-library-item:hover { border-color:#58a6ff; }
+    .ce-library-ready { color:#3fb950; }
+    .ce-library-missing { color:#d29922; }
+    #ce-library-preview-overlay { display:none; position:absolute; inset:0; z-index:12; background:#0d1117; padding:18px; overflow:hidden; }
+    #ce-library-preview-panel { display:flex; flex-direction:column; width:100%; min-width:0; }
+    #ce-library-preview-code { flex:1; overflow:auto; white-space:pre; background:#010409; border:1px solid #30363d; border-radius:7px; padding:12px; color:#c9d1d9; }
     .cet-search-box {
       display: flex;
       gap: 6px;
@@ -2085,6 +2095,7 @@ Measure-Object</pre>
         <div class="cet-mode-tabs">
           <button class="cet-mode-tab active" id="cet-mode-files-btn" onclick="showCodeEditorFileTree()">📁 Files</button>
           <button class="cet-mode-tab" id="cet-mode-search-btn" onclick="showCodeEditorSearch()">🔍 Search</button>
+          <button class="cet-mode-tab" id="cet-mode-library-btn" onclick="showCodeLibrary()">Library</button>
         </div>
         <div id="code-editor-filetree"></div>
         <div id="code-editor-search-panel" style="display:none;">
@@ -2098,6 +2109,16 @@ Measure-Object</pre>
           </div>
           <div id="ce-search-summary" class="muted small" style="padding:4px 10px;"></div>
           <div id="ce-search-results"></div>
+        </div>
+        <div id="code-editor-library-panel" style="display:none;">
+          <p class="muted small" style="padding:8px 10px 4px; margin:0;">Curated project patterns. Preview before inserting; nothing runs automatically.</p>
+          <div class="cet-search-box"><input type="text" id="ce-library-query" placeholder="Search code patterns…" oninput="searchCodeLibraryUI()"></div>
+          <div class="ce-library-filters">
+            <select id="ce-library-language" onchange="searchCodeLibraryUI()"><option value="">All languages</option></select>
+            <select id="ce-library-category" onchange="searchCodeLibraryUI()"><option value="">All categories</option></select>
+          </div>
+          <div id="ce-library-summary" class="muted small" style="padding:0 10px 4px;"></div>
+          <div id="ce-library-results"></div>
         </div>
       </div>
       <div id="code-editor-main-col">
@@ -2123,6 +2144,17 @@ Measure-Object</pre>
         </div>
         <div id="code-editor-cm-container"></div>
         <div id="code-editor-empty" class="code-editor-empty">Select a file from the tree to start editing, or ask NVIDIA NIM above to write a new one.</div>
+
+        <div id="ce-library-preview-overlay">
+          <div id="ce-library-preview-panel">
+            <div class="row" style="justify-content:space-between;"><strong id="ce-library-preview-title"></strong><button class="btn tiny btn-secondary" onclick="closeCodeLibraryPreview()">Close</button></div>
+            <p id="ce-library-preview-summary" class="muted small"></p>
+            <p id="ce-library-preview-compatibility" class="small"></p>
+            <p id="ce-library-preview-usage" class="small"></p>
+            <pre id="ce-library-preview-code"></pre>
+            <div class="row" style="margin-top:10px;"><button class="btn" onclick="insertCodeLibraryEntry('cursor')">Insert at cursor</button><button class="btn btn-secondary" onclick="insertCodeLibraryEntry('selection')">Replace selection</button></div>
+          </div>
+        </div>
 
         <div id="code-editor-diff-overlay">
           <div id="code-editor-diff-panel">

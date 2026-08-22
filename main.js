@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 const { OperationalDiagnostics } = require('./operationalDiagnostics');
 const { detectGameProject } = require('./gameProjectDetector');
+const { searchCodeLibrary, libraryFacets } = require('./codeLibrary');
 const { discover: discoverTests, snapshots: discoverSnapshots, TestHistory, readCoverage } = require('./advancedTesting');
 const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
 const testHistory = new TestHistory(app.getPath('userData'));
@@ -3442,6 +3443,7 @@ ipcMain.handle('scan-full-stack-config', wrapAsync(({ folder }) => {
   return { ok: true, ...fullStackSupport.createFullStackConfig(folder) };
 }));
 ipcMain.handle('detect-game-project', wrapAsync(({ folder }) => detectGameProject(folder)));
+ipcMain.handle('code-library:search', wrapAsync(({ folder, filters }) => ({ ok: true, entries: searchCodeLibrary(folder, filters), facets: libraryFacets() })));
 
 // Real per-language byte breakdown for the active project - the GitHub
 // repository "Languages" bar equivalent. Walks the actual files on disk;
