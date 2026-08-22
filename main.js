@@ -888,6 +888,29 @@ function getNimKey() {
   return cfg.nimKeyPlain || null;
 }
 
+function getCodingProviderKey(id) {
+  if (id === 'nim') return getNimKey();
+  return encryptedConfigValue(loadConfig(), `${id}ApiKey`);
+}
+
+ipcMain.handle('coding-models:status', () => {
+  const cfg = loadConfig(); const { PROVIDERS } = require('./codingModelProviders');
+  return { ok:true, selected:PROVIDERS[cfg.codingModelProvider] ? cfg.codingModelProvider : 'nim', providers:Object.values(PROVIDERS).map((item) => ({ id:item.id, name:item.name, model:item.model, configured:Boolean(getCodingProviderKey(item.id)) })) };
+});
+ipcMain.handle('coding-models:save-key', async (_event, { id, key }) => {
+  if (!require('./codingModelProviders').provider(id) || id === 'nim') return { ok:false, error:'Unknown or separately managed provider.' };
+  const cfg = loadConfig(); setEncryptedConfigValue(cfg, `${id}ApiKey`, String(key || '').trim()); await saveConfig(cfg); return { ok:true };
+});
+ipcMain.handle('coding-models:clear-key', async (_event, { id }) => {
+  if (!require('./codingModelProviders').provider(id) || id === 'nim') return { ok:false, error:'Unknown or separately managed provider.' };
+  const cfg = loadConfig(); setEncryptedConfigValue(cfg, `${id}ApiKey`, null); await saveConfig(cfg); return { ok:true };
+});
+ipcMain.handle('coding-models:select', async (_event, { id }) => {
+  if (!require('./codingModelProviders').provider(id)) return { ok:false, error:'Unknown coding model provider.' };
+  if (!getCodingProviderKey(id)) return { ok:false, error:'Save an API key for this provider first.' };
+  const cfg = loadConfig(); cfg.codingModelProvider = id; await saveConfig(cfg); return { ok:true };
+});
+
 // NVIDIA's hosted NIM endpoint - OpenAI-compatible chat completions API.
 // Model chosen: Qwen3-Coder-Next, NVIDIA's coding-focused hosted model, the
 // most relevant available option for Nexus's use (bug fixes, feature
@@ -929,10 +952,22 @@ function recordAiCallMetric({ folder, model, tag, startedAt, ok, error, tokensIn
   }
 }
 
+async function callSelectedCodingModel(prompt, meta = {}, maxTokens = 4000) {
+  const cfg = loadConfig();
+  const id = require('./codingModelProviders').provider(cfg.codingModelProvider) ? cfg.codingModelProvider : 'nim';
+  const startedAt = Date.now();
+  const result = await require('./codingModelProviders').callProvider(id, getCodingProviderKey(id), prompt, maxTokens);
+  recordAiCallMetric({ folder:meta.folder, model:result.model || id, tag:meta.tag, startedAt, ok:result.ok, error:result.error, tokensIn:result.usage?.prompt_tokens, tokensOut:result.usage?.completion_tokens });
+  return result;
+}
+
+ipcMain.handle('coding-models:ask', async (_event, { prompt, folder }) => callSelectedCodingModel(prompt, { folder, tag:'ask-coding-model' }, 4000));
+
 // --- Shared NIM call. Used by Bug Fix Assist and Feature Suggestions. ---
 // meta: { folder, tag } - folder is the open project (for per-project metrics),
 // tag identifies which Nexus feature made the call (e.g. 'bug-fix-assist').
 async function callNim(prompt, meta = {}) {
+  if ((loadConfig().codingModelProvider || 'nim') !== 'nim') return callSelectedCodingModel(prompt, meta, 4000);
   const key = getNimKey();
   if (!key) return { ok: false, error: 'No NVIDIA NIM API key saved yet. Add one in the Cloud tab (get one free at build.nvidia.com).' };
 
@@ -972,6 +1007,7 @@ async function callNim(prompt, meta = {}) {
 // whole starter project (multiple real files) needs far more room than a
 // single bug-fix diff does.
 async function callNimForProjectGeneration(prompt, meta = {}) {
+  if ((loadConfig().codingModelProvider || 'nim') !== 'nim') return callSelectedCodingModel(prompt, { ...meta, tag:meta.tag || 'project-generation' }, 16000);
   const key = getNimKey();
   if (!key) return { ok: false, error: 'No NVIDIA NIM API key saved yet. Add one in the Cloud tab (get one free at build.nvidia.com).' };
 
