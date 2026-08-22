@@ -58,3 +58,36 @@ test('release configuration publishes GitHub updater metadata', () => {
   assert.match(workflow, /GH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
   assert.match(workflow, /contents:\s*write/);
 });
+test('local Windows builds use and verify the trusted Nexus certificate', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const script = read('scripts/buildLocalSigned.js');
+  const signer = read('scripts/signLocalWindows.js');
+  assert.equal(pkg.scripts['dist:local-signed'], 'node scripts/buildLocalSigned.js');
+  assert.match(script, /sign:\s*path\.join\(__dirname, 'signLocalWindows\.js'\)/);
+  assert.match(script, /Get-AuthenticodeSignature/);
+  assert.match(script, /result\.Status !== 'Valid'/);
+  assert.match(script, /publish:\s*'never'/);
+  assert.match(signer, /'\/sha1', thumbprint, '\/s', 'My'/);
+  assert.match(signer, /timestamp\.acs\.microsoft\.com/);
+});
+
+test('local signing certificate has a safe one-command renewal path', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const renewal = read('scripts/renew-local-signing.ps1');
+  assert.equal(pkg.scripts['signing:renew-local'], 'pwsh -NoProfile -File scripts/renew-local-signing.ps1');
+  assert.match(renewal, /RenewWithinDays = 180/);
+  assert.match(renewal, /KeyExportPolicy Exportable/);
+  assert.match(renewal, /Export-PfxCertificate/);
+  assert.match(renewal, /AES256_SHA256/);
+  assert.match(renewal, /Cert:\\CurrentUser\\Root/);
+  assert.match(renewal, /Previous certificates were retained/);
+});
+
+test('portable signing identity can be restored without putting its password on the command line', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const restore = read('scripts/restore-local-signing.ps1');
+  assert.equal(pkg.scripts['signing:restore-local'], 'pwsh -NoProfile -File scripts/restore-local-signing.ps1');
+  assert.match(restore, /Read-Host 'Enter the PFX recovery password' -AsSecureString/);
+  assert.match(restore, /Import-PfxCertificate/);
+  assert.match(restore, /Cert:\\CurrentUser\\Root/);
+});
