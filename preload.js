@@ -258,4 +258,8 @@ contextBridge.exposeInMainWorld('nexus', {
   portableConfigInspect: (folder) => ipcRenderer.invoke('portable-config:inspect', { folder }),
   portableConfigSave: (folder, config, local) => ipcRenderer.invoke('portable-config:save', { folder, config, local }),
   portableConfigRunSetup: (folder, index) => ipcRenderer.invoke('portable-config:run-setup', { folder, index }),
+  githubOperationsGet: (folder) => ipcRenderer.invoke('github-operations:get', { folder }),
+  githubOperationsRun: (folder, runId) => ipcRenderer.invoke('github-operations:run', { folder, runId }),
+  githubOperationsAction: (folder, action, payload) => ipcRenderer.invoke('github-operations:action', { folder, action, payload }),
+  githubOperationsDownload: (folder, url, name) => ipcRenderer.invoke('github-operations:download', { folder, url, name }),
 });

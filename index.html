@@ -1469,6 +1469,13 @@ Type "help" for tips.
       </div>
 
       <div class="card" style="flex-shrink:0;">
+        <label class="label">GitHub CI/CD &amp; Security</label>
+        <div class="form-row" style="margin-top:8px"><button class="btn btn-secondary" onclick="loadGitHubOperations()">↻ Load Actions &amp; deployments</button><button class="btn btn-secondary" onclick="showCreateRelease()">Create release</button></div>
+        <div id="github-operations-summary" class="suggestions-list" style="margin-top:8px"></div>
+        <div id="github-run-details" class="suggestions-list" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
         <label class="label">Stashes &amp; Conflicts</label>
         <div class="form-row" style="margin-top:8px;">
           <input id="git-stash-message" placeholder="Optional stash description">

@@ -115,6 +115,41 @@ async function getBranchProtection(token, owner, repo, branch) {
   }
 }
 
+async function getRepositoryOperations(token, owner, repo) {
+  const [runs, deployments, environments, releases, alerts] = await Promise.all([
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/actions/runs?per_page=30`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/deployments?per_page=30`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/environments?per_page=30`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/releases?per_page=20`),
+    Promise.allSettled([
+      githubRequest(token, 'GET', `/repos/${owner}/${repo}/dependabot/alerts?per_page=30`),
+      githubRequest(token, 'GET', `/repos/${owner}/${repo}/code-scanning/alerts?per_page=30`),
+      githubRequest(token, 'GET', `/repos/${owner}/${repo}/secret-scanning/alerts?per_page=30`),
+    ]),
+  ]);
+  return {
+    runs: (runs.workflow_runs || []).map((run) => ({ id: run.id, name: run.name, event: run.event, branch: run.head_branch, status: run.status, conclusion: run.conclusion, createdAt: run.created_at, htmlUrl: run.html_url })),
+    deployments: deployments.map((d) => ({ id: d.id, environment: d.environment, ref: d.ref, sha: d.sha, createdAt: d.created_at })),
+    environments: (environments.environments || []).map((e) => ({ name: e.name, protectedBranches: e.protected_branches, waitTimer: e.protection_rules?.find((r) => r.type === 'wait_timer')?.wait_timer || 0 })),
+    releases: releases.map((r) => ({ id: r.id, name: r.name || r.tag_name, tag: r.tag_name, draft: r.draft, prerelease: r.prerelease, createdAt: r.created_at, htmlUrl: r.html_url })),
+    alerts: alerts.flatMap((result, index) => result.status === 'fulfilled' ? result.value.map((alert) => ({ type: ['dependency', 'code', 'secret'][index], number: alert.number, state: alert.state, severity: alert.security_advisory?.severity || alert.rule?.security_severity_level || null, description: alert.security_advisory?.summary || alert.rule?.description || alert.secret_type_display_name || 'Security alert', htmlUrl: alert.html_url })) : []),
+  };
+}
+
+async function getWorkflowRun(token, owner, repo, runId) {
+  const [run, jobs, artifacts] = await Promise.all([
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/actions/runs/${runId}`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/actions/runs/${runId}/jobs?per_page=100`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/actions/runs/${runId}/artifacts?per_page=100`),
+  ]);
+  return { run: { id: run.id, name: run.name, status: run.status, conclusion: run.conclusion, htmlUrl: run.html_url }, jobs: (jobs.jobs || []).map((job) => ({ id: job.id, name: job.name, status: job.status, conclusion: job.conclusion, startedAt: job.started_at, completedAt: job.completed_at, htmlUrl: job.html_url, steps: job.steps || [] })), artifacts: (artifacts.artifacts || []).map((artifact) => ({ id: artifact.id, name: artifact.name, size: artifact.size_in_bytes, expired: artifact.expired, downloadUrl: artifact.archive_download_url })) };
+}
+
+async function rerunWorkflow(token, owner, repo, runId, failedOnly = false) { return githubRequest(token, 'POST', `/repos/${owner}/${repo}/actions/runs/${runId}/${failedOnly ? 'rerun-failed-jobs' : 'rerun'}`); }
+async function createRelease(token, owner, repo, tag, name, body, target) { return githubRequest(token, 'POST', `/repos/${owner}/${repo}/releases`, { tag_name: tag, name, body, target_commitish: target, draft: false, prerelease: false, generate_release_notes: !body }); }
+async function rollbackDeployment(token, owner, repo, deploymentId) { return githubRequest(token, 'POST', `/repos/${owner}/${repo}/deployments/${deploymentId}/statuses`, { state: 'inactive', description: 'Marked inactive from Nexus rollback control' }); }
+async function downloadGitHubArchive(token, urlPath) { const res = await fetch(urlPath.startsWith('http') ? urlPath : `${API_BASE}${urlPath}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } }); if (!res.ok) throw new Error(`GitHub download failed (${res.status})`); return Buffer.from(await res.arrayBuffer()); }
+
 async function createBranch(token, owner, repo, branch, fromBranch) {
   const base = await githubRequest(token, 'GET', `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(fromBranch)}`);
   return githubRequest(token, 'POST', `/repos/${owner}/${repo}/git/refs`, {
@@ -146,6 +181,12 @@ module.exports = {
   submitPullRequestReview,
   mergePullRequest,
   getBranchProtection,
+  getRepositoryOperations,
+  getWorkflowRun,
+  rerunWorkflow,
+  createRelease,
+  rollbackDeployment,
+  downloadGitHubArchive,
   createBranch,
   getCommits,
 };
