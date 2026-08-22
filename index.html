@@ -1163,7 +1163,9 @@
           <div class="form-row">
             <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it">
             <button class="btn btn-secondary" onclick="browseFolder()">Browse…</button>
+            <button class="btn btn-secondary" onclick="showGitHubRepositoryPicker()">Choose from GitHub</button>
           </div>
+          <div id="github-repository-picker" class="suggestions-list" style="display:none; max-height:260px; overflow:auto;"></div>
           <div class="muted small" id="clone-progress" style="min-height:16px;"></div>
           <div class="form-row">
             <input type="text" id="project-command" placeholder="Start command" value="npm run dev">

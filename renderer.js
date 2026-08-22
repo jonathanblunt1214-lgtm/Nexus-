@@ -390,6 +390,31 @@ function persistProjects() {
   window.nexus.setProjectsForExitSync(projects);
 }
 
+let githubRepositoryChoices = [];
+
+async function showGitHubRepositoryPicker() {
+  const picker = document.getElementById('github-repository-picker');
+  picker.style.display = 'block';
+  picker.innerHTML = '<p class="muted small">Loading repositories available to your GitHub account…</p>';
+  const result = await window.nexus.githubListRepos();
+  if (!result.ok) {
+    picker.innerHTML = `<p class="muted small">${escapeHtml(result.error)}</p><button class="btn" onclick="switchTab('settings')">Connect GitHub</button>`;
+    return;
+  }
+  githubRepositoryChoices = result.repos;
+  picker.innerHTML = result.repos.map((repo, index) => `<button class="suggestion-item" style="display:block; width:100%; text-align:left;" onclick="selectGitHubRepository(${index})"><strong>${escapeHtml(repo.fullName)}</strong> ${repo.private ? '<span class="badge">Private</span>' : '<span class="muted small">Public</span>'}<span class="muted small" style="display:block;">${escapeHtml(repo.description || 'No description')}</span></button>`).join('') || '<p class="muted small">No repositories are available to this GitHub connection.</p>';
+}
+
+function selectGitHubRepository(index) {
+  const repo = githubRepositoryChoices[index];
+  if (!repo) return;
+  document.getElementById('project-path').value = repo.htmlUrl;
+  const nameInput = document.getElementById('project-name');
+  if (!nameInput.value.trim()) nameInput.value = repo.name;
+  document.getElementById('github-repository-picker').style.display = 'none';
+  document.getElementById('clone-progress').innerText = repo.private ? 'Private repository selected. Nexus will use your encrypted GitHub connection when cloning.' : 'GitHub repository selected.';
+}
+
 let editingProjectId = null;
 
 const projectTemplatePlaceholders = {
