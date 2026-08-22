@@ -1623,9 +1623,9 @@ ipcMain.handle('ai-suggest-features', async (_event, { folder }) => {
 
 // =======================================================================
 // Ship: real git actions, a multi-file feature planner, and a deploy-
-// script runner. Same safety property as Code Assist — pushing to a
-// remote or running your deploy script only ever happens from an explicit
-// button click in the renderer, never automatically.
+// script runner. Manual pushes and deployments require an explicit button
+// click. The separate git-auto-sync handler below only runs after the user
+// explicitly enables the bounded auto-sync setting, and only for GitHub.
 // =======================================================================
 
 function runGit(folder, args) {
@@ -1767,6 +1767,36 @@ ipcMain.handle('git-commit', async (_event, { folder, message }) => {
 
 ipcMain.handle('git-push', async (_event, { folder }) => {
   return runGit(folder, 'push -u origin HEAD');
+});
+
+ipcMain.handle('git-auto-sync', async (_event, { folder, projectName }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+
+  const nexusFolder = path.resolve(__dirname).toLowerCase();
+  const projectFolder = path.resolve(folder).toLowerCase();
+  if (projectFolder === nexusFolder && String(projectName || '').trim().toLowerCase() !== 'nexus') {
+    return { ok: false, skipped: true, error: 'The Nexus application repository only syncs when the project is named exactly Nexus.' };
+  }
+
+  const remote = await runGitArgs(folder, ['remote', 'get-url', 'origin']);
+  if (!remote.ok || !/github\.com[/:]/i.test(remote.output)) {
+    return { ok: false, skipped: true, error: 'No GitHub origin remote is configured.' };
+  }
+
+  const status = await runGitArgs(folder, ['status', '--porcelain']);
+  if (!status.ok) return { ok: false, error: status.output || 'Could not read Git status.' };
+  if (!status.output.trim()) return { ok: true, changed: false };
+
+  const add = await runGitArgs(folder, ['add', '-A']);
+  if (!add.ok) return { ok: false, error: add.output || 'Could not stage project changes.' };
+
+  const stamp = new Date().toISOString().replace('T', ' ').replace(/:\d{2}\.\d{3}Z$/, ' UTC');
+  const commit = await runGitArgs(folder, ['commit', '-m', `Nexus auto-sync ${stamp}`]);
+  if (!commit.ok) return { ok: false, error: commit.output || 'Could not commit project changes.' };
+
+  const push = await runGitArgs(folder, ['push', '-u', 'origin', 'HEAD']);
+  if (!push.ok) return { ok: false, committed: true, error: push.output || 'Committed locally, but GitHub push failed.' };
+  return { ok: true, changed: true, output: push.output };
 });
 
 // --- Deploy: run whatever script the user already uses (npm run deploy, a shell script, etc). ---

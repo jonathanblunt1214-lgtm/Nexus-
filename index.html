@@ -1414,6 +1414,20 @@ Type "help" for tips.
 
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
+      <div class="card" aria-labelledby="github-auto-sync-title">
+        <label class="label" id="github-auto-sync-title">Project Auto-sync to GitHub</label>
+        <p class="muted small" style="margin-top:6px;">Automatically commits and pushes changed projects that have a GitHub <code>origin</code>. Nexus application updates remain separate. The Nexus source folder is only eligible when its project name is exactly <strong>Nexus</strong>.</p>
+        <div class="form-row" style="margin-top:8px; align-items:center;">
+          <label class="muted small" style="display:flex; align-items:center; gap:7px;">
+            <input type="checkbox" id="github-auto-sync-enabled" onchange="saveGitHubAutoSyncSettings()">
+            Enable automatic project sync
+          </label>
+          <input type="number" id="github-auto-sync-seconds" min="30" max="600" step="30" value="300" aria-label="Auto-sync interval in seconds" style="max-width:120px;" onchange="saveGitHubAutoSyncSettings()">
+          <span class="muted small">seconds (30–600)</span>
+        </div>
+        <p class="muted small" id="github-auto-sync-status" style="margin-top:8px;">Auto-sync is off.</p>
+      </div>
+
       <div class="card update-card" aria-labelledby="update-card-title">
         <div class="update-card-heading">
           <div>

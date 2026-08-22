@@ -3212,6 +3212,72 @@ async function runPipeline() {
 // actions that deserve a real decision, not a silent background swap.
 let pendingSourceUpdate = null;
 
+const GITHUB_AUTO_SYNC_MIN_SECONDS = 30;
+const GITHUB_AUTO_SYNC_MAX_SECONDS = 600;
+let githubAutoSyncTimer = null;
+let githubAutoSyncRunning = false;
+
+function readGitHubAutoSyncSettings() {
+  const enabled = localStorage.getItem('nexus_github_auto_sync_enabled') === 'true';
+  const requested = Number.parseInt(localStorage.getItem('nexus_github_auto_sync_seconds') || '300', 10);
+  const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
+  return { enabled, seconds };
+}
+
+function renderGitHubAutoSyncSettings() {
+  const settings = readGitHubAutoSyncSettings();
+  document.getElementById('github-auto-sync-enabled').checked = settings.enabled;
+  document.getElementById('github-auto-sync-seconds').value = String(settings.seconds);
+  document.getElementById('github-auto-sync-status').innerText = settings.enabled
+    ? `Auto-sync runs every ${settings.seconds} seconds.`
+    : 'Auto-sync is off.';
+}
+
+function scheduleGitHubAutoSync() {
+  if (githubAutoSyncTimer) clearInterval(githubAutoSyncTimer);
+  githubAutoSyncTimer = null;
+  const settings = readGitHubAutoSyncSettings();
+  if (!settings.enabled) return;
+  githubAutoSyncTimer = setInterval(runGitHubAutoSync, settings.seconds * 1000);
+}
+
+function saveGitHubAutoSyncSettings() {
+  const enabled = document.getElementById('github-auto-sync-enabled').checked;
+  const input = document.getElementById('github-auto-sync-seconds');
+  const requested = Number.parseInt(input.value || '300', 10);
+  const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
+  input.value = String(seconds);
+  localStorage.setItem('nexus_github_auto_sync_enabled', String(enabled));
+  localStorage.setItem('nexus_github_auto_sync_seconds', String(seconds));
+  renderGitHubAutoSyncSettings();
+  scheduleGitHubAutoSync();
+  if (enabled) runGitHubAutoSync();
+}
+
+async function runGitHubAutoSync() {
+  if (githubAutoSyncRunning) return;
+  githubAutoSyncRunning = true;
+  const status = document.getElementById('github-auto-sync-status');
+  let pushed = 0;
+  let failures = 0;
+  status.innerText = 'Checking projects for changes…';
+  try {
+    for (const project of projects) {
+      const result = await window.nexus.gitAutoSync(project.folder, project.name);
+      if (result.ok && result.changed) pushed += 1;
+      else if (!result.ok && !result.skipped) failures += 1;
+    }
+    const checkedAt = new Date().toLocaleTimeString();
+    status.innerText = failures
+      ? `Last checked ${checkedAt}: ${pushed} pushed, ${failures} failed.`
+      : `Last checked ${checkedAt}: ${pushed ? `${pushed} project(s) pushed` : 'no changes'}.`;
+    if (pushed) showToast('success', 'GitHub auto-sync complete', `${pushed} project(s) committed and pushed.`);
+    if (failures) showToast('error', 'Some projects could not auto-sync', `${failures} project(s) need attention in Ship / Git.`);
+  } finally {
+    githubAutoSyncRunning = false;
+  }
+}
+
 function renderReleaseUpdateStatus(status) {
   const current = document.getElementById('update-current-version');
   if (!current) return;
@@ -3361,6 +3427,8 @@ setInterval(async () => {
   refreshNimStatus();
   refreshGitHubStatus();
   refreshOpenAiStatus();
+  renderGitHubAutoSyncSettings();
+  scheduleGitHubAutoSync();
   const gcp = await window.nexus.getGcpProject();
   if (gcp) document.getElementById('gcp-project-id').value = gcp;
 
