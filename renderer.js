@@ -3213,6 +3213,8 @@ function renderReleaseUpdateStatus(status) {
   const install = document.getElementById('update-install-btn');
   const progress = document.getElementById('update-progress');
   const bar = document.getElementById('update-progress-bar');
+  const notes = document.getElementById('update-notes');
+  const notesContent = document.getElementById('update-notes-content');
   const labels = {
     idle: 'Ready to check', checking: 'Checking…', available: 'Update available',
     downloading: `Downloading ${status.percent || 0}%`, ready: 'Ready to install',
@@ -3227,6 +3229,12 @@ function renderReleaseUpdateStatus(status) {
   install.hidden = status.state !== 'ready';
   progress.hidden = status.state !== 'downloading';
   bar.style.width = `${Math.max(0, Math.min(100, status.percent || 0))}%`;
+
+  const releaseNotes = Array.isArray(status.releaseNotes)
+    ? status.releaseNotes.map((entry) => entry.note || entry.version || '').filter(Boolean).join('\n\n')
+    : String(status.releaseNotes || '').trim();
+  notes.hidden = !releaseNotes;
+  notesContent.textContent = releaseNotes;
 
   if (status.state === 'available') message.innerText = `Nexus ${status.availableVersion} is available from GitHub Releases.`;
   else if (status.state === 'ready') message.innerText = `Nexus ${status.availableVersion} has downloaded. Restart when you're ready.`;

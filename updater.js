@@ -16,6 +16,7 @@ const { app } = require('electron');
 // when to restart, so it never yanks the app out from under active work.
 autoUpdater.autoInstallOnAppQuit = true;
 autoUpdater.autoDownload = false;
+autoUpdater.fullChangelog = true;
 
 let mainWindow = null;
 let initialized = false;
@@ -23,6 +24,7 @@ let updateState = {
   state: 'idle',
   currentVersion: app.getVersion(),
   availableVersion: null,
+  releaseNotes: null,
   percent: 0,
   message: null,
   canCheck: app.isPackaged,
@@ -71,7 +73,7 @@ function initUpdater(win) {
   });
 
   autoUpdater.on('update-not-available', () => {
-    notifyRenderer('updater:status', { state: 'up-to-date', availableVersion: null, percent: 0 });
+    notifyRenderer('updater:status', { state: 'up-to-date', availableVersion: null, releaseNotes: null, percent: 0 });
   });
 
   autoUpdater.on('download-progress', (progress) => {

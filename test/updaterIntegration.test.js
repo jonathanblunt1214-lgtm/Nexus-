@@ -33,6 +33,17 @@ test('installed Nexus checks for updates every time the application opens', () =
   assert.match(main, /Startup update check failed/);
 });
 
+test('available updates include safely rendered GitHub release notes', () => {
+  const updater = read('updater.js');
+  const html = read('index.html');
+  const renderer = read('renderer.js');
+  assert.match(updater, /fullChangelog\s*=\s*true/);
+  assert.ok(html.includes('id="update-notes"'));
+  assert.ok(html.includes('id="update-notes-content"'));
+  assert.match(renderer, /notesContent\.textContent = releaseNotes/);
+  assert.doesNotMatch(renderer, /notesContent\.innerHTML\s*=/);
+});
+
 test('release configuration publishes GitHub updater metadata', () => {
   const pkg = JSON.parse(read('package.json'));
   assert.deepEqual(pkg.build.publish, {
