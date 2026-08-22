@@ -1507,6 +1507,23 @@ Type "help" for tips.
         </div>
       </div>
 
+      <div class="card" id="game-development-guide" style="display:none; border-left:4px solid var(--accent);">
+        <div class="row" style="justify-content:space-between; align-items:start;">
+          <div>
+            <label class="label">Game Development Guide</label>
+            <h3 id="game-guide-title" style="margin-top:8px;"></h3>
+          </div>
+          <button class="btn btn-secondary tiny" onclick="hideGameDevelopmentGuide()">Dismiss</button>
+        </div>
+        <p id="game-guide-reason" style="margin-top:8px;"></p>
+        <p class="muted small" style="margin-top:8px;"><strong>Nexus is still useful</strong> for source editing, Git, pull requests, tests, CI/CD, secrets, and project documentation. Use the game engine's official editor for scenes or levels, visual assets, physics, play testing, platform builds, and engine-specific debugging.</p>
+        <p class="muted small" id="game-guide-evidence" style="margin-top:8px;"></p>
+        <div class="form-row" style="margin-top:10px;">
+          <button class="btn" onclick="openGameDevelopmentLink('tool')" id="game-guide-tool-button">Get the proper development tool</button>
+          <button class="btn btn-secondary" onclick="openGameDevelopmentLink('docs')">Open official getting-started guide</button>
+        </div>
+      </div>
+
       <div class="card" style="flex-shrink:0;">
         <label class="label">GitHub Pull Requests</label>
         <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="refreshProjectPullRequests()">↻ Load pull requests</button></div>
