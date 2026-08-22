@@ -11,7 +11,7 @@ const { writeJsonAtomic } = require('./atomicWrite');
 const os = require('os');
 const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
-const { resolveProjectPath } = require('./projectCloner');
+const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
 const { runPipeline, PipelineError } = require('./pipelineEngine');
@@ -468,12 +468,14 @@ ipcMain.handle('generate-new-project', async (_event, { name, description }) => 
 
 ipcMain.handle('resolve-project-path', async (_event, { input }) => {
   try {
+    const sourceType = isGitUrl(input) ? 'git' : 'local';
     const resolvedPath = await resolveProjectPath(input, (line) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('project-clone-log', { line });
       }
     });
-    return { ok: true, path: resolvedPath };
+    const detectedPort = sourceType === 'git' ? detectProjectPort(resolvedPath) : null;
+    return { ok: true, path: resolvedPath, sourceType, detectedPort };
   } catch (err) {
     return { ok: false, error: err.message };
   }
