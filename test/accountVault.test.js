@@ -31,3 +31,25 @@ test('OAuth sessions and executable plug-ins are not part of the portable secret
   assert.match(main, /id: String\(item\.id/);
   assert.doesNotMatch(main.match(/const plugins = Array[\s\S]*?: \[\];/)?.[0] || '', /pluginRoot|sourceCode|executable/);
 });
+
+test('air-gapped vault handlers use only explicit local file dialogs and encrypted envelopes', () => {
+  const fs = require('fs');
+  const main = fs.readFileSync(require.resolve('../main'), 'utf8');
+  const start = main.indexOf("ipcMain.handle('account-vault:airgap-export'");
+  const end = main.indexOf("ipcMain.handle('drive:list'", start);
+  const handlers = main.slice(start, end);
+  assert.ok(start > 0 && end > start);
+  assert.match(handlers, /showSaveDialog/);
+  assert.match(handlers, /showOpenDialog/);
+  assert.match(handlers, /encryptVault/);
+  assert.match(handlers, /decryptVault/);
+  assert.doesNotMatch(handlers, /githubClient|googleDriveClient|firebaseAccountClient|fetch\(|saveEncryptedAccountVault/);
+});
+
+test('Settings never mislabels encrypted cloud copies as air-gapped storage', () => {
+  const fs = require('fs');
+  const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(html, /Encrypted cloud backup:[\s\S]*not air-gapped/);
+  assert.match(html, /Local Air-Gapped Vault/);
+  assert.match(html, /Disconnect and securely store the drive/);
+});

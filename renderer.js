@@ -4202,6 +4202,40 @@ async function restoreAccountVault() {
   refreshAccountVaultStatus(); refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
 }
 
+function applyRestoredVaultResult(result) {
+  for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
+  const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
+  renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
+  refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
+  return `${result.restoredApiKeyCount} API key(s) restored. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`;
+}
+
+async function exportAirGappedVault() {
+  const passphrase = document.getElementById('account-vault-passphrase').value;
+  if (passphrase.length < 12) { showToast('error', 'Enter a 12+ character vault passphrase', 'The same passphrase is required for restore.'); return; }
+  const status = document.getElementById('airgap-vault-status'); status.innerText = 'Creating an encrypted offline vault without contacting cloud services…';
+  const result = await window.nexus.accountVaultAirgapExport({ passphrase, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() });
+  if (result.canceled) { status.innerText = 'Offline export canceled.'; return; }
+  if (result.ok) {
+    status.innerText = `Encrypted vault exported to ${result.path}. Disconnect the removable drive to complete the air gap.`;
+    showToast('success', 'Offline vault exported', 'Disconnect and securely store the removable drive.');
+  } else { status.innerText = `Offline export failed: ${result.error}`; showToast('error', 'Offline vault export failed', result.error); }
+  document.getElementById('account-vault-passphrase').value = '';
+}
+
+async function restoreAirGappedVault() {
+  const passphrase = document.getElementById('account-vault-passphrase').value;
+  if (passphrase.length < 12) { showToast('error', 'Enter the offline vault passphrase'); return; }
+  if (!confirm('Restore API keys and preferences from a local offline vault file? Existing matching settings on this PC will be replaced.')) return;
+  const status = document.getElementById('airgap-vault-status'); status.innerText = 'Opening and decrypting the local vault without contacting cloud services…';
+  const result = await window.nexus.accountVaultAirgapRestore({ passphrase });
+  if (result.canceled) { status.innerText = 'Offline restore canceled.'; return; }
+  if (result.ok) {
+    const summary = applyRestoredVaultResult(result); status.innerText = `Offline vault restored. ${summary}`; showToast('success', 'Offline vault restored', summary);
+  } else { status.innerText = `Offline restore failed: ${result.error}`; showToast('error', 'Offline vault restore failed', result.error); }
+  document.getElementById('account-vault-passphrase').value = '';
+}
+
 async function connectGitHubOAuth() {
   const status = document.getElementById('oauth-service-status');
   const start = await window.nexus.githubOAuthStart();

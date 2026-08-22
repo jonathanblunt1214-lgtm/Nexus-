@@ -3561,6 +3561,20 @@ function collectAccountVaultSecrets() {
   return Object.fromEntries(ACCOUNT_VAULT_SECRET_KEYS.map((key) => [key, encryptedConfigValue(cfg, key)]).filter(([, value]) => value));
 }
 
+function buildAccountVaultPayload(value = {}) {
+  const plugins = Array.isArray(value.plugins) ? value.plugins.slice(0, 250).map((item) => ({ id: String(item.id || '').slice(0, 150), version: item.version ? String(item.version).slice(0, 50) : null, enabled: item.status === 'ACTIVE', signed: item.signed === true })).filter((item) => item.id) : [];
+  return { schemaVersion: 1, updatedAt: new Date().toISOString(), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins };
+}
+
+async function applyAccountVaultPayload(payload) {
+  if (payload?.schemaVersion !== 1 || typeof payload.apiKeys !== 'object') throw new Error('The unlocked vault data is not supported.');
+  const cfg = loadConfig();
+  for (const key of ACCOUNT_VAULT_SECRET_KEYS) if (typeof payload.apiKeys[key] === 'string' && payload.apiKeys[key]) setEncryptedConfigValue(cfg, key, payload.apiKeys[key]);
+  cfg.accountVaultLastRestoredAt = new Date().toISOString();
+  await saveConfig(cfg);
+  return { preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
+}
+
 async function saveEncryptedAccountVault(encrypted, providers) {
   const results = {};
   if (providers.github) {
@@ -3594,8 +3608,7 @@ ipcMain.handle('account-vault:sync', async (_event, value = {}) => {
   try {
     const providers = { github: value.providers?.github !== false, google: value.providers?.google !== false, email: value.providers?.email === true };
     if (!providers.github && !providers.google && !providers.email) return { ok: false, error: 'Choose the email account, GitHub, Google Drive, or more than one.' };
-    const plugins = Array.isArray(value.plugins) ? value.plugins.slice(0, 250).map((item) => ({ id: String(item.id || '').slice(0, 150), version: item.version ? String(item.version).slice(0, 50) : null, enabled: item.status === 'ACTIVE', signed: item.signed === true })).filter((item) => item.id) : [];
-    const payload = { schemaVersion: 1, updatedAt: new Date().toISOString(), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins };
+    const payload = buildAccountVaultPayload(value);
     const encrypted = require('./accountVault').encryptVault(payload, value.passphrase);
     const results = await saveEncryptedAccountVault(encrypted, providers);
     const ok = Object.values(results).some((result) => result.ok);
@@ -3615,12 +3628,30 @@ ipcMain.handle('account-vault:restore', async (_event, value = {}) => {
     const available = candidates.filter((item) => item.content).sort((a, b) => Date.parse(b.modifiedTime || 0) - Date.parse(a.modifiedTime || 0));
     if (!available.length) return { ok: false, error: candidates.map((item) => item.error).filter(Boolean).join(' ') || 'No Nexus account vault was found in the connected accounts.' };
     const payload = require('./accountVault').decryptVault(available[0].content, value.passphrase);
-    if (payload?.schemaVersion !== 1 || typeof payload.apiKeys !== 'object') throw new Error('The unlocked vault data is not supported.');
-    const cfg = loadConfig();
-    for (const key of ACCOUNT_VAULT_SECRET_KEYS) if (typeof payload.apiKeys[key] === 'string' && payload.apiKeys[key]) setEncryptedConfigValue(cfg, key, payload.apiKeys[key]);
-    cfg.accountVaultLastRestoredAt = new Date().toISOString();
-    await saveConfig(cfg);
-    return { ok: true, source: available[0].source, updatedAt: payload.updatedAt || available[0].modifiedTime, preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
+    const restored = await applyAccountVaultPayload(payload);
+    return { ok: true, source: available[0].source, updatedAt: payload.updatedAt || available[0].modifiedTime, ...restored };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('account-vault:airgap-export', async (_event, value = {}) => {
+  try {
+    const selected = await dialog.showSaveDialog(mainWindow, { title: 'Export air-gapped Nexus vault', defaultPath: 'Nexus Air-Gapped Vault.nexusvault', filters: [{ name: 'Nexus encrypted vault', extensions: ['nexusvault'] }] });
+    if (selected.canceled) return { ok: false, canceled: true };
+    const encrypted = require('./accountVault').encryptVault(buildAccountVaultPayload(value), value.passphrase);
+    await fs.promises.writeFile(selected.filePath, encrypted, { encoding: 'utf8', mode: 0o600 });
+    return { ok: true, path: selected.filePath };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('account-vault:airgap-restore', async (_event, value = {}) => {
+  try {
+    const selected = await dialog.showOpenDialog(mainWindow, { title: 'Open air-gapped Nexus vault', properties: ['openFile', 'dontAddToRecent'], filters: [{ name: 'Nexus encrypted vault', extensions: ['nexusvault'] }] });
+    if (selected.canceled) return { ok: false, canceled: true };
+    const stat = await fs.promises.stat(selected.filePaths[0]);
+    if (!stat.isFile() || stat.size > 2 * 1024 * 1024) throw new Error('The selected vault file is invalid or exceeds 2 MB.');
+    const serialized = await fs.promises.readFile(selected.filePaths[0], 'utf8');
+    const payload = require('./accountVault').decryptVault(serialized, value.passphrase);
+    return { ok: true, source: 'air-gapped file', updatedAt: payload.updatedAt || null, ...(await applyAccountVaultPayload(payload)) };
   } catch (error) { return { ok: false, error: error.message }; }
 });
 ipcMain.handle('drive:list', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; return { ok: true, files: await require('./googleDriveClient').listFiles(token) }; } catch (error) { return { ok: false, error: error.message }; } });
