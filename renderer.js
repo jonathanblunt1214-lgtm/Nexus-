@@ -475,7 +475,7 @@ async function addProject(e) {
     document.getElementById('project-name').value = '';
     document.getElementById('project-path').value = '';
     document.getElementById('project-command').value = 'npm run dev';
-    document.getElementById('project-port').value = '3000';
+    document.getElementById('project-port').value = '';
     persistProjects();
     renderProjects();
     return;
@@ -505,6 +505,7 @@ async function addProject(e) {
   projects.push({ id: Date.now(), name, folder, command, port, running: false });
   document.getElementById('project-name').value = '';
   document.getElementById('project-path').value = '';
+  document.getElementById('project-port').value = '';
   persistProjects();
   renderProjects();
 }
@@ -531,7 +532,7 @@ function cancelEdit() {
   document.getElementById('project-name').value = '';
   document.getElementById('project-path').value = '';
   document.getElementById('project-command').value = 'npm run dev';
-  document.getElementById('project-port').value = '3000';
+  document.getElementById('project-port').value = '';
   document.querySelector('#view-projects .card button.btn[onclick^="addProject"]').innerText = 'Save Project';
 }
 
