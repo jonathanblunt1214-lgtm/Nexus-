@@ -1539,6 +1539,7 @@ function closeCodeEditor() {
   }
   document.getElementById('code-editor-overlay').style.display = 'none';
   closeCodeLibraryPreview();
+  closeDiagnosticLesson();
 }
 
 async function refreshCodeEditorTree() {
@@ -1658,6 +1659,8 @@ function closeEditorTab(relPath) {
 }
 
 let codeEditorLintTools = { hasEslint: false, hasPrettier: false };
+let lastDiagnosticMessages = [];
+let pendingDiagnosticLesson = null;
 
 async function saveCurrentEditorFile() {
   const entry = codeEditorOpenFiles.find((f) => f.relPath === codeEditorCurrentRelPath);
@@ -1721,6 +1724,7 @@ async function runFormatAndLint(entry) {
 }
 
 function renderLintResults(messages) {
+  lastDiagnosticMessages = messages;
   const summaryEl = document.getElementById('ce-lint-summary');
   const panelEl = document.getElementById('ce-lint-panel');
 
@@ -1735,12 +1739,13 @@ function renderLintResults(messages) {
   const warnCount = messages.length - errorCount;
   summaryEl.innerHTML = `<span style="cursor:pointer;" onclick="document.getElementById('ce-lint-panel').classList.toggle('open')">${errorCount} error(s), ${warnCount} warning(s)</span>`;
 
-  panelEl.innerHTML = messages.map((m) => `
+  panelEl.innerHTML = messages.map((m, index) => `
     <div class="ce-lint-item ce-lint-${m.severity}" onclick="jumpToLintLine(${m.line})">
       <span class="ce-lint-dot">●</span>
       <span class="ce-lint-line">Line ${m.line}</span>
       <span>${escapeHtml(m.message)}</span>
       <span class="ce-lint-rule">${escapeHtml(m.ruleId || '')}</span>
+      <button class="btn tiny btn-secondary ce-learn-button" onclick="event.stopPropagation(); explainDiagnostic(${index})">Explain &amp; Learn</button>
     </div>
   `).join('');
   panelEl.classList.add('open');
@@ -2197,6 +2202,45 @@ async function refreshCodingModels() {
   if (!codingModelProviderState.ok) return;
   document.getElementById('coding-model-provider').value = codingModelProviderState.selected;
   renderCodingModelProvider();
+}
+
+async function explainDiagnostic(index) {
+  const diagnostic = lastDiagnosticMessages[index];
+  const entry = codeEditorOpenFiles.find((file) => file.relPath === codeEditorCurrentRelPath);
+  if (!diagnostic || !entry || !codeEditorCM) return;
+  jumpToLintLine(diagnostic.line);
+  const overlay = document.getElementById('ce-learn-overlay');
+  overlay.style.display = 'block';
+  document.getElementById('ce-learn-diagnostic').innerText = `Line ${diagnostic.line} · ${diagnostic.ruleId || diagnostic.severity} · Preparing lesson…`;
+  for (const id of ['what','why','practice','avoid','example']) document.getElementById(`ce-learn-${id}`).innerText = id === 'what' ? 'Asking your selected coding model…' : '';
+  document.getElementById('ce-learn-before').innerText = codeEditorCM.getValue();
+  document.getElementById('ce-learn-after').innerText = '';
+  const result = await window.nexus.explainDiagnostic(codeEditorFolder, entry.absPath, codeEditorCM.getValue(), diagnostic);
+  if (!result.ok) { closeDiagnosticLesson(); showToast('error', 'Explain & Learn failed', result.error); return; }
+  pendingDiagnosticLesson = result;
+  document.getElementById('ce-learn-diagnostic').innerText = `Line ${result.diagnostic.line} · ${result.diagnostic.ruleId || result.diagnostic.severity} · ${result.diagnostic.message}`;
+  for (const id of ['what','why','practice','avoid','example']) document.getElementById(`ce-learn-${id}`).innerText = result.lesson[id] || 'No additional guidance returned.';
+  document.getElementById('ce-learn-before').innerText = result.oldContent;
+  document.getElementById('ce-learn-after').innerText = result.newContent;
+}
+
+function closeDiagnosticLesson() {
+  const overlay = document.getElementById('ce-learn-overlay');
+  if (overlay) overlay.style.display = 'none';
+  pendingDiagnosticLesson = null;
+}
+
+async function applyDiagnosticLesson() {
+  if (!pendingDiagnosticLesson) return;
+  const lesson = pendingDiagnosticLesson;
+  const result = await window.nexus.applyFileChange(lesson.filePath, lesson.newContent, 'Explain & Learn approved correction');
+  if (!result.ok) { showToast('error', 'Correction was not applied', result.error); return; }
+  const entry = codeEditorOpenFiles.find((file) => file.absPath === lesson.filePath);
+  if (entry) { entry.content = lesson.newContent; entry.dirty = false; }
+  codeEditorCM.setValue(lesson.newContent);
+  renderCodeEditorTabs(); closeDiagnosticLesson();
+  showToast('success', 'Correction applied', 'The approved change was saved with a backup. Nexus is checking the file again.');
+  setTimeout(() => editorLanguageAction('diagnostics', { quiet:true }), 100);
 }
 
 function renderCodingModelProvider() {

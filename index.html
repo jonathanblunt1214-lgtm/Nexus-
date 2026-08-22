@@ -830,6 +830,13 @@
     .ce-lint-item.ce-lint-error .ce-lint-dot { color: #f85149; }
     .ce-lint-item.ce-lint-warning .ce-lint-dot { color: #d29922; }
     .ce-lint-item .ce-lint-rule { color: #6e7681; flex-shrink: 0; }
+    .ce-learn-button { margin-left:auto; white-space:nowrap; }
+    #ce-learn-overlay { display:none; position:absolute; inset:0; z-index:14; background:#0d1117; padding:18px; overflow:auto; }
+    #ce-learn-panel { width:min(1100px, 100%); margin:auto; }
+    .ce-learn-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .ce-learn-section { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; }
+    .ce-learn-section pre { white-space:pre-wrap; margin-top:6px; }
+    @media (max-width:760px) { .ce-learn-grid { grid-template-columns:1fr; } }
     .cet-row {
       display: flex;
       align-items: center;
@@ -2174,7 +2181,17 @@ Measure-Object</pre>
           </div>
         </div>
         <div id="code-editor-cm-container"></div>
-        <div id="code-editor-empty" class="code-editor-empty">Select a file from the tree to start editing, or ask NVIDIA NIM above to write a new one.</div>
+        <div id="code-editor-empty" class="code-editor-empty">Select a file from the tree to start editing, or ask your selected coding model above to write a new one.</div>
+
+        <div id="ce-learn-overlay">
+          <div id="ce-learn-panel">
+            <div class="row" style="justify-content:space-between;"><div><strong>Explain &amp; Learn</strong><p id="ce-learn-diagnostic" class="muted small"></p></div><button class="btn btn-secondary" onclick="closeDiagnosticLesson()">Close</button></div>
+            <div class="ce-learn-grid"><div class="ce-learn-section"><strong>What went wrong</strong><p id="ce-learn-what"></p></div><div class="ce-learn-section"><strong>Why it matters</strong><p id="ce-learn-why"></p></div><div class="ce-learn-section"><strong>Accepted practice</strong><p id="ce-learn-practice"></p></div><div class="ce-learn-section"><strong>How to avoid it</strong><p id="ce-learn-avoid"></p></div></div>
+            <div class="ce-learn-section" style="margin-top:10px;"><strong>Properly formatted example</strong><pre id="ce-learn-example"></pre></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;"><div><strong class="muted small">CURRENT FILE</strong><pre id="ce-learn-before" class="diff-box"></pre></div><div><strong class="accent small">RECOMMENDED FILE</strong><pre id="ce-learn-after" class="diff-box"></pre></div></div>
+            <div class="row" style="margin-top:10px;"><button class="btn" onclick="applyDiagnosticLesson()">Apply correction</button><button class="btn btn-secondary" onclick="closeDiagnosticLesson()">Keep my code</button><span class="muted small">Nexus never applies this correction automatically.</span></div>
+          </div>
+        </div>
 
         <div id="ce-library-preview-overlay">
           <div id="ce-library-preview-panel">
