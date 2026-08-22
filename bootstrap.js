@@ -5,4 +5,4 @@ const { registerSection8Ipc } = require('./section8Ipc');
 
 registerSection7Ipc({ ipcMain, webContents });
 registerSection8Ipc({ ipcMain });
-require('./main');
+require('./main.js');
