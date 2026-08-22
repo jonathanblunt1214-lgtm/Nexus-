@@ -6,16 +6,18 @@ function normalizeProjectRoot(value) {
   if (typeof value !== 'string' || !value.trim()) throw new Error('projectRoot is required');
   const root = path.resolve(value);
   if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) throw new Error('projectRoot must be an existing directory');
-  return root;
+  return fs.realpathSync(root);
 }
 
-function registerSection8Ipc({ ipcMain, managerFactory } = {}) {
+function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot } = {}) {
   if (!ipcMain || typeof ipcMain.handle !== 'function') throw new Error('ipcMain.handle is required');
+  if (typeof isAuthorizedProjectRoot !== 'function') throw new Error('isAuthorizedProjectRoot is required');
   const managers = new Map();
   const makeManager = managerFactory || ((projectRoot) => new PluginManager({ projectRoot, requireSigned: true }));
 
   function getManager(projectRoot) {
     const root = normalizeProjectRoot(projectRoot);
+    if (!isAuthorizedProjectRoot(root)) throw new Error('Plugin access denied: projectRoot is not an authorized Nexus workspace');
     if (!managers.has(root)) managers.set(root, makeManager(root));
     return managers.get(root);
   }
