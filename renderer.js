@@ -4005,6 +4005,8 @@ setInterval(async () => {
   refreshOAuthServices();
   refreshAccountVaultStatus();
   loadOAuthConfiguration();
+  loadEmailAccountConfiguration();
+  refreshEmailAccountStatus();
   refreshOpenAiStatus();
   renderGitHubAutoSyncSettings();
   scheduleGitHubAutoSync();
@@ -4025,6 +4027,68 @@ async function loadOAuthConfiguration() {
   if (!result.ok) return;
   document.getElementById('oauth-github-client-id').value = result.githubClientId || '';
   document.getElementById('oauth-google-client-id').value = result.googleClientId || '';
+}
+
+async function loadEmailAccountConfiguration() {
+  const result = await window.nexus.emailAccountConfiguration();
+  if (!result.ok) return;
+  document.getElementById('firebase-project-id').value = result.projectId || '';
+  document.getElementById('firebase-web-api-key').value = result.apiKey || '';
+}
+
+async function saveEmailAccountConfiguration() {
+  let result;
+  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim() }); }
+  catch (error) { result = { ok: false, error: error.message }; }
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Email account configuration saved' : 'Configuration could not be saved', result.error || 'Firebase email sign-in is ready.');
+  refreshEmailAccountStatus();
+}
+
+function emailAccountCredentials() {
+  return { email: document.getElementById('email-account-email').value.trim(), password: document.getElementById('email-account-password').value };
+}
+
+async function signUpEmailAccount() {
+  const { email, password } = emailAccountCredentials();
+  const result = await window.nexus.emailAccountSignUp(email, password);
+  document.getElementById('email-account-password').value = '';
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Nexus account created' : 'Account could not be created', result.error || 'Check your inbox and verify the email address before syncing.');
+  refreshEmailAccountStatus(); refreshAccountVaultStatus();
+}
+
+async function signInEmailAccount() {
+  const { email, password } = emailAccountCredentials();
+  const result = await window.nexus.emailAccountSignIn(email, password);
+  document.getElementById('email-account-password').value = '';
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Signed in to Nexus' : 'Email sign-in failed', result.error || (result.emailVerified ? 'Email account vault sync is ready.' : 'Verify your email before syncing.'));
+  refreshEmailAccountStatus(); refreshAccountVaultStatus();
+}
+
+async function signOutEmailAccount() {
+  await window.nexus.emailAccountSignOut();
+  document.getElementById('email-account-password').value = '';
+  showToast('info', 'Signed out of Nexus email account'); refreshEmailAccountStatus(); refreshAccountVaultStatus();
+}
+
+async function resendEmailVerification() {
+  const result = await window.nexus.emailAccountResendVerification();
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Verification email sent' : 'Could not send verification email', result.error || 'Check your inbox and spam folder.');
+}
+
+async function resetEmailAccountPassword() {
+  const email = document.getElementById('email-account-email').value.trim();
+  if (!email) { showToast('error', 'Enter your email address first'); return; }
+  const result = await window.nexus.emailAccountResetPassword(email);
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Password reset email sent' : 'Could not send reset email', result.error || 'Check your inbox.');
+}
+
+async function refreshEmailAccountStatus() {
+  const panel = document.getElementById('email-account-status'); if (!panel) return;
+  const result = await window.nexus.emailAccountStatus();
+  if (!result.configured) { panel.innerText = 'Email accounts need Firebase configuration. Open Account provider configuration below.'; return; }
+  if (!result.signedIn) { panel.innerText = 'Not signed in with email.'; return; }
+  panel.innerText = `${result.email || 'Email account'} · ${result.emailVerified ? 'verified and ready to sync' : 'verification required before vault sync'}${result.error ? ` · ${result.error}` : ''}`;
+  if (result.emailVerified) document.getElementById('account-vault-email').checked = true;
 }
 
 async function saveOAuthConfiguration() {
@@ -4099,14 +4163,15 @@ async function refreshAccountVaultStatus() {
   const result = await window.nexus.accountVaultStatus();
   const panel = document.getElementById('account-vault-status');
   if (!panel || !result.ok) return;
-  const linked = result.github && result.google ? 'GitHub and Google are connected.' : result.github || result.google ? 'One cloud account is connected; connect both for two-location backup.' : 'Connect GitHub or Google before syncing.';
+  const connectionCount = [result.email, result.github, result.google].filter(Boolean).length;
+  const linked = connectionCount > 1 ? `${connectionCount} account destinations are connected.` : connectionCount === 1 ? 'One account destination is connected; add another for redundant backup.' : 'Connect an email account, GitHub, or Google before syncing.';
   panel.innerText = `${linked}${result.lastSyncedAt ? ` Last synced ${new Date(result.lastSyncedAt).toLocaleString()}.` : ''} The passphrase is never saved.`;
 }
 
 function accountVaultFormValue() {
   return {
     passphrase: document.getElementById('account-vault-passphrase').value,
-    providers: { github: document.getElementById('account-vault-github').checked, google: document.getElementById('account-vault-google').checked },
+    providers: { email: document.getElementById('account-vault-email').checked, github: document.getElementById('account-vault-github').checked, google: document.getElementById('account-vault-google').checked },
   };
 }
 
@@ -4115,7 +4180,7 @@ async function syncAccountVault() {
   if (value.passphrase.length < 12) { showToast('error', 'Choose a longer sync passphrase', 'Use at least 12 characters. It cannot be recovered by Nexus.'); return; }
   document.getElementById('account-vault-status').innerText = 'Encrypting and syncing the account vault…';
   const result = await window.nexus.accountVaultSync({ ...value, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() });
-  const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : 'Google Drive').join(' and ');
+  const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : name === 'google' ? 'Google Drive' : 'Nexus email account').join(', ');
   showToast(result.ok ? 'success' : 'error', result.ok ? 'Account vault synced' : 'Account vault sync failed', result.ok ? `Encrypted backup saved to ${destinations}.` : result.error);
   document.getElementById('account-vault-passphrase').value = '';
   refreshAccountVaultStatus();

@@ -77,6 +77,11 @@ npm run dist
 
 ## Using it
 
+Email account sign-up and encrypted email-vault sync require a one-time
+Firebase project configuration. See **`FIREBASE_SETUP.md`** for the exact
+Authentication and Firestore Rules setup. GitHub and Google sign-in continue
+to work independently.
+
 - **Projects tab:** Click **Browse…**, pick a real project folder on your
   computer, give it a name, set the start command (e.g. `npm run dev` for
   Vite/Next.js, or `npm start` for Create React App) and the port it runs

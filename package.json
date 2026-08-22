@@ -60,6 +60,7 @@
       "oauthIntegrations.js",
       "googleDriveClient.js",
       "accountVault.js",
+      "firebaseAccountClient.js",
       "codingModelProviders.js",
       "providerDiscovery.js",
       "gitWorkflow.js",
