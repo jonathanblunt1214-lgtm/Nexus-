@@ -5,6 +5,10 @@ const { ipcMain, webContents } = require('electron');
 const { registerSection7Ipc } = require('./section7Ipc');
 const { registerSection8Ipc } = require('./section8Ipc');
 const { listProjects } = require('./projectRegistry');
+const { createSenderValidator, secureIpcHandlers } = require('./ipcSecurity');
+
+const assertTrustedSender = createSenderValidator(__dirname);
+secureIpcHandlers(ipcMain, assertTrustedSender);
 
 function canonicalProjectPath(value) {
   try {
@@ -23,4 +27,5 @@ function isAuthorizedProjectRoot(projectRoot) {
 
 registerSection7Ipc({ ipcMain, webContents });
 registerSection8Ipc({ ipcMain, isAuthorizedProjectRoot });
+global.nexusAssertTrustedIpcSender = assertTrustedSender;
 require('./main.js');

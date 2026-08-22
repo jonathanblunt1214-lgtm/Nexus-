@@ -661,6 +661,11 @@ function renderProjects() {
         </div>
         <p class="path">${escapeHtml(p.folder)}</p>
         <p class="meta">${escapeHtml(p.command)} — port ${escapeHtml(p.port)}</p>
+        <div class="row" style="margin-top:6px; align-items:center;">
+          <span class="pill" id="project-trust-${p.id}">RESTRICTED</span>
+          <button class="btn tiny btn-secondary" onclick="configureWorkspaceTrust(${p.id}, event)">Review permissions</button>
+          <button class="btn tiny btn-secondary" onclick="revokeWorkspaceTrust(${p.id}, event)">Revoke</button>
+        </div>
         <label class="muted small" style="display:flex; align-items:center; gap:6px; margin-top:4px; cursor:pointer;" title="Run inside a Docker container that can only see this project's own folder - it can't read or write anything else on this machine, including Nexus itself.">
           <input type="checkbox" ${p.sandboxed ? 'checked' : ''} ${p.running ? 'disabled' : ''} onclick="toggleSandboxed(${p.id}, event)">
           🛡️ Sandboxed (Docker)
@@ -681,6 +686,7 @@ function renderProjects() {
     list.appendChild(card);
   });
   attachConfigPanel();
+  refreshWorkspaceTrustBadges();
   const active = projects.find((p) => p.id === activeProjectId);
   document.getElementById('header-active-name').innerText = active ? active.name : 'None';
 }
@@ -3227,6 +3233,45 @@ function readGitHubAutoSyncSettings() {
   const requested = Number.parseInt(localStorage.getItem('nexus_github_auto_sync_seconds') || '300', 10);
   const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
   return { enabled, seconds };
+}
+
+async function refreshWorkspaceTrustBadges() {
+  for (const project of projects) {
+    const trust = await window.nexus.getWorkspaceTrust(project.folder);
+    const badge = document.getElementById(`project-trust-${project.id}`);
+    if (!badge) continue;
+    badge.innerText = trust.trusted ? `TRUSTED · ${trust.permissions.length} permissions` : 'RESTRICTED';
+    badge.classList.toggle('on', Boolean(trust.trusted));
+    badge.title = trust.trusted ? trust.permissions.join(', ') : 'No project commands may run.';
+  }
+}
+
+async function configureWorkspaceTrust(id, event) {
+  event.stopPropagation();
+  const project = projects.find((item) => item.id === id);
+  if (!project) return;
+  if (!confirm(`Trust ${project.name}?\n\nThis project may contain untrusted code. Choose OK only after reviewing it. Nexus will ask which capabilities to allow next.`)) return;
+  const choices = [
+    ['commands', 'Run project commands, services, tests, and tools?'],
+    ['dependencies', 'Install, remove, or update dependencies?'],
+    ['git-write', 'Commit and push changes to GitHub?'],
+    ['deploy', 'Run deployment commands?'],
+    ['secrets', 'Expose configured project secrets to approved processes?'],
+  ];
+  const permissions = choices.filter(([, question]) => confirm(`${project.name}: ${question}`)).map(([permission]) => permission);
+  const result = await window.nexus.setWorkspaceTrust(project.folder, permissions);
+  if (!result.ok) showToast('error', 'Could not save Workspace Trust', result.error);
+  else showToast('success', 'Workspace Trust updated', permissions.length ? permissions.join(', ') : 'Restricted mode remains active.');
+  refreshWorkspaceTrustBadges();
+}
+
+async function revokeWorkspaceTrust(id, event) {
+  event.stopPropagation();
+  const project = projects.find((item) => item.id === id);
+  if (!project || !confirm(`Revoke all execution permissions for ${project.name}?`)) return;
+  await window.nexus.revokeWorkspaceTrust(project.folder);
+  showToast('info', 'Workspace Trust revoked', `${project.name} is now restricted.`);
+  refreshWorkspaceTrustBadges();
 }
 
 async function saveAllDirtyEditorFiles(source = 'Automatic save') {

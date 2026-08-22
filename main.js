@@ -11,6 +11,7 @@ const { writeJsonAtomic } = require('./atomicWrite');
 const os = require('os');
 const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
+const { pathToFileURL } = require('url');
 const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
@@ -106,6 +107,31 @@ function saveConfig(cfg) {
   return configWriteQueue;
 }
 
+const WORKSPACE_PERMISSIONS = new Set(['commands', 'dependencies', 'git-write', 'deploy', 'secrets']);
+
+function workspaceTrustKey(folder) {
+  try {
+    const resolved = fs.realpathSync(path.resolve(folder));
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  } catch { return null; }
+}
+
+function getWorkspaceTrust(folder) {
+  const key = workspaceTrustKey(folder);
+  const record = key ? loadConfig().workspaceTrust?.[key] : null;
+  return record
+    ? { trusted: true, restricted: false, permissions: record.permissions || [], trustedAt: record.trustedAt }
+    : { trusted: false, restricted: true, permissions: [] };
+}
+
+function requireWorkspacePermission(folder, permission) {
+  const trust = getWorkspaceTrust(folder);
+  if (!trust.trusted || !trust.permissions.includes(permission)) {
+    return { ok: false, error: `Workspace Trust required for ${permission}. Review this project on the Projects screen first.`, code: 'WORKSPACE_TRUST_REQUIRED' };
+  }
+  return null;
+}
+
 // ---- Terminal state -------------------------------------------------
 // A real "cd" doesn't persist across separate child_process calls, so we
 // track the working directory ourselves and special-case `cd`.
@@ -146,7 +172,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true, // needed for the real live-preview panel
-      sandbox: false,
+      sandbox: true,
     },
   });
 
@@ -185,6 +211,8 @@ function setupPreviewSession() {
   // arbitrary third-party sites - stripping these specific framing headers
   // here is safe and is exactly what a local dev-preview tool needs to do.
   const previewSession = session.fromPartition('persist:nexus-preview');
+  previewSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+  previewSession.setPermissionCheckHandler(() => false);
   previewSession.webRequest.onHeadersReceived((details, callback) => {
     const headers = { ...details.responseHeaders };
     for (const key of Object.keys(headers)) {
@@ -256,6 +284,11 @@ function isAllowedPopupUrl(urlString) {
 
 function setupPopupAllowlist() {
   app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType() === 'window') {
+      contents.on('will-navigate', (event, url) => {
+        if (url !== pathToFileURL(path.join(__dirname, 'index.html')).href) event.preventDefault();
+      });
+    }
     if (contents.getType() !== 'webview') return;
 
     contents.setWindowOpenHandler(({ url }) => {
@@ -309,6 +342,7 @@ app.on('activate', () => {
 });
 
 ipcMain.on('set-projects-for-exit-sync', (_event, { projects }) => {
+  global.nexusAssertTrustedIpcSender?.(_event);
   projectsForExitSync = Array.isArray(projects)
     ? projects.filter((project) => project && typeof project.folder === 'string' && typeof project.name === 'string')
       .map(({ folder, name }) => ({ folder, name }))
@@ -318,6 +352,27 @@ ipcMain.on('set-projects-for-exit-sync', (_event, { projects }) => {
 // =======================================================================
 // IPC handlers — everything the renderer (UI) is allowed to ask us to do.
 // =======================================================================
+
+ipcMain.handle('workspace-trust:get', (_event, { folder }) => ({ ok: true, ...getWorkspaceTrust(folder) }));
+
+ipcMain.handle('workspace-trust:set', async (_event, { folder, permissions }) => {
+  const key = workspaceTrustKey(folder);
+  if (!key) return { ok: false, error: 'Project folder does not exist.' };
+  const allowed = [...new Set(Array.isArray(permissions) ? permissions.filter((item) => WORKSPACE_PERMISSIONS.has(item)) : [])];
+  const cfg = loadConfig();
+  cfg.workspaceTrust = cfg.workspaceTrust || {};
+  cfg.workspaceTrust[key] = { permissions: allowed, trustedAt: new Date().toISOString() };
+  await saveConfig(cfg);
+  return { ok: true, trusted: true, permissions: allowed };
+});
+
+ipcMain.handle('workspace-trust:revoke', async (_event, { folder }) => {
+  const key = workspaceTrustKey(folder);
+  const cfg = loadConfig();
+  if (key && cfg.workspaceTrust) delete cfg.workspaceTrust[key];
+  await saveConfig(cfg);
+  return { ok: true, trusted: false, permissions: [] };
+});
 
 // --- Folder picker: real native OS dialog ---
 ipcMain.handle('pick-folder', async () => {
@@ -611,6 +666,8 @@ function launchProjectSandboxed(id, folder, command, port, secretsEnv) {
 }
 
 ipcMain.handle('launch-project', async (_event, { id, folder, command, port, projectUid, sandboxed }) => {
+  const trustError = requireWorkspacePermission(folder, 'commands');
+  if (trustError) return trustError;
   if (runningProcesses.has(id)) {
     return { ok: false, error: 'Already running.' };
   }
@@ -681,7 +738,11 @@ ipcMain.handle('is-project-running', (_event, { id }) => runningProcesses.has(id
 
 // --- Open a URL in the user's real default browser ---
 ipcMain.handle('open-external', (_event, { url }) => {
-  shell.openExternal(url);
+  let parsed;
+  try { parsed = new URL(url); } catch { return { ok: false, error: 'Invalid URL.' }; }
+  if (!['https:', 'mailto:'].includes(parsed.protocol)) return { ok: false, error: 'Only HTTPS and mail links may open externally.' };
+  shell.openExternal(parsed.href);
+  return { ok: true };
 });
 
 // --- Gemini API key: stored encrypted at rest via Electron's safeStorage ---
@@ -1778,17 +1839,23 @@ ipcMain.handle('git-create-branch', async (_event, { folder, branchName }) => {
 });
 
 ipcMain.handle('git-commit', async (_event, { folder, message }) => {
+  const trustError = requireWorkspacePermission(folder, 'git-write');
+  if (trustError) return trustError;
   const add = await runGit(folder, 'add -A');
   if (!add.ok) return add;
   return runGitArgs(folder, ['commit', '-m', message]);
 });
 
 ipcMain.handle('git-push', async (_event, { folder }) => {
+  const trustError = requireWorkspacePermission(folder, 'git-write');
+  if (trustError) return trustError;
   return runGit(folder, 'push -u origin HEAD');
 });
 
 async function autoSyncProject(folder, projectName) {
   if (!folder || !fs.existsSync(folder)) return { ok: false, skipped: true, error: 'Folder not found.' };
+  const trustError = requireWorkspacePermission(folder, 'git-write');
+  if (trustError) return { ...trustError, skipped: true };
 
   const nexusFolder = path.resolve(__dirname).toLowerCase();
   const projectFolder = path.resolve(folder).toLowerCase();
@@ -1943,6 +2010,7 @@ function requestRendererSaveBeforeExit() {
       resolve({ ok: false, failures: ['Timed out while saving open project files.'] });
     }, 30_000);
     const onComplete = (_event, payload) => {
+      try { global.nexusAssertTrustedIpcSender?.(_event); } catch { return; }
       if (payload?.requestId !== requestId) return;
       clearTimeout(timeout);
       ipcMain.removeListener('exit-save-complete', onComplete);
@@ -1958,6 +2026,8 @@ function requestRendererSaveBeforeExit() {
 const deployProcesses = new Map();
 
 ipcMain.handle('run-deploy', (_event, { id, folder, command }) => {
+  const trustError = requireWorkspacePermission(folder, 'deploy');
+  if (trustError) return trustError;
   if (deployProcesses.has(id)) return { ok: false, error: 'A deploy is already running.' };
   if (!fs.existsSync(folder)) return { ok: false, error: `Folder does not exist: ${folder}` };
 
@@ -2374,6 +2444,8 @@ function setServiceState(key, state, extra = {}) {
 }
 
 ipcMain.handle('start-service', async (_event, { projectId, name, folder, command, healthCheckUrl, projectUid }) => {
+  const trustError = requireWorkspacePermission(folder, 'commands');
+  if (trustError) return trustError;
   const key = serviceKey(projectId, name);
   if (services.get(key)?.child) return { ok: false, error: 'Already running.' };
   if (!fs.existsSync(folder)) return { ok: false, error: `Folder does not exist: ${folder}` };
@@ -2470,6 +2542,8 @@ function runCommandForPipeline(folder, cmd) {
 }
 
 ipcMain.handle('run-audit', async (_event, { folder }) => {
+  const trustError = requireWorkspacePermission(folder, 'commands');
+  if (trustError) return trustError;
   if (!fs.existsSync(path.join(folder, 'package.json'))) {
     return { ok: false, error: 'No package.json in this folder — nothing to audit.' };
   }
@@ -2477,10 +2551,14 @@ ipcMain.handle('run-audit', async (_event, { folder }) => {
 });
 
 ipcMain.handle('run-audit-fix', async (_event, { folder }) => {
+  const trustError = requireWorkspacePermission(folder, 'dependencies');
+  if (trustError) return trustError;
   return runCommandForPipeline(folder, 'npm audit fix');
 });
 
 ipcMain.handle('run-tests', async (_event, { folder }) => {
+  const trustError = requireWorkspacePermission(folder, 'commands');
+  if (trustError) return trustError;
   let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf8'));
@@ -2807,6 +2885,8 @@ ipcMain.handle('npm-check-outdated', async (_event, { folder }) => {
 });
 
 function runNpmStreamed(opId, folder, args) {
+  const trustError = requireWorkspacePermission(folder, 'dependencies');
+  if (trustError) return trustError;
   let child;
   try {
     child = spawn('npm', args, { cwd: folder, shell: true });

@@ -37,6 +37,7 @@
     },
     "files": [
       "bootstrap.js",
+      "ipcSecurity.js",
       "main.js",
       "preload.js",
       "renderer.js",
