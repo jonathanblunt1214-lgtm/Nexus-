@@ -1414,18 +1414,27 @@ Type "help" for tips.
 
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
-      <div class="card" aria-labelledby="github-auto-sync-title">
-        <label class="label" id="github-auto-sync-title">Project Auto-sync to GitHub</label>
-        <p class="muted small" style="margin-top:6px;">Automatically commits and pushes changed projects that have a GitHub <code>origin</code>. Nexus application updates remain separate. The Nexus source folder is only eligible when its project name is exactly <strong>Nexus</strong>.</p>
+      <div class="card" aria-labelledby="github-settings-title">
+        <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Push</label>
+        <p class="muted small" style="margin-top:6px;">Log in with a GitHub Personal Access Token carrying <code>repo</code> access. Nexus stores it encrypted on this Windows account.</p>
+        <div class="form-row" style="margin-top:8px;">
+          <input type="password" id="github-token" placeholder="GitHub token (ghp_…)">
+          <button class="btn" id="github-login-btn" onclick="githubConnect()">Log in</button>
+          <button class="btn btn-secondary" id="github-logout-btn" onclick="githubDisconnect()">Log out</button>
+        </div>
+        <p class="muted small" id="github-status" style="margin-top:8px;">Logged out.</p>
+        <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
+        <p class="muted small">Auto Push commits and pushes changed saved projects with a GitHub <code>origin</code>. Nexus application updates remain separate. The Nexus source folder is eligible only when its project name is exactly <strong>Nexus</strong>.</p>
         <div class="form-row" style="margin-top:8px; align-items:center;">
           <label class="muted small" style="display:flex; align-items:center; gap:7px;">
             <input type="checkbox" id="github-auto-sync-enabled" onchange="saveGitHubAutoSyncSettings()">
-            Enable automatic project sync
+            Enable Auto Push
           </label>
-          <input type="number" id="github-auto-sync-seconds" min="30" max="600" step="30" value="300" aria-label="Auto-sync interval in seconds" style="max-width:120px;" onchange="saveGitHubAutoSyncSettings()">
+          <label class="muted small" for="github-auto-sync-seconds">Push interval</label>
+          <input type="number" id="github-auto-sync-seconds" min="30" max="600" step="1" value="300" inputmode="numeric" aria-label="Auto Push interval in seconds" style="max-width:120px;" onchange="saveGitHubAutoSyncSettings()">
           <span class="muted small">seconds (30–600)</span>
         </div>
-        <p class="muted small" id="github-auto-sync-status" style="margin-top:8px;">Auto-sync is off.</p>
+        <p class="muted small" id="github-auto-sync-status" style="margin-top:8px;">Auto Push is off.</p>
       </div>
 
       <div class="card update-card" aria-labelledby="update-card-title">
@@ -1489,20 +1498,6 @@ Type "help" for tips.
           <input type="text" id="gcp-project-id" placeholder="my-firebase-project">
           <button class="btn" onclick="saveGcpProject()">Save</button>
         </div>
-      </div>
-
-      <div class="card">
-        <label class="label">🔐 GitHub — powers the GitHub actions in the Ship tab (create branch, commit via API, open a PR) and the AI Changelog</label>
-        <p class="muted small">
-          Paste a Personal Access Token with <code>repo</code> scope. Create one at
-          github.com → Settings → Developer settings → Personal access tokens → Generate new token (classic). Stored encrypted at rest, same as your other API keys.
-        </p>
-        <div class="form-row" style="margin-top:8px;">
-          <input type="password" id="github-token" placeholder="ghp_...">
-          <button class="btn" onclick="githubConnect()">Connect</button>
-          <button class="btn btn-secondary" onclick="githubDisconnect()">Disconnect</button>
-        </div>
-        <p class="muted small" id="github-status" style="margin-top:8px;">Not connected.</p>
       </div>
 
       <div class="card">
