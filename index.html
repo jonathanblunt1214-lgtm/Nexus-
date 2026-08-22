@@ -1628,12 +1628,15 @@ Type "help" for tips.
         <div class="form-row" style="margin-top:8px;">
           <input type="text" id="secret-key-name" placeholder="Name, e.g. OPENAI_API_KEY">
           <input type="password" id="secret-key-value" placeholder="Value">
+          <select id="secret-provider"><option value="local">Local encrypted</option><option value="github-actions">GitHub Actions</option><option value="github-environment">GitHub Environment</option></select>
+          <input type="date" id="secret-expires-at" aria-label="Expiration date">
           <button class="btn" onclick="saveProjectSecret()">Save</button>
         </div>
         <div id="secrets-list" class="suggestions-list"></div>
         <div class="form-row" style="margin-top:10px;">
           <button class="btn btn-secondary" onclick="exportSecretsToEnv()">Export to .env (so this project's own code can read them)</button>
         </div>
+        <p class="muted small" style="margin-top:8px">Publishing uses GitHub public-key sealed-box encryption. Nexus records names, providers, dates, and actions in the audit trail—never secret values.</p>
       </div>
 
       <div class="card" style="flex-shrink:0;">

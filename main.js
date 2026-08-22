@@ -1850,9 +1850,11 @@ ipcMain.handle('git-create-branch', async (_event, { folder, branchName }) => {
   return runGitArgs(folder, ['checkout', '-b', branchName]);
 });
 
-ipcMain.handle('git-commit', async (_event, { folder, message }) => {
+ipcMain.handle('git-commit', async (_event, { folder, message, allowSecrets }) => {
   const trustError = requireWorkspacePermission(folder, 'git-write');
   if (trustError) return trustError;
+  const scan = await require('./secretScanner').scanStaged(folder);
+  if (scan.findings.length && !allowSecrets) { diagnostics.record('warn', 'secrets', 'commit-blocked', { findings: scan.findings }); return { ok: false, secretScanBlocked: true, findings: scan.findings, error: 'Potential secrets found in staged files.' }; }
   return runGitArgs(folder, ['commit', '-m', message]);
 });
 
@@ -2540,14 +2542,14 @@ function projectSecretsKey(projectUid) {
   return `projectSecrets.${projectUid}`;
 }
 
-ipcMain.handle('save-project-secret', async (_event, { projectUid, key, value }) => {
+ipcMain.handle('save-project-secret', async (_event, { projectUid, key, value, metadata }) => {
   if (!projectUid) return { ok: false, error: 'Missing project_uid — refusing to store an unscoped secret.' };
   const cfg = loadConfig();
   const storeKey = projectSecretsKey(projectUid);
   const secrets = cfg[storeKey] || {};
 
   if (safeStorage.isEncryptionAvailable()) {
-    secrets[key] = safeStorage.encryptString(value).toString('base64');
+    secrets[key] = { encrypted: safeStorage.encryptString(value).toString('base64'), provider: metadata?.provider || 'local', expiresAt: metadata?.expiresAt || null, rotatedAt: new Date().toISOString() };
   } else {
     return { ok: false, error: 'OS-level encryption is unavailable on this machine — refusing to store in plaintext.' };
   }
@@ -2562,13 +2564,14 @@ ipcMain.handle('list-project-secrets', (_event, { projectUid }) => {
   const cfg = loadConfig();
   const secrets = cfg[projectSecretsKey(projectUid)] || {};
   // Return keys only + a decrypted preview flag — never the raw encrypted blob to the renderer needlessly.
-  return { ok: true, keys: Object.keys(secrets) };
+  return { ok: true, keys: Object.entries(secrets).map(([key, record]) => ({ key, provider: typeof record === 'object' ? record.provider : 'local', expiresAt: typeof record === 'object' ? record.expiresAt : null, rotatedAt: typeof record === 'object' ? record.rotatedAt : null })) };
 });
 
 ipcMain.handle('reveal-project-secret', (_event, { projectUid, key }) => {
   const cfg = loadConfig();
   const secrets = cfg[projectSecretsKey(projectUid)] || {};
-  const encVal = secrets[key];
+  const record = secrets[key];
+  const encVal = typeof record === 'object' ? record.encrypted : record;
   if (!encVal) return { ok: false, error: 'Not found.' };
   if (!safeStorage.isEncryptionAvailable()) return { ok: false, error: 'Encryption unavailable on this machine.' };
   try {
@@ -2576,6 +2579,16 @@ ipcMain.handle('reveal-project-secret', (_event, { projectUid, key }) => {
   } catch (err) {
     return { ok: false, error: err.message };
   }
+});
+
+ipcMain.handle('publish-project-secret', async (_event, { folder, projectUid, key, environment }) => {
+  const denied = requireWorkspacePermission(folder, 'secrets'); if (denied) return denied;
+  const token = getGithubToken(); const coordinates = await githubCoordinatesForFolder(folder);
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const cfg = loadConfig(); const record = (cfg[projectSecretsKey(projectUid)] || {})[key]; const encrypted = typeof record === 'object' ? record.encrypted : record;
+  if (!encrypted || !safeStorage.isEncryptionAvailable()) return { ok: false, error: 'Local secret not found.' };
+  try { const value = safeStorage.decryptString(Buffer.from(encrypted, 'base64')); await require('./githubClient').putActionsSecret(token, coordinates.owner, coordinates.repo, key, value, environment || null); diagnostics.record('info', 'secrets', 'published', { key, provider: environment ? `github-environment:${environment}` : 'github-actions' }); return { ok: true }; } catch (error) { diagnostics.record('error', 'secrets', 'publish-failed', { key, error: error.message }); return { ok: false, error: error.message }; }
 });
 
 ipcMain.handle('delete-project-secret', async (_event, { projectUid, key }) => {
@@ -3180,8 +3193,9 @@ function decryptAllProjectSecrets(projectUid) {
   const secrets = cfg[projectSecretsKey(projectUid)] || {};
   const out = {};
   if (!safeStorage.isEncryptionAvailable()) return out;
-  for (const [key, encVal] of Object.entries(secrets)) {
+  for (const [key, record] of Object.entries(secrets)) {
     try {
+      const encVal = typeof record === 'object' ? record.encrypted : record;
       out[key] = safeStorage.decryptString(Buffer.from(encVal, 'base64'));
     } catch {
       // skip anything that fails to decrypt rather than crash the whole set

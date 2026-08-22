@@ -7,6 +7,7 @@
 // Gemini/NIM calls.
 
 const API_BASE = 'https://api.github.com';
+const sodium = require('libsodium-wrappers');
 
 async function githubRequest(token, method, urlPath, body) {
   const res = await fetch(`${API_BASE}${urlPath}`, {
@@ -149,6 +150,7 @@ async function rerunWorkflow(token, owner, repo, runId, failedOnly = false) { re
 async function createRelease(token, owner, repo, tag, name, body, target) { return githubRequest(token, 'POST', `/repos/${owner}/${repo}/releases`, { tag_name: tag, name, body, target_commitish: target, draft: false, prerelease: false, generate_release_notes: !body }); }
 async function rollbackDeployment(token, owner, repo, deploymentId) { return githubRequest(token, 'POST', `/repos/${owner}/${repo}/deployments/${deploymentId}/statuses`, { state: 'inactive', description: 'Marked inactive from Nexus rollback control' }); }
 async function downloadGitHubArchive(token, urlPath) { const res = await fetch(urlPath.startsWith('http') ? urlPath : `${API_BASE}${urlPath}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } }); if (!res.ok) throw new Error(`GitHub download failed (${res.status})`); return Buffer.from(await res.arrayBuffer()); }
+async function putActionsSecret(token, owner, repo, name, value, environment) { const base = environment ? `/repos/${owner}/${repo}/environments/${encodeURIComponent(environment)}/secrets` : `/repos/${owner}/${repo}/actions/secrets`; const key = await githubRequest(token, 'GET', `${base}/public-key`); await sodium.ready; const encrypted = sodium.crypto_box_seal(sodium.from_string(value), sodium.from_base64(key.key, sodium.base64_variants.ORIGINAL)); return githubRequest(token, 'PUT', `${base}/${encodeURIComponent(name)}`, { encrypted_value: sodium.to_base64(encrypted, sodium.base64_variants.ORIGINAL), key_id: key.key_id }); }
 
 async function createBranch(token, owner, repo, branch, fromBranch) {
   const base = await githubRequest(token, 'GET', `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(fromBranch)}`);
@@ -187,6 +189,7 @@ module.exports = {
   createRelease,
   rollbackDeployment,
   downloadGitHubArchive,
+  putActionsSecret,
   createBranch,
   getCommits,
 };

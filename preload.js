@@ -107,7 +107,7 @@ contextBridge.exposeInMainWorld('nexus', {
   // Ship: git actions, deploy runner, feature planner
   gitStatus: (folder) => ipcRenderer.invoke('git-status', { folder }),
   gitCreateBranch: (folder, branchName) => ipcRenderer.invoke('git-create-branch', { folder, branchName }),
-  gitCommit: (folder, message) => ipcRenderer.invoke('git-commit', { folder, message }),
+  gitCommit: (folder, message, allowSecrets) => ipcRenderer.invoke('git-commit', { folder, message, allowSecrets }),
   gitPush: (folder) => ipcRenderer.invoke('git-push', { folder }),
   gitWorkflowStatus: (folder) => ipcRenderer.invoke('git-workflow-status', { folder }),
   gitStagePaths: (folder, paths) => ipcRenderer.invoke('git-stage-paths', { folder, paths }),
@@ -144,10 +144,11 @@ contextBridge.exposeInMainWorld('nexus', {
 
   // Per-project config & secrets (real UID, encrypted-at-rest, no plaintext fallback)
   ensureProjectConfig: (folder) => ipcRenderer.invoke('ensure-project-config', { folder }),
-  saveProjectSecret: (projectUid, key, value) => ipcRenderer.invoke('save-project-secret', { projectUid, key, value }),
+  saveProjectSecret: (projectUid, key, value, metadata) => ipcRenderer.invoke('save-project-secret', { projectUid, key, value, metadata }),
   listProjectSecrets: (projectUid) => ipcRenderer.invoke('list-project-secrets', { projectUid }),
   revealProjectSecret: (projectUid, key) => ipcRenderer.invoke('reveal-project-secret', { projectUid, key }),
   deleteProjectSecret: (projectUid, key) => ipcRenderer.invoke('delete-project-secret', { projectUid, key }),
+  publishProjectSecret: (folder, projectUid, key, environment) => ipcRenderer.invoke('publish-project-secret', { folder, projectUid, key, environment }),
   exportSecretsToEnv: (folder, projectUid) => ipcRenderer.invoke('export-secrets-to-env', { folder, projectUid }),
   scanIntegrations: (folder) => ipcRenderer.invoke('scan-integrations', { folder }),
 

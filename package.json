@@ -18,6 +18,7 @@
   "license": "MIT",
   "dependencies": {
     "electron-updater": "^6.3.9",
+    "libsodium-wrappers": "^0.7.15",
     "tree-sitter-javascript": "0.25.0",
     "tree-sitter-typescript": "0.23.2",
     "typescript": "~5.8.2",
@@ -59,6 +60,7 @@
       "debugAdapter.js",
       "portableProjectConfig.js",
       "operationalDiagnostics.js",
+      "secretScanner.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",
