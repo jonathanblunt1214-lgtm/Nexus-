@@ -105,6 +105,7 @@ contextBridge.exposeInMainWorld('nexus', {
   gitCreateBranch: (folder, branchName) => ipcRenderer.invoke('git-create-branch', { folder, branchName }),
   gitCommit: (folder, message) => ipcRenderer.invoke('git-commit', { folder, message }),
   gitPush: (folder) => ipcRenderer.invoke('git-push', { folder }),
+  gitAutoSync: (folder, projectName) => ipcRenderer.invoke('git-auto-sync', { folder, projectName }),
   runDeploy: (id, folder, command) => ipcRenderer.invoke('run-deploy', { id, folder, command }),
   onDeployLog: (callback) => ipcRenderer.on('deploy-log', (_e, payload) => callback(payload)),
   onDeployClosed: (callback) => ipcRenderer.on('deploy-closed', (_e, payload) => callback(payload)),
