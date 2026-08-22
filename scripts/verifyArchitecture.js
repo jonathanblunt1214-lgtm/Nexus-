@@ -1,5 +1,5 @@
 // scripts/verifyArchitecture.js
-// Regression gate for the consolidated Nexus upgrade through Section 6.
+// Regression gate for the consolidated Nexus upgrade through Section 7.
 
 const fs = require('fs');
 const path = require('path');
@@ -48,6 +48,10 @@ const requiredFiles = [
   ['governanceEngine.js', 'truthful lifecycle and cost governance'],
   ['evalsEngine.js', 'evaluation gates'],
   ['memoryEngine.js', 'project-scoped semantic memory'],
+  ['visualContext.js', 'local-preview visual context'],
+  ['runtimeDebugger.js', 'isolated runtime debugging'],
+  ['section7Ipc.js', 'narrow vision/debugger IPC bridge'],
+  ['bootstrap.js', 'Section 7 IPC bootstrap entrypoint'],
 ];
 
 for (const [file, purpose] of requiredFiles) {
@@ -92,9 +96,37 @@ if (!/sourceCommitHash/.test(memorySource) || !/security\/constitution constrain
   console.error('[FAIL] memoryEngine.js must require accepted commit provenance and security precedence.');
 }
 
+const visionSource = fs.readFileSync(path.join(__dirname, '..', 'visualContext.js'), 'utf8');
+if (!/localhost/.test(visionSource) || !/127\.0\.0\.1/.test(visionSource) || !/untrusted visual evidence/.test(visionSource)) {
+  failures += 1;
+  console.error('[FAIL] visualContext.js must remain local-preview-only and treat screenshot contents as untrusted.');
+}
+
+const debuggerSource = fs.readFileSync(path.join(__dirname, '..', 'runtimeDebugger.js'), 'utf8');
+if (!/--inspect=127\.0\.0\.1:0/.test(debuggerSource) || !/process\.pid/.test(debuggerSource) || !/main process is forbidden/.test(debuggerSource)) {
+  failures += 1;
+  console.error('[FAIL] runtimeDebugger.js must launch isolated loopback inspector targets and forbid Nexus main-process attachment.');
+}
+if (/inspector\.Session\s*\(/.test(debuggerSource)) {
+  failures += 1;
+  console.error('[FAIL] runtimeDebugger.js must not attach an inspector.Session to the Nexus process itself.');
+}
+
+const bridgeSource = fs.readFileSync(path.join(__dirname, '..', 'section7Ipc.js'), 'utf8');
+if (!/vision:capture-preview/.test(bridgeSource) || !/debugger:launch-isolated/.test(bridgeSource)) {
+  failures += 1;
+  console.error('[FAIL] Section 7 IPC must expose only the narrow visual/debugger control surface.');
+}
+
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+if (pkg.main !== 'bootstrap.js') {
+  failures += 1;
+  console.error('[FAIL] package.json must load bootstrap.js so Section 7 IPC is registered before main.js.');
+}
+
 if (failures > 0) {
   console.error(`Architecture audit failed with ${failures} violation(s).`);
   process.exit(1);
 }
 
-console.log('[PASS] Consolidated Section 0-6 architecture guardrails verified.');
+console.log('[PASS] Consolidated Section 0-7 architecture guardrails verified.');
