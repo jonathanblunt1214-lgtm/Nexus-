@@ -1345,6 +1345,19 @@ Type "help" for tips.
       </div>
 
       <div class="card" style="flex-shrink:0;">
+        <label class="label">Debugger — Node.js inspector</label>
+        <div class="form-row" style="margin-top:8px;"><input id="debug-script" placeholder="Script path inside project, e.g. src/server.js"><input id="debug-args" placeholder="Arguments"><button class="btn" onclick="launchDebugger()">Launch</button></div>
+        <div class="form-row" style="margin-top:8px;"><input id="debug-attach-pid" type="number" placeholder="PID"><input id="debug-attach-url" placeholder="ws://127.0.0.1:9229/…"><button class="btn btn-secondary" onclick="attachDebugger()">Attach local process</button></div>
+        <details style="margin-top:8px;"><summary>Other languages via Debug Adapter Protocol</summary><div class="form-row" style="margin-top:8px"><input id="debug-dap-command" placeholder="Absolute path to debug adapter executable"><input id="debug-dap-id" placeholder="Adapter ID, e.g. python"><button class="btn btn-secondary" onclick="launchDebugAdapter()">Start adapter</button></div><textarea id="debug-dap-config" class="mono" rows="5" style="width:100%; margin-top:8px" placeholder='{"request":"launch","program":"C:\\project\\app.py"}'></textarea></details>
+        <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="debugControl('pause')">Pause</button><button class="btn btn-secondary" onclick="debugControl('resume')">Continue</button><button class="btn btn-secondary" onclick="debugControl('over')">Step over</button><button class="btn btn-secondary" onclick="debugControl('into')">Step into</button><button class="btn btn-secondary" onclick="debugControl('out')">Step out</button><select id="debug-exception-mode" onchange="setDebugExceptionMode(this.value)"><option value="none">Do not pause on exceptions</option><option value="uncaught">Pause on uncaught</option><option value="all">Pause on all exceptions</option></select></div>
+        <div class="form-row" style="margin-top:8px;"><input id="debug-breakpoint-url" placeholder="Exact script URL"><input id="debug-breakpoint-line" type="number" min="1" placeholder="Line"><input id="debug-breakpoint-condition" placeholder="Optional condition"><button class="btn btn-secondary" onclick="addDebugBreakpoint()">Add breakpoint</button></div>
+        <div class="form-row" style="margin-top:8px;"><input id="debug-watch-expression" placeholder="Watch, e.g. state.user"><button class="btn btn-secondary" onclick="evaluateDebugWatch()">Evaluate</button><button class="btn btn-secondary" onclick="refreshDebugger()">↻ Refresh</button><button class="btn btn-danger" onclick="stopDebugger()">Stop</button></div>
+        <p id="debug-status" class="muted small" style="margin-top:8px;">No debug session.</p>
+        <div class="form-grid" style="margin-top:8px;"><div><label class="label">Call stack</label><div id="debug-call-stack" class="suggestions-list"></div></div><div><label class="label">Variables &amp; watches</label><div id="debug-variables" class="suggestions-list"></div></div></div>
+        <details style="margin-top:8px;"><summary>Loaded scripts and source maps</summary><div id="debug-scripts" class="suggestions-list"></div></details>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
         <label class="label">Deploy — runs your existing script for this project</label>
         <div class="form-row" style="margin-top:8px;">
           <input type="text" id="deploy-command" placeholder="e.g. npm run deploy, or bash deploy.sh">

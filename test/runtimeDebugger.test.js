@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const { EventEmitter } = require('events');
-const { RuntimeDebugger, resolveInsideWorkspace, validateExpression } = require('../runtimeDebugger');
+const { RuntimeDebugger, resolveInsideWorkspace, validateExpression, validateInspectorUrl } = require('../runtimeDebugger');
 
 function fakeChild(pid = 4242) {
   const child = new EventEmitter();
@@ -27,7 +27,7 @@ test('debugger launches only a new isolated inspected process', () => {
   });
   const result = debuggerCtl.launchIsolated('test/runtimeDebugger.test.js');
   assert.equal(result.pid, 4242);
-  assert.equal(seenArgs[0], '--inspect=127.0.0.1:0');
+  assert.equal(seenArgs[0], '--inspect-brk=127.0.0.1:0');
   assert.notEqual(result.pid, process.pid);
 });
 
@@ -43,4 +43,11 @@ test('Nexus main process can never be used as a debugger target', () => {
   const debuggerCtl = new RuntimeDebugger({ workspaceRoot: process.cwd(), spawnImpl: () => child });
   const target = debuggerCtl.launchIsolated('test/runtimeDebugger.test.js');
   assert.throws(() => debuggerCtl.prepareEvaluation(target.id, process.pid, 'state'), /main process is forbidden/);
+});
+
+test('attach targets are limited to localhost and never the Nexus process', async () => {
+  assert.match(validateInspectorUrl('ws://127.0.0.1:9229/id'), /^ws:\/\/127\.0\.0\.1/);
+  assert.throws(() => validateInspectorUrl('ws://example.com:9229/id'), /limited to localhost/);
+  const debuggerCtl = new RuntimeDebugger({ workspaceRoot: process.cwd() });
+  await assert.rejects(() => debuggerCtl.attachLocal(process.pid, 'ws://127.0.0.1:9229/id'), /forbidden debugger PID/);
 });

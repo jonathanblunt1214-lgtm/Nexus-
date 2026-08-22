@@ -108,7 +108,7 @@ if (!/localhost/.test(visionSource) || !/127\.0\.0\.1/.test(visionSource) || !/u
 }
 
 const debuggerSource = fs.readFileSync(path.join(__dirname, '..', 'runtimeDebugger.js'), 'utf8');
-if (!/--inspect=127\.0\.0\.1:0/.test(debuggerSource) || !/process\.pid/.test(debuggerSource) || !/main process is forbidden/.test(debuggerSource)) {
+if (!/--inspect(?:-brk)?=127\.0\.0\.1:0/.test(debuggerSource) || !/process\.pid/.test(debuggerSource) || !/(?:main process is forbidden|forbidden debugger PID)/.test(debuggerSource)) {
   failures += 1;
   console.error('[FAIL] runtimeDebugger.js must launch isolated loopback inspector targets and forbid Nexus main-process attachment.');
 }

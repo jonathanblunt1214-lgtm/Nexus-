@@ -25,7 +25,7 @@ function isAuthorizedProjectRoot(projectRoot) {
   return listProjects().some((project) => canonicalProjectPath(project.localPath) === candidate);
 }
 
-registerSection7Ipc({ ipcMain, webContents });
+registerSection7Ipc({ ipcMain, webContents, authorizeRuntime: (folder) => isAuthorizedProjectRoot(folder) && Boolean(global.nexusAuthorizeRuntime?.(folder)) });
 registerSection8Ipc({ ipcMain, isAuthorizedProjectRoot });
 global.nexusAssertTrustedIpcSender = assertTrustedSender;
 require('./main.js');
