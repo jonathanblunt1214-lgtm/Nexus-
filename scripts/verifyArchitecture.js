@@ -1,5 +1,5 @@
 // scripts/verifyArchitecture.js
-// Regression gate for the consolidated Nexus upgrade through Section 7.
+// Regression gate for the consolidated Nexus upgrade through Section 8.
 
 const fs = require('fs');
 const path = require('path');
@@ -51,7 +51,11 @@ const requiredFiles = [
   ['visualContext.js', 'local-preview visual context'],
   ['runtimeDebugger.js', 'isolated runtime debugging'],
   ['section7Ipc.js', 'narrow vision/debugger IPC bridge'],
-  ['bootstrap.js', 'Section 7 IPC bootstrap entrypoint'],
+  ['pluginManifest.js', 'plugin manifest schema and compatibility validation'],
+  ['pluginRuntime.js', 'contained plugin runtime'],
+  ['pluginManager.js', 'plugin lifecycle registry, health and audit ledger'],
+  ['section8Ipc.js', 'narrow plugin platform IPC bridge'],
+  ['bootstrap.js', 'upgrade IPC bootstrap entrypoint'],
 ];
 
 for (const [file, purpose] of requiredFiles) {
@@ -118,10 +122,45 @@ if (!/vision:capture-preview/.test(bridgeSource) || !/debugger:launch-isolated/.
   console.error('[FAIL] Section 7 IPC must expose only the narrow visual/debugger control surface.');
 }
 
+const manifestSource = fs.readFileSync(path.join(__dirname, '..', 'pluginManifest.js'), 'utf8');
+if (!/ALLOWED_CAPABILITIES/.test(manifestSource) || !/ALLOWED_SLOTS/.test(manifestSource) || !/minNexusVersion/.test(manifestSource)) {
+  failures += 1;
+  console.error('[FAIL] pluginManifest.js must enforce capability, slot, and version compatibility declarations.');
+}
+
+const pluginRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'pluginRuntime.js'), 'utf8');
+if (!/vm\.createContext/.test(pluginRuntimeSource) || /require:\s*require/.test(pluginRuntimeSource) || /process:\s*process/.test(pluginRuntimeSource)) {
+  failures += 1;
+  console.error('[FAIL] pluginRuntime.js must keep plugin code in a constrained VM without raw require/process injection.');
+}
+
+const pluginManagerSource = fs.readFileSync(path.join(__dirname, '..', 'pluginManager.js'), 'utf8');
+if (!/requireSigned\s*=\s*true/.test(pluginManagerSource) || !/verifyManifestSignature/.test(pluginManagerSource) || !/plugin-audit\.jsonl/.test(pluginManagerSource)) {
+  failures += 1;
+  console.error('[FAIL] pluginManager.js must default to signed plugins and maintain an audit ledger.');
+}
+
+const pluginIpcSource = fs.readFileSync(path.join(__dirname, '..', 'section8Ipc.js'), 'utf8');
+if (!/plugins:scan/.test(pluginIpcSource) || !/plugins:enable/.test(pluginIpcSource) || !/plugins:disable/.test(pluginIpcSource) || !/plugins:health/.test(pluginIpcSource)) {
+  failures += 1;
+  console.error('[FAIL] Section 8 IPC must expose the bounded plugin lifecycle surface.');
+}
+
+const bootstrapSource = fs.readFileSync(path.join(__dirname, '..', 'bootstrap.js'), 'utf8');
+if (!/registerSection7Ipc/.test(bootstrapSource) || !/registerSection8Ipc/.test(bootstrapSource)) {
+  failures += 1;
+  console.error('[FAIL] bootstrap.js must register both Section 7 and Section 8 IPC boundaries.');
+}
+
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 if (pkg.main !== 'bootstrap.js') {
   failures += 1;
-  console.error('[FAIL] package.json must load bootstrap.js so Section 7 IPC is registered before main.js.');
+  console.error('[FAIL] package.json must load bootstrap.js so upgrade IPC is registered before main.js.');
+}
+for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','pluginManager.js','section8Ipc.js']) {
+  if ((pkg.build?.files || []).includes(requiredPackageFile)) continue;
+  failures += 1;
+  console.error(`[FAIL] package.json must package ${requiredPackageFile}.`);
 }
 
 if (failures > 0) {
@@ -129,4 +168,4 @@ if (failures > 0) {
   process.exit(1);
 }
 
-console.log('[PASS] Consolidated Section 0-7 architecture guardrails verified.');
+console.log('[PASS] Consolidated Section 0-8 architecture guardrails verified.');
