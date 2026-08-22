@@ -2196,6 +2196,7 @@ function shorten(p) {
 
 // ---------- Cloud / Gemini ----------
 let codingModelProviderState = null;
+let safeProviderDiscovery = null;
 
 async function refreshCodingModels() {
   codingModelProviderState = await window.nexus.codingModelsStatus();
@@ -2248,9 +2249,34 @@ function renderCodingModelProvider() {
   const id = document.getElementById('coding-model-provider').value;
   const item = codingModelProviderState.providers.find((provider) => provider.id === id);
   const selected = codingModelProviderState.selected === id ? 'Active' : 'Available';
-  document.getElementById('coding-model-key').disabled = id === 'nim';
-  document.getElementById('coding-model-key').placeholder = id === 'nim' ? 'Use NVIDIA key setting above' : `API key for ${item?.name || id}`;
+  document.getElementById('coding-model-key').disabled = id === 'nim' || item?.keyless;
+  document.getElementById('coding-model-key').placeholder = item?.keyless ? 'No API key required' : id === 'nim' ? 'Use NVIDIA key setting above' : `API key for ${item?.name || id}`;
   document.getElementById('coding-model-status').innerText = `${selected} · ${item?.model || ''} · ${item?.configured ? 'key saved' : 'no key saved'}`;
+}
+
+async function discoverSafeProviders() {
+  const panel = document.getElementById('provider-discovery-results'); panel.innerHTML = '<p class="muted small">Checking localhost services and supported environment-variable names…</p>';
+  safeProviderDiscovery = await window.nexus.discoverProviders();
+  if (!safeProviderDiscovery.ok) { panel.innerHTML = `<p class="muted small">${escapeHtml(safeProviderDiscovery.error)}</p>`; return; }
+  const locals = safeProviderDiscovery.localServices.map((service, serviceIndex) => `<div class="suggestion-item"><strong>${escapeHtml(service.name)}</strong><span class="muted small">Local and keyless · ${service.models.length} model(s)</span>${service.models.length ? `<select id="local-provider-model-${serviceIndex}">${service.models.map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join('')}</select><button class="btn tiny" onclick="useDiscoveredLocalProvider(${serviceIndex})">Use locally</button>` : '<span class="muted small">No loaded models detected.</span>'}</div>`).join('');
+  const keys = safeProviderDiscovery.environmentKeys.map((item, index) => `<div class="suggestion-item"><strong>${escapeHtml(item.name)}</strong><span class="muted small">Found ${escapeHtml(item.env)}; value remains hidden.</span><button class="btn tiny" onclick="approveEnvironmentKeyImport(${index})">Review &amp; import</button></div>`).join('');
+  panel.innerHTML = `<p class="label">Local services</p>${locals || '<p class="muted small">Ollama and LM Studio were not detected on localhost.</p>'}<p class="label">Keys you already own</p>${keys || '<p class="muted small">No supported provider environment variables were detected.</p>'}`;
+}
+
+async function useDiscoveredLocalProvider(index) {
+  const service = safeProviderDiscovery?.localServices[index]; if (!service) return;
+  const model = document.getElementById(`local-provider-model-${index}`).value;
+  if (!confirm(`Use ${service.name} model ${model} as Nexus's coding model? Requests will stay on this computer.`)) return;
+  const result = await window.nexus.useLocalProviderModel(service.id, model);
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Local model activated' : 'Could not activate local model', result.error || model); refreshCodingModels();
+}
+
+async function approveEnvironmentKeyImport(index) {
+  const item = safeProviderDiscovery?.environmentKeys[index]; if (!item) return;
+  if (!confirm(`Import your ${item.name} key from ${item.env} into Nexus encrypted storage? The key value will remain hidden and will not be sent to the interface.`)) return;
+  const result = await window.nexus.importEnvironmentProviderKey(item.env);
+  showToast(result.ok ? 'success' : 'error', result.ok ? `${item.name} key imported` : 'Key import failed', result.error || 'Stored with Windows encryption.');
+  if (result.ok) { safeProviderDiscovery.environmentKeys.splice(index, 1); refreshCodingModels(); discoverSafeProviders(); }
 }
 
 async function saveCodingModelProviderKey() {
