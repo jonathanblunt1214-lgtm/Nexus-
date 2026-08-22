@@ -58,7 +58,6 @@ test('release configuration publishes GitHub updater metadata', () => {
   assert.match(workflow, /GH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
   assert.match(workflow, /contents:\s*write/);
 });
-
 test('local Windows builds use and verify the trusted Nexus certificate', () => {
   const pkg = JSON.parse(read('package.json'));
   const script = read('scripts/buildLocalSigned.js');
