@@ -42,5 +42,11 @@ jobs:
             exit 1
           fi
 
+          ahead_count="$(git rev-list --count "$upgrade_sha..$main_sha")"
+          if [ "$ahead_count" -lt 100 ]; then
+            echo "main is $ahead_count commit(s) ahead. Waiting until it is at least 100 commits ahead before synchronizing."
+            exit 0
+          fi
+
           git push origin "$main_sha:refs/heads/upgrade/nexus-overhaul"
-          echo "upgrade/nexus-overhaul now matches confirmed main at $main_sha."
+          echo "main was $ahead_count commits ahead; upgrade/nexus-overhaul now matches confirmed main at $main_sha."

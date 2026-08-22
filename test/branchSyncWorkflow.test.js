@@ -5,10 +5,22 @@ const path = require('node:path');
 
 const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'sync-upgrade-branch.yml'), 'utf8');
 
-test('main pushes automatically fast-forward the upgrade branch', () => {
+test('main pushes evaluate whether the upgrade branch reached the synchronization threshold', () => {
   assert.match(workflow, /push:\s*\n\s*branches:\s*\n\s*- main/);
   assert.match(workflow, /permissions:\s*\n\s*contents: write/);
+  assert.match(workflow, /ahead_count="\$\(git rev-list --count "\$upgrade_sha\.\.\$main_sha"\)"/);
+  assert.match(workflow, /if \[ "\$ahead_count" -lt 100 \]/);
+  assert.match(workflow, /Waiting until it is at least 100 commits ahead/);
   assert.match(workflow, /git push origin "\$main_sha:refs\/heads\/upgrade\/nexus-overhaul"/);
+});
+
+test('branch synchronization waits at 99 commits and proceeds at 100', () => {
+  const thresholdMatch = workflow.match(/"\$ahead_count" -lt (\d+)/);
+  assert.ok(thresholdMatch);
+
+  const threshold = Number(thresholdMatch[1]);
+  assert.equal(99 < threshold, true);
+  assert.equal(100 < threshold, false);
 });
 
 test('branch synchronization refuses to destroy divergent upgrade work', () => {
