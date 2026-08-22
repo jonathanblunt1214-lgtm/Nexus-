@@ -60,6 +60,8 @@
       "governanceEngine.js",
       "evalsEngine.js",
       "memoryEngine.js",
+      "visualContext.js",
+      "runtimeDebugger.js",
       "aiMetrics.js",
       "aiGuardrailTester.js",
       "aiUpgradeOrchestrator.js",
