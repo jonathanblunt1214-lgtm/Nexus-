@@ -27,7 +27,12 @@ function showToast(type, title, message) {
   toast.addEventListener('click', () => toast.remove());
   container.appendChild(toast);
   setTimeout(() => toast.remove(), type === 'error' ? 10000 : 5000);
+  window.nexus?.diagnosticsRecord?.({ level: type === 'error' ? 'error' : 'info', component: 'ui', event: title, data: { message: messageText } }).catch(() => {});
 }
+
+async function loadDiagnostics() { const r = await window.nexus.diagnosticsGet(300); if (!r.ok) return; document.getElementById('diagnostics-telemetry').checked = r.settings.telemetry; document.getElementById('diagnostics-paths').checked = r.settings.includePaths; document.getElementById('diagnostics-log').innerHTML = r.entries.slice().reverse().map((entry) => `<p class="small mono">${escapeHtml(entry.timestamp)} · ${escapeHtml(entry.level)} · ${escapeHtml(entry.component)} · ${escapeHtml(entry.event)} · ${escapeHtml(entry.correlationId)}</p>`).join('') || '<p class="muted small">No diagnostics recorded yet.</p>'; }
+async function saveDiagnosticsSettings() { const r = await window.nexus.diagnosticsSettings({ telemetry: document.getElementById('diagnostics-telemetry').checked, includePaths: document.getElementById('diagnostics-paths').checked }); showToast(r.ok ? 'success' : 'error', r.ok ? 'Privacy settings saved' : 'Could not save settings', r.error || ''); }
+async function exportDiagnosticsBundle() { const r = await window.nexus.diagnosticsExport(); if (!r.canceled) showToast(r.ok ? 'success' : 'error', r.ok ? 'Support bundle exported' : 'Export failed', r.path || r.error); }
 
 // Previously, an uncaught exception or a rejected promise anywhere in this
 // file (or in main.js) would fail completely silently unless DevTools
