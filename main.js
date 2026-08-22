@@ -133,6 +133,7 @@ function requireWorkspacePermission(folder, permission) {
   }
   return null;
 }
+global.nexusAuthorizeRuntime = (folder) => !requireWorkspacePermission(folder, 'commands');
 
 // ---- Terminal state -------------------------------------------------
 // A real "cd" doesn't persist across separate child_process calls, so we

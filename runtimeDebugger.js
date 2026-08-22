@@ -19,12 +19,71 @@ function validateExpression(expression) {
   return value;
 }
 
+function validateInspectorUrl(value) {
+  let url;
+  try { url = new URL(value); } catch { throw new Error('A valid inspector WebSocket URL is required'); }
+  if (url.protocol !== 'ws:' || !['127.0.0.1', 'localhost', '::1'].includes(url.hostname)) throw new Error('Debugger attachment is limited to localhost inspector targets');
+  return url.toString();
+}
+
+class InspectorSession {
+  constructor(url, WebSocketImpl = globalThis.WebSocket) {
+    if (!WebSocketImpl) throw new Error('WebSocket support is unavailable');
+    this.url = validateInspectorUrl(url);
+    this.socket = new WebSocketImpl(this.url);
+    this.sequence = 0;
+    this.pending = new Map();
+    this.events = [];
+    this.paused = null;
+    this.scripts = new Map();
+    this.ready = new Promise((resolve, reject) => {
+      this.socket.addEventListener('open', resolve, { once: true });
+      this.socket.addEventListener('error', () => reject(new Error('Could not connect to debugger target')), { once: true });
+    });
+    this.socket.addEventListener('message', (event) => this.onMessage(event.data));
+  }
+
+  onMessage(raw) {
+    const message = JSON.parse(String(raw));
+    if (message.id) {
+      const pending = this.pending.get(message.id);
+      if (pending) { this.pending.delete(message.id); message.error ? pending.reject(new Error(message.error.message)) : pending.resolve(message.result || {}); }
+      return;
+    }
+    if (message.method === 'Debugger.paused') this.paused = message.params;
+    if (message.method === 'Debugger.resumed') this.paused = null;
+    if (message.method === 'Debugger.scriptParsed') this.scripts.set(message.params.scriptId, message.params);
+    this.events.push({ method: message.method, params: message.params, at: Date.now() });
+    if (this.events.length > 300) this.events.shift();
+  }
+
+  async send(method, params = {}) {
+    await this.ready;
+    const id = ++this.sequence;
+    const result = new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }));
+    this.socket.send(JSON.stringify({ id, method, params }));
+    return result;
+  }
+
+  async initialize() { await this.send('Runtime.enable'); await this.send('Debugger.enable'); return this.snapshot(); }
+  snapshot() {
+    return {
+      paused: Boolean(this.paused), reason: this.paused?.reason || null,
+      callFrames: (this.paused?.callFrames || []).map((frame) => ({ id: frame.callFrameId, functionName: frame.functionName || '(anonymous)', url: frame.url, line: frame.location.lineNumber + 1, column: frame.location.columnNumber + 1, scopes: frame.scopeChain.map((scope) => ({ type: scope.type, name: scope.name, objectId: scope.object.objectId, description: scope.object.description })) })),
+      scripts: [...this.scripts.values()].filter((script) => script.url).map((script) => ({ id: script.scriptId, url: script.url, sourceMapUrl: script.sourceMapURL || null })),
+      events: this.events.slice(-50),
+    };
+  }
+  close() { this.socket.close(); }
+}
+
 class RuntimeDebugger {
-  constructor({ workspaceRoot, nodeBinary = process.execPath, spawnImpl = spawn } = {}) {
+  constructor({ workspaceRoot, nodeBinary = process.execPath, spawnImpl = spawn, WebSocketImpl = globalThis.WebSocket } = {}) {
     if (!workspaceRoot) throw new Error('workspaceRoot is required');
     this.workspaceRoot = path.resolve(workspaceRoot);
     this.nodeBinary = nodeBinary;
     this.spawnImpl = spawnImpl;
+    this.WebSocketImpl = WebSocketImpl;
     this.targets = new Map();
   }
 
@@ -34,7 +93,7 @@ class RuntimeDebugger {
     if (!Array.isArray(args) || args.some((x) => typeof x !== 'string' || x.length > 1000)) throw new Error('Invalid debug target arguments');
 
     const id = `dbg_${crypto.randomUUID()}`;
-    const child = this.spawnImpl(this.nodeBinary, ['--inspect=127.0.0.1:0', resolvedScript, ...args], {
+    const child = this.spawnImpl(this.nodeBinary, ['--inspect-brk=127.0.0.1:0', resolvedScript, ...args], {
       cwd: this.workspaceRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
@@ -83,10 +142,36 @@ class RuntimeDebugger {
   stop(id) {
     const target = this.targets.get(id);
     if (!target) return false;
-    if (!target.closed) target.child.kill('SIGTERM');
+    target.session?.close();
+    if (!target.closed && target.child) target.child.kill('SIGTERM');
     target.closed = true;
     return true;
   }
+
+  async connect(id) {
+    const target = this.targets.get(id);
+    if (!target?.debugUrl) throw new Error('Inspector URL is not ready yet');
+    if (!target.session) { target.session = new InspectorSession(target.debugUrl, this.WebSocketImpl); await target.session.initialize(); }
+    return target.session.snapshot();
+  }
+
+  async attachLocal(pid, debugUrl) {
+    if (!Number.isInteger(pid) || pid <= 0 || pid === process.pid) throw new Error('Invalid or forbidden debugger PID');
+    const id = `dbg_${crypto.randomUUID()}`;
+    const target = { id, pid, child: null, scriptPath: null, createdAt: Date.now(), debugUrl: validateInspectorUrl(debugUrl), closed: false, attached: true };
+    this.targets.set(id, target);
+    await this.connect(id);
+    return { id, pid, state: 'ATTACHED' };
+  }
+
+  session(id) { const target = this.targets.get(id); if (!target?.session) throw new Error('Debugger target is not connected'); return target.session; }
+  async setBreakpoint(id, url, line, column = 0, condition = '') { return this.session(id).send('Debugger.setBreakpointByUrl', { url, lineNumber: Math.max(0, Number(line) - 1), columnNumber: Math.max(0, Number(column)), condition: String(condition || '') }); }
+  async removeBreakpoint(id, breakpointId) { return this.session(id).send('Debugger.removeBreakpoint', { breakpointId }); }
+  async control(id, action) { const methods = { resume: 'Debugger.resume', pause: 'Debugger.pause', over: 'Debugger.stepOver', into: 'Debugger.stepInto', out: 'Debugger.stepOut' }; if (!methods[action]) throw new Error('Invalid debugger action'); await this.session(id).send(methods[action]); return { ok: true }; }
+  async setExceptionMode(id, mode) { if (!['none', 'uncaught', 'all'].includes(mode)) throw new Error('Invalid exception mode'); await this.session(id).send('Debugger.setPauseOnExceptions', { state: mode }); return { ok: true }; }
+  async properties(id, objectId) { const result = await this.session(id).send('Runtime.getProperties', { objectId, ownProperties: true, generatePreview: true }); return { properties: (result.result || []).map((item) => ({ name: item.name, type: item.value?.type, value: item.value?.value, description: item.value?.description, objectId: item.value?.objectId })) }; }
+  async evaluate(id, callFrameId, expression) { return this.session(id).send('Debugger.evaluateOnCallFrame', { callFrameId, expression: validateExpression(expression), returnByValue: true, throwOnSideEffect: true }); }
+  snapshot(id) { return this.session(id).snapshot(); }
 }
 
-module.exports = { RuntimeDebugger, resolveInsideWorkspace, validateExpression, SAFE_EXPRESSION };
+module.exports = { RuntimeDebugger, InspectorSession, resolveInsideWorkspace, validateExpression, validateInspectorUrl, SAFE_EXPRESSION };
