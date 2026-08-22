@@ -39,9 +39,9 @@ instructions if they do:
 
 ## Alternative: manual setup (if you already have Node.js)
 
-If you know you already have Node.js working, `setup-and-run.bat` skips
-straight to installing Nexus and launching it, without touching Node at
-all.
+Open PowerShell in the Nexus folder, run `npm ci` once, then run
+`npm start`. The primary `START-NEXUS.bat` launcher remains available for
+people who prefer not to use the command line.
 
 ## Making a real installer (.exe) instead
 
@@ -126,8 +126,9 @@ npm run dist
   `package.json` and lists ideas. This is read-only: there is no "apply"
   button anywhere in the code for this feature, on purpose.
 - **Self-update** — same approve/reject flow, but pointed at Nexus's own
-  source files. After approving a change to Nexus itself, restart the app
-  (or re-run `setup-and-run.bat`) to see it take effect.
+  source files. After approving a source change to Nexus itself, restart
+  the development copy to see it take effect. Installed releases use the
+  in-app GitHub Releases updater instead.
 
 ## Ship tab (🚀) — git, multi-file features, deploy
 
@@ -325,11 +326,12 @@ Audit → Repair → Test → Gate pipeline already enforces mechanically.
   shows a verified minimum of roughly 30GB VRAM even for the most
   memory-efficient coding-relevant model), which a typical consumer GPU
   doesn't have. The hosted API needs no local GPU at all.
-- The installer built by `build-installer.bat` is unsigned (no paid code-
-  signing certificate), so Windows SmartScreen may show a warning the first
-  time someone runs it — this is normal for small/independent apps and not
-  a sign anything is wrong. Signing requires a certificate you'd buy
-  separately if you ever want to remove that warning.
+- Windows installers are signed when the trusted Nexus certificate is
+  available on the build machine. Use `npm run dist:local-signed` when you
+  need the build to require and verify that local signing identity. Public
+  distribution still benefits from a recognized commercial publisher
+  certificate and reputation; a locally trusted certificate applies only
+  to PCs where its public certificate has been trusted.
 
 ## If something goes wrong
 
