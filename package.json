@@ -13,7 +13,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.3.9",
+    "web-tree-sitter": "0.25.10",
+    "tree-sitter-javascript": "0.25.0",
+    "tree-sitter-typescript": "0.23.2"
   },
   "devDependencies": {
     "electron": "^31.3.1",
@@ -47,6 +50,10 @@
       "aiInventory.js",
       "inventoryWorker.js",
       "atomicWrite.js",
+      "astEngine.js",
+      "workspaceIndexer.js",
+      "semanticWorker.js",
+      "semanticContext.js",
       "aiMetrics.js",
       "aiGuardrailTester.js",
       "aiUpgradeOrchestrator.js",

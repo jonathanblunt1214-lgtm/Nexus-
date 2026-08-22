@@ -1,4 +1,4 @@
-name: Section 0 Stability Gate
+name: Nexus Stability Gate
 
 on:
   pull_request:
@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - upgrade/section-0-stabilization
+      - upgrade/section-1-context-engineering
 
 jobs:
   verify:
@@ -15,5 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
       - run: node scripts/verifyArchitecture.js
       - run: node --test
