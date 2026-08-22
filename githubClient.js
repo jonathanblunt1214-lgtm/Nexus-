@@ -79,6 +79,42 @@ async function getPullRequests(token, owner, repo, state = 'open') {
   }));
 }
 
+async function getPullRequestReview(token, owner, repo, number) {
+  const pr = await githubRequest(token, 'GET', `/repos/${owner}/${repo}/pulls/${number}`);
+  const [files, reviews, checks] = await Promise.all([
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/pulls/${number}/files?per_page=100`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/pulls/${number}/reviews?per_page=100`),
+    githubRequest(token, 'GET', `/repos/${owner}/${repo}/commits/${pr.head.sha}/check-runs?per_page=100`),
+  ]);
+  return {
+    number: pr.number, title: pr.title, body: pr.body, state: pr.state, draft: pr.draft,
+    mergeable: pr.mergeable, mergeableState: pr.mergeable_state, head: pr.head.ref, base: pr.base.ref,
+    author: pr.user?.login, htmlUrl: pr.html_url,
+    files: files.map((file) => ({ filename: file.filename, status: file.status, additions: file.additions, deletions: file.deletions, patch: file.patch || '' })),
+    reviews: reviews.map((review) => ({ author: review.user?.login, state: review.state, body: review.body, submittedAt: review.submitted_at })),
+    checks: (checks.check_runs || []).map((check) => ({ name: check.name, status: check.status, conclusion: check.conclusion, htmlUrl: check.html_url })),
+  };
+}
+
+async function submitPullRequestReview(token, owner, repo, number, body, event) {
+  if (!['APPROVE', 'REQUEST_CHANGES', 'COMMENT'].includes(event)) throw new Error('Invalid review action.');
+  return githubRequest(token, 'POST', `/repos/${owner}/${repo}/pulls/${number}/reviews`, { body, event });
+}
+
+async function mergePullRequest(token, owner, repo, number, mergeMethod = 'merge') {
+  return githubRequest(token, 'PUT', `/repos/${owner}/${repo}/pulls/${number}/merge`, { merge_method: mergeMethod });
+}
+
+async function getBranchProtection(token, owner, repo, branch) {
+  try {
+    const data = await githubRequest(token, 'GET', `/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`);
+    return { protected: true, requiredChecks: data.required_status_checks?.contexts || [], enforceAdmins: Boolean(data.enforce_admins?.enabled), reviewsRequired: data.required_pull_request_reviews?.required_approving_review_count || 0 };
+  } catch (error) {
+    if (/\(404 /.test(error.message)) return { protected: false, requiredChecks: [], enforceAdmins: false, reviewsRequired: 0 };
+    throw error;
+  }
+}
+
 async function createBranch(token, owner, repo, branch, fromBranch) {
   const base = await githubRequest(token, 'GET', `/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(fromBranch)}`);
   return githubRequest(token, 'POST', `/repos/${owner}/${repo}/git/refs`, {
@@ -106,6 +142,10 @@ module.exports = {
   createOrUpdateFile,
   createPullRequest,
   getPullRequests,
+  getPullRequestReview,
+  submitPullRequestReview,
+  mergePullRequest,
+  getBranchProtection,
   createBranch,
   getCommits,
 };

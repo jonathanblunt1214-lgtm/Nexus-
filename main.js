@@ -47,6 +47,7 @@ const aiPerformanceTuner = require('./aiPerformanceTuner');
 const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
+const gitWorkflow = require('./gitWorkflow');
 
 let mainWindow;
 let projectsForExitSync = [];
@@ -1842,15 +1843,116 @@ ipcMain.handle('git-create-branch', async (_event, { folder, branchName }) => {
 ipcMain.handle('git-commit', async (_event, { folder, message }) => {
   const trustError = requireWorkspacePermission(folder, 'git-write');
   if (trustError) return trustError;
-  const add = await runGit(folder, 'add -A');
-  if (!add.ok) return add;
   return runGitArgs(folder, ['commit', '-m', message]);
 });
 
 ipcMain.handle('git-push', async (_event, { folder }) => {
   const trustError = requireWorkspacePermission(folder, 'git-write');
   if (trustError) return trustError;
+  const token = getGithubToken();
+  const coordinates = token ? await githubCoordinatesForFolder(folder) : null;
+  if (token && coordinates) {
+    const branch = await gitWorkflow.git(folder, ['branch', '--show-current']);
+    if (branch.ok) {
+      try {
+        const protection = await require('./githubClient').getBranchProtection(token, coordinates.owner, coordinates.repo, branch.output);
+        if (protection.protected) return { ok: false, protectedBranch: true, error: `${branch.output} is protected. Push a feature branch and open a pull request instead.` };
+      } catch { /* A permissions-limited token must not make ordinary Git unusable. */ }
+    }
+  }
   return runGit(folder, 'push -u origin HEAD');
+});
+
+ipcMain.handle('git-workflow-status', (_event, { folder }) => gitWorkflow.getWorkflowStatus(folder));
+ipcMain.handle('git-stage-paths', (_event, { folder, paths }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.stagePaths(folder, paths || []);
+});
+ipcMain.handle('git-unstage-paths', (_event, { folder, paths }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.unstagePaths(folder, paths || []);
+});
+ipcMain.handle('git-list-branches', (_event, { folder }) => gitWorkflow.listBranches(folder));
+ipcMain.handle('git-switch-branch', (_event, { folder, branch }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.switchBranch(folder, branch);
+});
+ipcMain.handle('git-list-stashes', (_event, { folder }) => gitWorkflow.listStashes(folder));
+ipcMain.handle('git-stash-action', (_event, { folder, action, ref, message }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.stashAction(folder, action, ref, message);
+});
+ipcMain.handle('git-history-action', (_event, { folder, action, hash }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.historyAction(folder, action, hash);
+});
+ipcMain.handle('git-conflict-details', (_event, { folder, file }) => gitWorkflow.conflictDetails(folder, file));
+ipcMain.handle('git-resolve-conflict', (_event, { folder, file, content }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.resolveConflict(folder, file, content);
+});
+ipcMain.handle('git-abort-operation', (_event, { folder, action }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  return denied || gitWorkflow.abortOperation(folder, action);
+});
+
+async function githubCoordinatesForFolder(folder) {
+  const remote = await gitWorkflow.git(folder, ['remote', 'get-url', 'origin']);
+  return remote.ok ? gitWorkflow.parseGitHubRemote(remote.output) : null;
+}
+
+ipcMain.handle('git-branch-protection', async (_event, { folder }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  const coordinates = await githubCoordinatesForFolder(folder);
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const branch = await gitWorkflow.git(folder, ['branch', '--show-current']);
+  if (!branch.ok) return branch;
+  const { getBranchProtection } = require('./githubClient');
+  try { return { ok: true, branch: branch.output, ...(await getBranchProtection(token, coordinates.owner, coordinates.repo, branch.output)) }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('github-project-prs', async (_event, { folder, state }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  const coordinates = await githubCoordinatesForFolder(folder);
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const { getPullRequests } = require('./githubClient');
+  try { return { ok: true, coordinates, prs: await getPullRequests(token, coordinates.owner, coordinates.repo, state || 'open') }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('github-project-pr-review', async (_event, { folder, number }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  const coordinates = await githubCoordinatesForFolder(folder);
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const { getPullRequestReview } = require('./githubClient');
+  try { return { ok: true, review: await getPullRequestReview(token, coordinates.owner, coordinates.repo, number) }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('github-project-pr-submit-review', async (_event, { folder, number, body, action }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  const coordinates = await githubCoordinatesForFolder(folder);
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const { submitPullRequestReview } = require('./githubClient');
+  try { return { ok: true, result: await submitPullRequestReview(token, coordinates.owner, coordinates.repo, number, body, action) }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('github-project-pr-merge', async (_event, { folder, number, method }) => {
+  const denied = requireWorkspacePermission(folder, 'git-write');
+  if (denied) return denied;
+  const token = getGithubToken();
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  const coordinates = await githubCoordinatesForFolder(folder);
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const { mergePullRequest } = require('./githubClient');
+  try { return { ok: true, result: await mergePullRequest(token, coordinates.owner, coordinates.repo, number, method) }; }
+  catch (error) { return { ok: false, error: error.message }; }
 });
 
 ipcMain.handle('language-intelligence', (_event, payload) => {

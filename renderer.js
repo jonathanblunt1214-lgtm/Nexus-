@@ -2370,7 +2370,10 @@ async function refreshGitStatus() {
     document.getElementById('git-diff-file-list').innerHTML = '';
     return;
   }
-  const result = await window.nexus.gitStatus(folder);
+  const [result, workflow, branches, protection] = await Promise.all([
+    window.nexus.gitStatus(folder), window.nexus.gitWorkflowStatus(folder),
+    window.nexus.gitListBranches(folder), window.nexus.gitBranchProtection(folder),
+  ]);
   if (!result.ok) {
     document.getElementById('git-branch-display').innerText = 'branch: —';
     document.getElementById('git-status-display').innerText = result.error;
@@ -2379,8 +2382,42 @@ async function refreshGitStatus() {
   }
   document.getElementById('git-branch-display').innerText = `branch: ${result.branch}`;
   document.getElementById('git-status-display').innerText = result.status;
+  if (workflow.ok) {
+    window._gitWorkflow = workflow;
+    document.getElementById('git-sync-indicator').innerText = workflow.upstream ? `↑ ${workflow.ahead}  ↓ ${workflow.behind} vs ${workflow.upstream}` : 'No upstream';
+    renderGitWorkflowFiles(workflow);
+  }
+  if (branches.ok) document.getElementById('git-branch-select').innerHTML = '<option value="">Switch branch…</option>' + branches.branches.map((b) => `<option value="${escapeHtml(b.name)}" ${b.current ? 'disabled' : ''}>${escapeHtml(b.name)}${b.current ? ' (current)' : ''}</option>`).join('');
+  const protectionEl = document.getElementById('git-protection-indicator');
+  protectionEl.innerText = protection.ok ? (protection.protected ? `protected · ${protection.reviewsRequired || 0} review(s)` : 'not protected') : (protection.authRequired ? 'GitHub login required' : 'protection unavailable');
   await refreshGitDiff(folder);
+  await refreshGitStashes();
 }
+
+function renderGitWorkflowFiles(workflow) {
+  const el = document.getElementById('git-workflow-file-list');
+  el.innerHTML = workflow.files.map((file) => `<div class="form-row small" style="justify-content:space-between; margin-top:4px;"><span class="mono">${escapeHtml(file.status)} ${escapeHtml(file.file)}</span><span>${file.staged ? `<button class="btn btn-secondary" onclick="unstageGitFile('${escapeHtml(file.file).replaceAll("'", '&#39;')}')">Unstage</button>` : `<button class="btn btn-secondary" onclick="stageGitFile('${escapeHtml(file.file).replaceAll("'", '&#39;')}')">Stage</button>`}</span></div>`).join('') || '<p class="muted small">Working tree clean.</p>';
+  document.getElementById('git-conflict-list').innerHTML = workflow.conflicts.length ? `<p class="label">Merge conflicts</p>${workflow.conflicts.map((file) => `<button class="btn btn-secondary" onclick="openGitConflict('${escapeHtml(file).replaceAll("'", '&#39;')}')">Resolve ${escapeHtml(file)}</button>`).join(' ')}` : '';
+}
+
+async function stageGitFile(file) { await window.nexus.gitStagePaths(shipFolder(), [file]); refreshGitStatus(); }
+async function unstageGitFile(file) { await window.nexus.gitUnstagePaths(shipFolder(), [file]); refreshGitStatus(); }
+async function stageAllGitFiles() { const files = window._gitWorkflow?.files.filter((f) => !f.staged).map((f) => f.file) || []; if (files.length) await window.nexus.gitStagePaths(shipFolder(), files); refreshGitStatus(); }
+async function unstageAllGitFiles() { const files = window._gitWorkflow?.files.filter((f) => f.staged).map((f) => f.file) || []; if (files.length) await window.nexus.gitUnstagePaths(shipFolder(), files); refreshGitStatus(); }
+async function switchGitBranch(branch) { if (!branch || !confirm(`Switch to ${branch}?`)) return; const r = await window.nexus.gitSwitchBranch(shipFolder(), branch); if (!r.ok) showToast('error', 'Could not switch branch', r.error || r.output); refreshGitStatus(); }
+
+async function refreshGitStashes() { const folder = shipFolder(); if (!folder) return; const r = await window.nexus.gitListStashes(folder); const el = document.getElementById('git-stash-list'); if (!r.ok) { el.innerHTML = ''; return; } el.innerHTML = r.stashes.map((s) => `<div class="form-row small" style="justify-content:space-between"><span>${escapeHtml(s.ref)} · ${escapeHtml(s.message)}</span><span><button class="btn btn-secondary" onclick="runGitStash('apply','${escapeHtml(s.ref)}')">Apply</button><button class="btn btn-secondary" onclick="runGitStash('pop','${escapeHtml(s.ref)}')">Pop</button><button class="btn btn-secondary" onclick="runGitStash('drop','${escapeHtml(s.ref)}')">Drop</button></span></div>`).join('') || '<p class="muted small">No stashes.</p>'; }
+async function createGitStash() { const message = document.getElementById('git-stash-message').value; const r = await window.nexus.gitStashAction(shipFolder(), 'create', null, message); if (!r.ok) showToast('error', 'Stash failed', r.error); refreshGitStatus(); }
+async function runGitStash(action, ref) { if (action === 'drop' && !confirm(`Delete ${ref}?`)) return; const r = await window.nexus.gitStashAction(shipFolder(), action, ref); if (!r.ok) showToast('error', 'Stash action failed', r.error); refreshGitStatus(); }
+
+async function openGitConflict(file) { const r = await window.nexus.gitConflictDetails(shipFolder(), file); if (!r.ok) return showToast('error', 'Could not open conflict', r.error); window._gitConflict = r; document.getElementById('git-conflict-file').innerText = file; document.getElementById('git-conflict-content').value = r.current; document.getElementById('git-conflict-editor').style.display = 'block'; }
+function useConflictVersion(side) { document.getElementById('git-conflict-content').value = window._gitConflict?.[side] || ''; }
+async function saveConflictResolution() { const r = await window.nexus.gitResolveConflict(shipFolder(), window._gitConflict.file, document.getElementById('git-conflict-content').value); if (!r.ok) return showToast('error', 'Resolution failed', r.error); document.getElementById('git-conflict-editor').style.display = 'none'; refreshGitStatus(); }
+
+async function refreshProjectPullRequests() { const el = document.getElementById('github-project-pr-list'); el.innerHTML = '<p class="muted small">Loading…</p>'; const r = await window.nexus.githubProjectPRs(shipFolder(), 'open'); if (!r.ok) { el.innerHTML = `<p class="muted small">${escapeHtml(r.error)}</p>${r.authRequired ? '<button class="btn" onclick="switchTab(\'settings\')">Open GitHub settings</button>' : ''}`; return; } el.innerHTML = r.prs.map((pr) => `<button class="btn btn-secondary" style="margin:3px" onclick="openProjectPullRequest(${pr.number})">#${pr.number} ${escapeHtml(pr.title)} · ${escapeHtml(pr.head)} → ${escapeHtml(pr.base)}</button>`).join('') || '<p class="muted small">No open pull requests.</p>'; }
+async function openProjectPullRequest(number) { const el = document.getElementById('github-project-pr-review'); el.innerHTML = '<p class="muted small">Loading review…</p>'; const r = await window.nexus.githubProjectPRReview(shipFolder(), number); if (!r.ok) { el.innerHTML = escapeHtml(r.error); return; } const pr = r.review; window._activeProjectPR = pr; el.innerHTML = `<h3>#${pr.number} ${escapeHtml(pr.title)}</h3><p>${escapeHtml(pr.body || '')}</p><p class="small">Checks: ${pr.checks.map((c) => `${escapeHtml(c.name)}: ${escapeHtml(c.conclusion || c.status)}`).join(' · ') || 'none'}</p>${pr.files.map((f) => `<details><summary>${escapeHtml(f.filename)} (+${f.additions}/-${f.deletions})</summary><pre class="diff-box">${escapeHtml(f.patch)}</pre></details>`).join('')}<textarea id="github-pr-review-body" rows="3" style="width:100%" placeholder="Review comment"></textarea><div class="form-row"><button class="btn" onclick="submitProjectPRReview('APPROVE')">Approve</button><button class="btn btn-secondary" onclick="submitProjectPRReview('REQUEST_CHANGES')">Request changes</button><button class="btn btn-secondary" onclick="submitProjectPRReview('COMMENT')">Comment</button><select id="github-pr-merge-method"><option value="squash">Squash merge</option><option value="merge">Merge commit</option><option value="rebase">Rebase merge</option></select><button class="btn" onclick="mergeProjectPullRequest()">Merge</button></div>`; }
+async function submitProjectPRReview(action) { const pr = window._activeProjectPR; const body = document.getElementById('github-pr-review-body').value; const r = await window.nexus.githubProjectPRSubmitReview(shipFolder(), pr.number, body, action); showToast(r.ok ? 'success' : 'error', r.ok ? 'Review submitted' : 'Review failed', r.error || action); if (r.ok) openProjectPullRequest(pr.number); }
+async function mergeProjectPullRequest() { const pr = window._activeProjectPR; if (!confirm(`Merge #${pr.number}?`)) return; const method = document.getElementById('github-pr-merge-method').value; const r = await window.nexus.githubProjectPRMerge(shipFolder(), pr.number, method); showToast(r.ok ? 'success' : 'error', r.ok ? 'Pull request merged' : 'Merge failed', r.error || ''); refreshProjectPullRequests(); }
 
 const GD_STATUS_LABELS = { M: 'Modified', A: 'Added', D: 'Deleted', R: 'Renamed', '??': 'New' };
 const GD_STATUS_CLASSES = { M: 'gd-badge-modified', A: 'gd-badge-added', D: 'gd-badge-deleted', R: 'gd-badge-modified', '??': 'gd-badge-added' };
@@ -2448,7 +2485,7 @@ async function refreshCommitHistory() {
       <div class="ch-commit-top">
         <span><span class="ch-hash">${escapeHtml(c.shortHash)}</span> <span class="ch-message">${escapeHtml(c.message)}</span></span>
       </div>
-      <div class="ch-meta">${escapeHtml(c.author)} — ${escapeHtml(c.date)}${c.branches.map((b) => `<span class="ch-branch-tag">${escapeHtml(b)}</span>`).join('')}</div>
+      <div class="ch-meta">${escapeHtml(c.author)} — ${escapeHtml(c.date)}${c.branches.map((b) => `<span class="ch-branch-tag">${escapeHtml(b)}</span>`).join('')} <button class="btn btn-secondary" onclick="runCommitHistoryAction('cherry-pick','${c.hash}',event)">Cherry-pick</button> <button class="btn btn-secondary" onclick="runCommitHistoryAction('revert','${c.hash}',event)">Revert</button></div>
       <div class="gd-diff-body" id="ch-diff-${i}"></div>
     </div>
   `).join('');
@@ -3241,6 +3278,8 @@ function readGitHubAutoSyncSettings() {
   const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
   return { enabled, seconds };
 }
+
+async function runCommitHistoryAction(action, hash, event) { event.stopPropagation(); if (!confirm(`${action} ${hash.slice(0, 8)}?`)) return; const r = await window.nexus.gitHistoryAction(shipFolder(), action, hash); showToast(r.ok ? 'success' : 'error', r.ok ? `${action} complete` : `${action} failed`, r.error || r.output || ''); refreshGitStatus(); refreshCommitHistory(); }
 
 function currentLanguagePayload(action) {
   const entry = codeEditorOpenFiles.find((file) => file.relPath === codeEditorCurrentRelPath);
