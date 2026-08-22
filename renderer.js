@@ -3229,6 +3229,33 @@ function readGitHubAutoSyncSettings() {
   return { enabled, seconds };
 }
 
+async function saveAllEditorFilesBeforeExit() {
+  const current = codeEditorOpenFiles.find((file) => file.relPath === codeEditorCurrentRelPath);
+  if (current && codeEditorCM) current.content = codeEditorCM.getValue();
+
+  const failures = [];
+  let saved = 0;
+  for (const entry of codeEditorOpenFiles.filter((file) => file.dirty)) {
+    const result = await window.nexus.applyFileChange(entry.absPath, entry.content, 'Automatic save before Nexus closes');
+    if (!result.ok) failures.push(`${entry.relPath}: ${result.error}`);
+    else {
+      entry.dirty = false;
+      saved += 1;
+    }
+  }
+  renderCodeEditorTabs();
+  return failures.length ? { ok: false, failures } : { ok: true, saved };
+}
+
+window.nexus.onExitSaveRequest(async ({ requestId }) => {
+  try {
+    const result = await saveAllEditorFilesBeforeExit();
+    window.nexus.completeExitSave(requestId, result);
+  } catch (error) {
+    window.nexus.completeExitSave(requestId, { ok: false, failures: [error.message] });
+  }
+});
+
 function renderGitHubAutoSyncSettings() {
   const settings = readGitHubAutoSyncSettings();
   document.getElementById('github-auto-sync-enabled').checked = settings.enabled;

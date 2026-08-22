@@ -108,6 +108,8 @@ contextBridge.exposeInMainWorld('nexus', {
   gitAutoSync: (folder, projectName) => ipcRenderer.invoke('git-auto-sync', { folder, projectName }),
   setProjectsForExitSync: (projects) => ipcRenderer.send('set-projects-for-exit-sync', { projects }),
   onExitSyncStatus: (callback) => ipcRenderer.on('exit-sync-status', (_e, payload) => callback(payload)),
+  onExitSaveRequest: (callback) => ipcRenderer.on('exit-save-request', (_e, payload) => callback(payload)),
+  completeExitSave: (requestId, result) => ipcRenderer.send('exit-save-complete', { requestId, result }),
   runDeploy: (id, folder, command) => ipcRenderer.invoke('run-deploy', { id, folder, command }),
   onDeployLog: (callback) => ipcRenderer.on('deploy-log', (_e, payload) => callback(payload)),
   onDeployClosed: (callback) => ipcRenderer.on('deploy-closed', (_e, payload) => callback(payload)),

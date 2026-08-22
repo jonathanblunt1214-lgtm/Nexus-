@@ -36,3 +36,15 @@ test('closing Nexus is blocked until configured projects finish syncing', () => 
   assert.match(main, /exitSyncComplete = true;[\s\S]*?mainWindow\?\.close\(\)/);
   assert.match(main, /const hadChanges = Boolean\(status\.output\.trim\(\)\);[\s\S]*?runGitArgs\(folder, \['push', '-u', 'origin', 'HEAD'\]\)/);
 });
+
+test('unsaved local editor files are forced to disk before exit sync', () => {
+  const preload = read('preload.js');
+  const renderer = read('renderer.js');
+  const main = read('main.js');
+  assert.match(preload, /onExitSaveRequest:.*exit-save-request/);
+  assert.match(preload, /completeExitSave:.*exit-save-complete/);
+  assert.match(renderer, /async function saveAllEditorFilesBeforeExit\(\)/);
+  assert.match(renderer, /Automatic save before Nexus closes/);
+  assert.match(main, /const saveResult = await requestRendererSaveBeforeExit\(\)/);
+  assert.match(main, /local project files could not be saved/);
+});
