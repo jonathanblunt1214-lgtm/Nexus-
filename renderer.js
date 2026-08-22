@@ -3130,7 +3130,7 @@ async function runDetailedTests() {
   summaryEl.innerText = 'Running…';
   listEl.innerHTML = '';
 
-  const result = await window.nexus.runTestsDetailed(folder);
+  const result = await window.nexus.runTestsDetailed(folder, null, { coverage: document.getElementById('test-coverage-enabled').checked, maxWorkers: Number(document.getElementById('test-max-workers').value) });
 
   if (result.multiScript) {
     // No Jest/Vitest, but the project has its own real test:* npm scripts
@@ -3161,6 +3161,8 @@ async function runDetailedTests() {
   const failed = result.tests.filter((t) => t.status === 'fail').length;
   const skipped = result.tests.filter((t) => t.status === 'skip').length;
   summaryEl.innerText = `${passed} passed, ${failed} failed, ${skipped} skipped`;
+  if (result.coverage?.ok) document.getElementById('test-coverage-summary').innerHTML = `<p class="label">Coverage</p>${result.coverage.files.map((f) => `<p class="small mono">${escapeHtml(f.file)} · lines ${f.lines}% · statements ${f.statements}% · functions ${f.functions}% · branches ${f.branches}%</p>`).join('')}`;
+  if (result.history) renderTestHistory(result.history);
 
   renderTestResultsList();
 }
@@ -3172,7 +3174,7 @@ function renderTestResultsList() {
       <span class="tr-icon tr-icon-${t.status}">${t.status === 'pass' ? '✓' : t.status === 'fail' ? '✕' : '○'}</span>
       <span class="tr-name" title="${escapeHtml(t.name)}" onclick="${t.failureMessage ? `toggleTestFailureMessage(${i})` : ''}" style="${t.failureMessage ? 'cursor:pointer;' : ''}">${escapeHtml(t.name)}</span>
       <span class="tr-duration">${t.duration ? t.duration + 'ms' : ''}</span>
-      ${t.status === 'fail' ? `<button class="btn tiny btn-secondary tr-rerun" onclick="rerunSingleTest(${i}, event)">↻ Rerun</button>` : ''}
+      ${t.status === 'fail' ? `<button class="btn tiny btn-secondary tr-rerun" onclick="rerunSingleTest(${i}, event)">↻ Rerun</button><button class="btn tiny btn-secondary" onclick="debugSingleTest(${i}, event)">Debug</button>` : ''}
     </div>
     ${t.failureMessage ? `<div class="tr-failure-message" id="tr-fail-${i}">${escapeHtml(t.failureMessage)}</div>` : ''}
   `).join('') || '<p class="muted small">No tests ran.</p>';
@@ -3293,6 +3295,13 @@ function readGitHubAutoSyncSettings() {
   const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
   return { enabled, seconds };
 }
+
+async function discoverProjectTests() { const r = await window.nexus.discoverTests(shipFolder()); document.getElementById('test-discovery-summary').innerText = `${r.count} test file(s) discovered before execution.`; document.getElementById('test-snapshot-summary').innerHTML = `<p class="label">Snapshots</p>${r.snapshots.map((s) => `<p class="small mono">${escapeHtml(s.file)} · ${s.size} bytes</p>`).join('') || '<p class="muted small">No snapshots.</p>'}${r.snapshots.length ? '<button class="btn btn-secondary" onclick="updateTestSnapshots()">Review complete — update snapshots</button>' : ''}`; renderTestHistory(r.history); }
+function renderTestHistory(history) { document.getElementById('test-history-summary').innerHTML = `<p class="label">Duration &amp; flakiness history</p>${history.filter((t) => t.failures || t.averageDuration).sort((a, b) => b.flakiness - a.flakiness).slice(0, 50).map((t) => `<p class="small">${escapeHtml(t.name)} · ${Math.round(t.flakiness * 100)}% failed across ${t.runs} run(s) · avg ${t.averageDuration ?? '—'}ms</p>`).join('') || '<p class="muted small">History builds as tests run.</p>'}`; }
+async function startTestWatch() { const r = await window.nexus.testWatchStart(shipFolder()); showToast(r.ok ? 'success' : 'error', r.ok ? 'Test watch running' : 'Watch failed', r.error || `PID ${r.pid}`); }
+async function stopTestWatch() { const r = await window.nexus.testWatchStop(shipFolder()); showToast('info', 'Test watch stopped', r.stopped ? 'Watcher terminated.' : 'No watcher was running.'); }
+async function updateTestSnapshots() { if (!confirm('Update snapshots using the project test runner? Review the Git diff afterward.')) return; const r = await window.nexus.updateSnapshots(shipFolder(), null); showToast(r.ok ? 'success' : 'error', r.ok ? 'Snapshots updated' : 'Snapshot update failed', r.error || r.stderr || ''); discoverProjectTests(); refreshGitStatus(); }
+async function debugSingleTest(index, event) { event.stopPropagation(); const test = lastTestResults[index]; const r = await window.nexus.debugTest(shipFolder(), test.name); if (!r.ok) return showToast('error', 'Test debugger failed', r.error); document.getElementById('debug-script').value = 'Test runner'; activeDebugTarget = r; for (let attempt = 0; attempt < 30; attempt += 1) { await new Promise((resolve) => setTimeout(resolve, 100)); const target = await window.nexus.debuggerGetTarget(shipFolder(), r.id); if (target.debugUrl) { await window.nexus.debuggerConnect(shipFolder(), r.id); await refreshDebugger(); showToast('success', 'Failing test paused in debugger', `PID ${r.pid}`); return; } } showToast('error', 'Test debugger failed', 'Inspector did not become ready.'); }
 
 async function publishSecret(btn) { const wrapper = btn.closest('.suggestion-item'); const key = wrapper.dataset.key; const p = projects.find((x) => x.id === activeProjectId); const environment = prompt('GitHub environment name, or leave blank for repository Actions secrets:', '') || null; const r = await window.nexus.publishProjectSecret(p.folder, p.projectUid, key, environment); showToast(r.ok ? 'success' : 'error', r.ok ? 'Secret published' : 'Publish failed', r.error || (environment || 'GitHub Actions')); refreshSecretsList(p.projectUid); }
 

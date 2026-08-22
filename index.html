@@ -1338,9 +1338,18 @@ Type "help" for tips.
         <label class="label">Test Results — per-test detail (Jest/Vitest), rerun a single failing test</label>
         <div class="form-row" style="margin-top:8px;">
           <button class="btn btn-secondary" onclick="runDetailedTests()">▶ Run Tests</button>
+          <button class="btn btn-secondary" onclick="discoverProjectTests()">Discover</button>
+          <button class="btn btn-secondary" onclick="startTestWatch()">Watch</button>
+          <button class="btn btn-secondary" onclick="stopTestWatch()">Stop watch</button>
+          <label class="small"><input type="checkbox" id="test-coverage-enabled"> Coverage</label>
+          <label class="small">Workers <input type="number" id="test-max-workers" min="1" max="16" value="4" style="width:60px"></label>
           <span class="muted small" id="test-framework-label"></span>
         </div>
         <div id="test-results-summary" class="muted small" style="margin-top:6px;"></div>
+        <div id="test-discovery-summary" class="muted small" style="margin-top:6px;"></div>
+        <div id="test-coverage-summary" style="margin-top:6px;"></div>
+        <div id="test-history-summary" style="margin-top:6px;"></div>
+        <div id="test-snapshot-summary" style="margin-top:6px;"></div>
         <div id="test-results-list" style="margin-top:6px; max-height:260px; overflow-y:auto;"></div>
       </div>
 

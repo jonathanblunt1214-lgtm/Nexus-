@@ -61,6 +61,7 @@
       "portableProjectConfig.js",
       "operationalDiagnostics.js",
       "secretScanner.js",
+      "advancedTesting.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",

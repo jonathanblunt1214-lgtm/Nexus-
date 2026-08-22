@@ -97,7 +97,7 @@ class RuntimeDebugger {
       cwd: this.workspaceRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
-      env: { ...process.env, NEXUS_DEBUG_TARGET: '1' },
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NEXUS_DEBUG_TARGET: '1' },
     });
 
     this.targets.set(id, { id, pid: child.pid, child, scriptPath: resolvedScript, createdAt: Date.now(), debugUrl: null, closed: false });

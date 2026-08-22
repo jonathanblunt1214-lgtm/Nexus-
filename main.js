@@ -13,7 +13,10 @@ const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 const { OperationalDiagnostics } = require('./operationalDiagnostics');
+const { discover: discoverTests, snapshots: discoverSnapshots, TestHistory, readCoverage } = require('./advancedTesting');
 const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
+const testHistory = new TestHistory(app.getPath('userData'));
+const testWatchers = new Map();
 const startupStartedAt = performance.now();
 crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
 const { pathToFileURL } = require('url');
@@ -2766,6 +2769,7 @@ function detectTestFramework(folder) {
   if (deps.jest) return 'jest';
   return null;
 }
+function findTestRunnerScript(folder, framework) { try { return require.resolve(framework === 'jest' ? 'jest/bin/jest.js' : 'vitest/vitest.mjs', { paths: [folder] }); } catch { return null; } }
 
 ipcMain.handle('detect-test-framework', (_event, { folder }) => {
   return { framework: detectTestFramework(folder) };
@@ -2789,7 +2793,7 @@ function findTestScripts(folder) {
   }
 }
 
-ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern }) => {
+ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern, coverage, maxWorkers }) => {
   const framework = detectTestFramework(folder);
   if (!framework) {
     const testScripts = findTestScripts(folder).filter((s) => s !== 'test'); // 'test' itself is covered by the plain fallback below
@@ -2823,8 +2827,12 @@ ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern })
   let args;
   if (framework === 'jest') {
     args = ['--json', `--outputFile=${outFile}`];
+    if (coverage) args.push('--coverage', '--coverageReporters=json-summary');
+    if (maxWorkers) args.push(`--maxWorkers=${Math.max(1, Math.min(16, Number(maxWorkers)))}`);
   } else {
     args = ['run', '--reporter=json', `--outputFile=${outFile}`];
+    if (coverage) args.push('--coverage', '--coverage.reporter=json-summary');
+    if (maxWorkers) args.push(`--maxWorkers=${Math.max(1, Math.min(16, Number(maxWorkers)))}`);
   }
   if (testNamePattern) args.push('-t', testNamePattern);
 
@@ -2842,8 +2850,15 @@ ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern })
     try { fs.unlinkSync(outFile); } catch { /* best effort cleanup */ }
   }
 
-  return { ok: runResult.ok, detailed: true, framework, ...parsed };
+  const history = testHistory.record(folder, parsed.tests);
+  return { ok: runResult.ok, detailed: true, framework, ...parsed, history, coverage: coverage ? readCoverage(folder) : null };
 });
+
+ipcMain.handle('tests:discover', (_event, { folder }) => ({ ...discoverTests(folder), snapshots: discoverSnapshots(folder).files, history: testHistory.summary(folder) }));
+ipcMain.handle('tests:watch-start', async (_event, { folder }) => { const denied = requireWorkspacePermission(folder, 'commands'); if (denied) return denied; if (testWatchers.has(folder)) return { ok: true, alreadyRunning: true }; const framework = detectTestFramework(folder); const script = framework && findTestRunnerScript(folder, framework); if (!script) return { ok: false, error: 'Watch mode requires a locally installed Jest or Vitest.' }; const child = spawn(process.execPath, [script, '--watch'], { cwd: folder, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } }); testWatchers.set(folder, child); child.once('exit', () => testWatchers.delete(folder)); return { ok: true, pid: child.pid }; });
+ipcMain.handle('tests:watch-stop', (_event, { folder }) => { const child = testWatchers.get(folder); if (!child) return { ok: true, stopped: false }; child.kill('SIGTERM'); testWatchers.delete(folder); return { ok: true, stopped: true }; });
+ipcMain.handle('tests:update-snapshots', async (_event, { folder, pattern }) => { const denied = requireWorkspacePermission(folder, 'commands'); if (denied) return denied; const framework = detectTestFramework(folder); if (!framework) return { ok: false, error: 'Snapshot updates require Jest or Vitest.' }; const bin = findLocalBin(folder, framework) || framework; const args = framework === 'jest' ? ['-u'] : ['run', '-u']; if (pattern) args.push('-t', pattern); return runCommandArgs(folder, bin, args, 120_000); });
+ipcMain.handle('tests:debug', async (_event, { folder, testName }) => { const denied = requireWorkspacePermission(folder, 'commands'); if (denied) return denied; const framework = detectTestFramework(folder); const script = framework && findTestRunnerScript(folder, framework); if (!script) return { ok: false, error: 'Debugging requires a locally installed Jest or Vitest.' }; const relative = path.relative(folder, script); const args = framework === 'jest' ? ['--runInBand', '-t', testName] : ['run', '--no-file-parallelism', '-t', testName]; return { ok: true, ...(require('./section7Ipc').getDebugger(folder).launchIsolated(relative, args)) }; });
 
 // =======================================================================
 // API Testing Tool: sends real HTTP requests from the main process (avoids
