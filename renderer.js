@@ -2554,7 +2554,12 @@ async function commitAndPush() {
   if (!message) { alert('Write a commit message first.'); return; }
   if (!confirm(`This will commit all changes in ${folder} and push to the remote. Continue?`)) return;
 
-  const commitResult = await window.nexus.gitCommit(folder, message);
+  let commitResult = await window.nexus.gitCommit(folder, message, false);
+  if (commitResult.secretScanBlocked) {
+    const details = commitResult.findings.map((f) => `${f.file}:${f.line} · ${f.type}`).join('\n');
+    if (!confirm(`Commit blocked because potential secrets were detected:\n\n${details}\n\nOnly continue if these are false positives. Commit anyway?`)) return;
+    commitResult = await window.nexus.gitCommit(folder, message, true);
+  }
   if (!commitResult.ok) { alert('Commit failed: ' + (commitResult.error || commitResult.output)); return; }
 
   const pushResult = await window.nexus.gitPush(folder);
@@ -2945,11 +2950,13 @@ async function refreshSecretsList(projectUid) {
     listEl.innerHTML = '<p class="muted small">No secrets saved for this project yet.</p>';
     return;
   }
-  listEl.innerHTML = result.keys.map((k) => `
-    <div class="suggestion-item" data-key="${escapeHtml(k)}">
-      <strong>${escapeHtml(k)}</strong>
+  listEl.innerHTML = result.keys.map((record) => `
+    <div class="suggestion-item" data-key="${escapeHtml(record.key)}">
+      <strong>${escapeHtml(record.key)}</strong> <span class="pill">${escapeHtml(record.provider)}</span>
+      <p class="muted small">${record.expiresAt ? `Expires ${escapeHtml(record.expiresAt)}${new Date(record.expiresAt) < new Date(Date.now() + 30 * 86400000) ? ' · ROTATE SOON' : ''}` : 'No expiration set'}${record.rotatedAt ? ` · rotated ${escapeHtml(record.rotatedAt.slice(0, 10))}` : ''}</p>
       <div class="row" style="margin-top:6px;">
         <button class="btn btn-secondary tiny" onclick="revealSecret(this)">Show</button>
+        <button class="btn btn-secondary tiny" onclick="publishSecret(this)">Publish to GitHub</button>
         <button class="btn btn-secondary tiny" onclick="deleteSecret(this)">Delete</button>
       </div>
       <p class="mono small secret-value" style="margin-top:4px;"></p>
@@ -2963,10 +2970,13 @@ async function saveProjectSecret() {
   const key = document.getElementById('secret-key-name').value.trim();
   const value = document.getElementById('secret-key-value').value;
   if (!key || !value) return;
-  const result = await window.nexus.saveProjectSecret(p.projectUid, key, value);
+  const provider = document.getElementById('secret-provider').value;
+  const expiresAt = document.getElementById('secret-expires-at').value || null;
+  const result = await window.nexus.saveProjectSecret(p.projectUid, key, value, { provider, expiresAt });
   if (!result.ok) { alert('Failed to save: ' + result.error); return; }
   document.getElementById('secret-key-name').value = '';
   document.getElementById('secret-key-value').value = '';
+  if (provider !== 'local') { const environment = provider === 'github-environment' ? prompt('GitHub environment name:') : null; const published = await window.nexus.publishProjectSecret(p.folder, p.projectUid, key, environment); if (!published.ok) showToast('error', 'Secret saved locally but GitHub publish failed', published.error); }
   refreshSecretsList(p.projectUid);
 }
 
@@ -3283,6 +3293,8 @@ function readGitHubAutoSyncSettings() {
   const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
   return { enabled, seconds };
 }
+
+async function publishSecret(btn) { const wrapper = btn.closest('.suggestion-item'); const key = wrapper.dataset.key; const p = projects.find((x) => x.id === activeProjectId); const environment = prompt('GitHub environment name, or leave blank for repository Actions secrets:', '') || null; const r = await window.nexus.publishProjectSecret(p.folder, p.projectUid, key, environment); showToast(r.ok ? 'success' : 'error', r.ok ? 'Secret published' : 'Publish failed', r.error || (environment || 'GitHub Actions')); refreshSecretsList(p.projectUid); }
 
 let activeDebugTarget = null;
 let activeDebugSnapshot = null;
