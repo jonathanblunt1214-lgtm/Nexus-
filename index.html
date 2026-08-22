@@ -1237,7 +1237,17 @@ Type "help" for tips.
           <button class="btn btn-secondary" onclick="refreshGitStatus()">↻ Refresh status</button>
           <span class="mono small" id="git-branch-display">branch: —</span>
         </div>
+        <div class="form-row" style="margin-top:8px;">
+          <select id="git-branch-select" onchange="switchGitBranch(this.value)" aria-label="Switch branch"><option value="">Switch branch…</option></select>
+          <span class="muted small" id="git-sync-indicator"></span>
+          <span class="pill" id="git-protection-indicator">protection: unknown</span>
+        </div>
         <pre id="git-status-display" class="diff-box" style="max-height:60px; margin-top:8px;"></pre>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="stageAllGitFiles()">Stage all</button>
+          <button class="btn btn-secondary" onclick="unstageAllGitFiles()">Unstage all</button>
+        </div>
+        <div id="git-workflow-file-list" style="margin-top:8px;"></div>
         <div id="git-diff-file-list" style="margin-top:8px;"></div>
         <div class="form-row" style="margin-top:10px;">
           <input type="text" id="git-branch-input" placeholder="new-feature-branch-name">
@@ -1435,6 +1445,30 @@ Type "help" for tips.
           <span class="muted small">seconds (30–600)</span>
         </div>
         <p class="muted small" id="github-auto-sync-status" style="margin-top:8px;">Auto Save/Push is off.</p>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">Stashes &amp; Conflicts</label>
+        <div class="form-row" style="margin-top:8px;">
+          <input id="git-stash-message" placeholder="Optional stash description">
+          <button class="btn btn-secondary" onclick="createGitStash()">Stash changes</button>
+          <button class="btn btn-secondary" onclick="refreshGitStashes()">↻ Refresh</button>
+        </div>
+        <div id="git-stash-list" style="margin-top:8px;"></div>
+        <div id="git-conflict-list" style="margin-top:8px;"></div>
+        <div id="git-conflict-editor" style="display:none; margin-top:8px;">
+          <label class="label" id="git-conflict-file"></label>
+          <div class="form-row"><button class="btn btn-secondary" onclick="useConflictVersion('ours')">Use ours</button><button class="btn btn-secondary" onclick="useConflictVersion('theirs')">Use theirs</button></div>
+          <textarea id="git-conflict-content" rows="10" class="mono" style="width:100%; margin-top:8px;"></textarea>
+          <button class="btn" style="margin-top:8px;" onclick="saveConflictResolution()">Mark resolved</button>
+        </div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
+        <label class="label">GitHub Pull Requests</label>
+        <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="refreshProjectPullRequests()">↻ Load pull requests</button></div>
+        <div id="github-project-pr-list" style="margin-top:8px;"></div>
+        <div id="github-project-pr-review" style="margin-top:8px;"></div>
       </div>
 
       <div class="card update-card" aria-labelledby="update-card-title">

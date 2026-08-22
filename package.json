@@ -55,6 +55,7 @@
       "pureLogic.js",
       "pipelineEngine.js",
       "githubClient.js",
+      "gitWorkflow.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",
