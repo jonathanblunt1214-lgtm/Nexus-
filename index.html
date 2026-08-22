@@ -1475,9 +1475,18 @@ Type "help" for tips.
         <div class="form-row" style="margin-top:8px"><label class="small"><input type="checkbox" id="diagnostics-telemetry"> Allow anonymous telemetry</label><label class="small"><input type="checkbox" id="diagnostics-paths"> Include local paths in exported diagnostics</label><button class="btn btn-secondary" onclick="saveDiagnosticsSettings()">Save privacy settings</button><button class="btn" onclick="exportDiagnosticsBundle()">Export support bundle</button><button class="btn btn-secondary" onclick="loadDiagnostics()">View recent logs</button></div>
         <div id="diagnostics-log" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto"></div>
       </div>
+      <div class="card" aria-labelledby="connected-services-title">
+        <label class="label" id="connected-services-title">Connected Services</label>
+        <p class="muted small" style="margin-top:6px;">Sign in through your system browser. Account tokens are Windows-encrypted. Google Drive access is limited to files Nexus creates or you explicitly select.</p>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="connectGitHubOAuth()">Sign in with GitHub</button><button class="btn" onclick="connectGoogleOAuth()">Sign in with Google</button><button class="btn btn-secondary" onclick="disconnectGoogleOAuth()">Disconnect Google</button></div>
+        <p id="oauth-service-status" class="muted small" style="margin-top:8px;">Checking connections…</p>
+        <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="uploadGoogleDriveFile()">Upload file to Drive</button><button class="btn btn-secondary" onclick="loadGoogleDriveFiles()">Browse Nexus Drive files</button></div>
+        <div id="google-drive-files" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto;"></div>
+        <details style="margin-top:12px;"><summary class="muted small">OAuth app configuration for development builds</summary><p class="muted small">Packaged releases should provide these identifiers. They are not user passwords.</p><div class="form-row"><input id="oauth-github-client-id" placeholder="GitHub OAuth client ID"><input id="oauth-google-client-id" placeholder="Google desktop client ID"><input type="password" id="oauth-google-client-secret" placeholder="Google client secret"><button class="btn btn-secondary" onclick="saveOAuthConfiguration()">Save configuration</button></div></details>
+      </div>
       <div class="card" aria-labelledby="github-settings-title">
         <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Save/Push</label>
-        <p class="muted small" style="margin-top:6px;">Log in with a GitHub Personal Access Token carrying <code>repo</code> access. Nexus stores it encrypted on this Windows account.</p>
+        <p class="muted small" style="margin-top:6px;">Use Connected Services above, or provide a Personal Access Token carrying <code>repo</code> access as a compatibility option. Nexus stores it encrypted on this Windows account.</p>
         <div class="form-row" style="margin-top:8px;">
           <input type="password" id="github-token" placeholder="GitHub token (ghp_…)">
           <button class="btn" id="github-login-btn" onclick="githubConnect()">Log in</button>

@@ -3879,6 +3879,8 @@ setInterval(async () => {
   refreshGeminiStatus();
   refreshNimStatus();
   refreshGitHubStatus();
+  refreshOAuthServices();
+  loadOAuthConfiguration();
   refreshOpenAiStatus();
   renderGitHubAutoSyncSettings();
   scheduleGitHubAutoSync();
@@ -3892,10 +3894,70 @@ setInterval(async () => {
 
   updateActivityDot();
 })();
-// GitHub is connected with a pasted Personal Access Token (stored encrypted
-// via the same saveGeminiKey-style path), not an OAuth app flow - Nexus
-// isn't a registered GitHub OAuth App, so a real device-flow "Authorize"
-// button would have nothing to talk to. This is the honest, working version.
+let googleDriveFiles = [];
+
+async function loadOAuthConfiguration() {
+  const result = await window.nexus.oauthConfiguration();
+  if (!result.ok) return;
+  document.getElementById('oauth-github-client-id').value = result.githubClientId || '';
+  document.getElementById('oauth-google-client-id').value = result.googleClientId || '';
+}
+
+async function saveOAuthConfiguration() {
+  const result = await window.nexus.oauthConfigure({ githubClientId: document.getElementById('oauth-github-client-id').value.trim(), googleClientId: document.getElementById('oauth-google-client-id').value.trim(), googleClientSecret: document.getElementById('oauth-google-client-secret').value.trim() });
+  if (result.ok) document.getElementById('oauth-google-client-secret').value = '';
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'OAuth configuration saved' : 'Could not save configuration', result.error || '');
+}
+
+async function refreshOAuthServices() {
+  const result = await window.nexus.oauthStatus();
+  if (!result.ok) return;
+  document.getElementById('oauth-service-status').innerText = `GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'}`;
+}
+
+async function connectGitHubOAuth() {
+  const status = document.getElementById('oauth-service-status');
+  const start = await window.nexus.githubOAuthStart();
+  if (!start.ok) { showToast('error', 'GitHub sign-in could not start', start.error); return; }
+  status.innerText = `GitHub opened in your browser. Enter code ${start.userCode}. Waiting for authorization…`;
+  const result = await window.nexus.githubOAuthComplete();
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub connected' : 'GitHub sign-in failed', result.error || 'Private repositories and GitHub tools are ready.');
+  refreshOAuthServices(); refreshGitHubStatus();
+}
+
+async function connectGoogleOAuth() {
+  document.getElementById('oauth-service-status').innerText = 'Complete Google sign-in and Drive permission in your browser…';
+  const result = await window.nexus.googleOAuthConnect();
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Google connected' : 'Google sign-in failed', result.error || 'Google Drive storage is ready.');
+  refreshOAuthServices();
+}
+
+async function disconnectGoogleOAuth() {
+  if (!confirm('Disconnect Google and revoke the Nexus session?')) return;
+  await window.nexus.googleOAuthDisconnect(); googleDriveFiles = []; document.getElementById('google-drive-files').innerHTML = ''; refreshOAuthServices();
+}
+
+async function uploadGoogleDriveFile() {
+  const result = await window.nexus.googleDriveUpload();
+  if (!result.canceled) showToast(result.ok ? 'success' : 'error', result.ok ? 'Uploaded to Google Drive' : 'Drive upload failed', result.file?.name || result.error);
+  if (result.ok) loadGoogleDriveFiles();
+}
+
+async function loadGoogleDriveFiles() {
+  const panel = document.getElementById('google-drive-files'); panel.innerHTML = '<p class="muted small">Loading Google Drive files…</p>';
+  const result = await window.nexus.googleDriveList();
+  if (!result.ok) { panel.innerHTML = `<p class="muted small">${escapeHtml(result.error)}</p>`; return; }
+  googleDriveFiles = result.files;
+  panel.innerHTML = googleDriveFiles.map((file, index) => `<div class="suggestion-item"><strong>${escapeHtml(file.name)}</strong><span class="muted small">${escapeHtml(file.modifiedTime || '')}</span><button class="btn tiny btn-secondary" onclick="downloadGoogleDriveFile(${index})">Download</button></div>`).join('') || '<p class="muted small">No Nexus-accessible Drive files yet.</p>';
+}
+
+async function downloadGoogleDriveFile(index) {
+  const file = googleDriveFiles[index]; if (!file) return;
+  const result = await window.nexus.googleDriveDownload(file.id, file.name);
+  if (!result.canceled) showToast(result.ok ? 'success' : 'error', result.ok ? 'Drive file downloaded' : 'Drive download failed', result.path || result.error);
+}
+
+// Personal access tokens remain available for compatibility with existing setups.
 async function githubConnect() {
   const input = document.getElementById('github-token');
   const token = input.value.trim();

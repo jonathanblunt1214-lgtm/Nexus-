@@ -57,6 +57,8 @@
       "pipelineEngine.js",
       "githubClient.js",
       "githubGitAuth.js",
+      "oauthIntegrations.js",
+      "googleDriveClient.js",
       "gitWorkflow.js",
       "debugAdapter.js",
       "portableProjectConfig.js",
