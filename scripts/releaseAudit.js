@@ -32,6 +32,7 @@ for (const name of rootEntries) {
 const bootstrap = read('bootstrap.js');
 if (!/require\(['"]\.\/main\.js['"]\)/.test(bootstrap)) fail('bootstrap must load main.js explicitly to prevent extensionless-file shadowing.');
 if (!/registerSection7Ipc/.test(bootstrap) || !/registerSection8Ipc/.test(bootstrap)) fail('bootstrap must register Sections 7 and 8 IPC before main.js.');
+if (!/isAuthorizedProjectRoot/.test(bootstrap) || !/listProjects/.test(bootstrap)) fail('bootstrap must authorize Section 8 project roots against the Nexus project registry.');
 
 const preload = read('preload.js');
 for (const api of ['visionCapturePreview', 'debuggerLaunchIsolated']) {
@@ -57,19 +58,23 @@ if (exists('package-lock.json')) {
     fail(`package-lock.json is invalid JSON: ${error.message}`);
   }
 } else {
-  warn('package-lock.json is missing; release installs are not reproducible.');
+  fail('package-lock.json is missing; release installs must be reproducible.');
 }
 
 const mainSource = read('main.js');
 if (/webPreferences:\s*\{[\s\S]*?nodeIntegration:\s*true/.test(mainSource)) fail('Electron renderer must not enable nodeIntegration.');
 if (!/contextIsolation:\s*true/.test(mainSource)) fail('Electron renderer must keep contextIsolation enabled.');
-if (/function saveConfig\([\s\S]{0,300}writeFileSync/.test(mainSource)) warn('main.js saveConfig still uses synchronous non-atomic persistence; hardening recommended before release.');
+if (!/function saveConfig\([\s\S]{0,300}writeJsonAtomicSync/.test(mainSource)) fail('main.js saveConfig must use atomic persistence.');
 
 const pluginRuntime = read('pluginRuntime.js');
-if (/vm\.createContext/.test(pluginRuntime)) warn('Plugin VM runs in the Electron main process; handler infinite loops are not preempted by the initial vm.Script timeout. Treat this as a release-blocking isolation review item for untrusted third-party plugins.');
+const pluginWorker = exists('pluginWorker.js') ? read('pluginWorker.js') : '';
+if (!/new Worker\(/.test(pluginRuntime) || !/worker_threads/.test(pluginRuntime)) fail('Plugin runtime must execute third-party plugins in a killable worker boundary.');
+if (!/terminate\(\)/.test(pluginRuntime) || !/timed out/.test(pluginRuntime)) fail('Plugin runtime must terminate workers on execution timeout.');
+if (!/vm\.createContext/.test(pluginWorker)) fail('Plugin worker must retain the constrained VM sandbox inside the worker boundary.');
+if (/vm\.createContext/.test(pluginRuntime)) fail('Plugin VM must not execute in the Electron main-process runtime module.');
 
 const section8 = read('section8Ipc.js');
-if (/path\.resolve\(value\)/.test(section8) && !/getProjectsRoot|resolveProjectPath/.test(section8)) warn('Section 8 accepts any existing directory as projectRoot; bind plugin IPC to registered/active Nexus workspaces before exposing it to untrusted renderer content.');
+if (!/isAuthorizedProjectRoot/.test(section8) || !/Plugin access denied/.test(section8)) fail('Section 8 IPC must reject unregistered project roots.');
 
 for (const message of warnings) console.warn(`[WARN] ${message}`);
 for (const message of failures) console.error(`[FAIL] ${message}`);
