@@ -3229,14 +3229,14 @@ function readGitHubAutoSyncSettings() {
   return { enabled, seconds };
 }
 
-async function saveAllEditorFilesBeforeExit() {
+async function saveAllDirtyEditorFiles(source = 'Automatic save') {
   const current = codeEditorOpenFiles.find((file) => file.relPath === codeEditorCurrentRelPath);
   if (current && codeEditorCM) current.content = codeEditorCM.getValue();
 
   const failures = [];
   let saved = 0;
   for (const entry of codeEditorOpenFiles.filter((file) => file.dirty)) {
-    const result = await window.nexus.applyFileChange(entry.absPath, entry.content, 'Automatic save before Nexus closes');
+    const result = await window.nexus.applyFileChange(entry.absPath, entry.content, source);
     if (!result.ok) failures.push(`${entry.relPath}: ${result.error}`);
     else {
       entry.dirty = false;
@@ -3249,7 +3249,7 @@ async function saveAllEditorFilesBeforeExit() {
 
 window.nexus.onExitSaveRequest(async ({ requestId }) => {
   try {
-    const result = await saveAllEditorFilesBeforeExit();
+    const result = await saveAllDirtyEditorFiles('Automatic save before Nexus closes');
     window.nexus.completeExitSave(requestId, result);
   } catch (error) {
     window.nexus.completeExitSave(requestId, { ok: false, failures: [error.message] });
@@ -3258,11 +3258,14 @@ window.nexus.onExitSaveRequest(async ({ requestId }) => {
 
 function renderGitHubAutoSyncSettings() {
   const settings = readGitHubAutoSyncSettings();
+  const intervalInput = document.getElementById('github-auto-sync-seconds');
+  intervalInput.min = String(GITHUB_AUTO_SYNC_MIN_SECONDS);
+  intervalInput.max = String(GITHUB_AUTO_SYNC_MAX_SECONDS);
   document.getElementById('github-auto-sync-enabled').checked = settings.enabled;
-  document.getElementById('github-auto-sync-seconds').value = String(settings.seconds);
+  intervalInput.value = String(settings.seconds);
   document.getElementById('github-auto-sync-status').innerText = settings.enabled
-    ? `Auto Push runs every ${settings.seconds} seconds.`
-    : 'Auto Push is off.';
+    ? `Auto Save/Push runs every ${settings.seconds} seconds.`
+    : 'Auto Save/Push is off.';
 }
 
 function scheduleGitHubAutoSync() {
@@ -3294,6 +3297,12 @@ async function runGitHubAutoSync() {
   let failures = 0;
   status.innerText = 'Checking projects for changes…';
   try {
+    const saveResult = await saveAllDirtyEditorFiles('Timed Auto Save before GitHub push');
+    if (!saveResult.ok) {
+      status.innerText = `Auto Save failed: ${saveResult.failures.join('; ')}`;
+      showToast('error', 'Auto Save failed', saveResult.failures.join('\n'));
+      return;
+    }
     for (const project of projects) {
       const result = await window.nexus.gitAutoSync(project.folder, project.name);
       if (result.ok && result.changed) pushed += 1;
@@ -3303,7 +3312,7 @@ async function runGitHubAutoSync() {
     status.innerText = failures
       ? `Last checked ${checkedAt}: ${pushed} pushed, ${failures} failed.`
       : `Last checked ${checkedAt}: ${pushed ? `${pushed} project(s) pushed` : 'no changes'}.`;
-    if (pushed) showToast('success', 'GitHub auto-sync complete', `${pushed} project(s) committed and pushed.`);
+    if (pushed || saveResult.saved) showToast('success', 'Auto Save/Push complete', `${saveResult.saved} file(s) saved; ${pushed} project(s) pushed.`);
     if (failures) showToast('error', 'Some projects could not auto-sync', `${failures} project(s) need attention in Ship / Git.`);
   } finally {
     githubAutoSyncRunning = false;
@@ -3485,7 +3494,7 @@ async function githubConnect() {
     const validation = await window.nexus.githubListRepos();
     if (validation?.ok) {
       input.value = '';
-      showToast('success', 'Logged in to GitHub', 'GitHub actions and Auto Push can now use this encrypted connection.');
+      showToast('success', 'Logged in to GitHub', 'GitHub actions and Auto Save/Push can now use this encrypted connection.');
     } else {
       await window.nexus.clearGitHubToken();
       showToast('error', 'GitHub login failed', validation?.error || 'GitHub rejected the token.');

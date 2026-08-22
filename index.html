@@ -1415,7 +1415,7 @@ Type "help" for tips.
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
       <div class="card" aria-labelledby="github-settings-title">
-        <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Push</label>
+        <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Save/Push</label>
         <p class="muted small" style="margin-top:6px;">Log in with a GitHub Personal Access Token carrying <code>repo</code> access. Nexus stores it encrypted on this Windows account.</p>
         <div class="form-row" style="margin-top:8px;">
           <input type="password" id="github-token" placeholder="GitHub token (ghp_…)">
@@ -1424,17 +1424,17 @@ Type "help" for tips.
         </div>
         <p class="muted small" id="github-status" style="margin-top:8px;">Logged out.</p>
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
-        <p class="muted small">Auto Push commits and pushes changed saved projects with a GitHub <code>origin</code>. Nexus application updates remain separate. The Nexus source folder is eligible only when its project name is exactly <strong>Nexus</strong>.</p>
+        <p class="muted small">Auto Save/Push first saves open editor changes, then commits and pushes projects with a GitHub <code>origin</code>. Both actions use the same interval. Nexus application updates remain separate. The Nexus source folder is eligible only when its project name is exactly <strong>Nexus</strong>.</p>
         <div class="form-row" style="margin-top:8px; align-items:center;">
           <label class="muted small" style="display:flex; align-items:center; gap:7px;">
             <input type="checkbox" id="github-auto-sync-enabled" onchange="saveGitHubAutoSyncSettings()">
-            Enable Auto Push
+            Enable Auto Save/Push
           </label>
-          <label class="muted small" for="github-auto-sync-seconds">Push interval</label>
-          <input type="number" id="github-auto-sync-seconds" min="30" max="600" step="1" value="300" inputmode="numeric" aria-label="Auto Push interval in seconds" style="max-width:120px;" onchange="saveGitHubAutoSyncSettings()">
+          <label class="muted small" for="github-auto-sync-seconds">Save/push interval</label>
+          <input type="number" id="github-auto-sync-seconds" min="30" max="600" step="1" value="300" inputmode="numeric" aria-label="Auto Save and Push interval in seconds" style="max-width:120px;" onchange="saveGitHubAutoSyncSettings()">
           <span class="muted small">seconds (30–600)</span>
         </div>
-        <p class="muted small" id="github-auto-sync-status" style="margin-top:8px;">Auto Push is off.</p>
+        <p class="muted small" id="github-auto-sync-status" style="margin-top:8px;">Auto Save/Push is off.</p>
       </div>
 
       <div class="card update-card" aria-labelledby="update-card-title">
