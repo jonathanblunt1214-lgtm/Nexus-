@@ -1437,6 +1437,12 @@ Type "help" for tips.
 
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
+      <div class="card" aria-labelledby="diagnostics-settings-title">
+        <label class="label" id="diagnostics-settings-title">Diagnostics &amp; Privacy</label>
+        <p class="muted small" style="margin-top:6px">Nexus keeps redacted structured logs and local crash dumps so failures survive a restart. Nothing is uploaded unless you explicitly enable privacy-controlled telemetry.</p>
+        <div class="form-row" style="margin-top:8px"><label class="small"><input type="checkbox" id="diagnostics-telemetry"> Allow anonymous telemetry</label><label class="small"><input type="checkbox" id="diagnostics-paths"> Include local paths in exported diagnostics</label><button class="btn btn-secondary" onclick="saveDiagnosticsSettings()">Save privacy settings</button><button class="btn" onclick="exportDiagnosticsBundle()">Export support bundle</button><button class="btn btn-secondary" onclick="loadDiagnostics()">View recent logs</button></div>
+        <div id="diagnostics-log" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto"></div>
+      </div>
       <div class="card" aria-labelledby="github-settings-title">
         <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Save/Push</label>
         <p class="muted small" style="margin-top:6px;">Log in with a GitHub Personal Access Token carrying <code>repo</code> access. Nexus stores it encrypted on this Windows account.</p>

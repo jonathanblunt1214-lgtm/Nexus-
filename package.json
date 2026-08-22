@@ -58,6 +58,7 @@
       "gitWorkflow.js",
       "debugAdapter.js",
       "portableProjectConfig.js",
+      "operationalDiagnostics.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",

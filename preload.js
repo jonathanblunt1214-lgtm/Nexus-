@@ -262,4 +262,8 @@ contextBridge.exposeInMainWorld('nexus', {
   githubOperationsRun: (folder, runId) => ipcRenderer.invoke('github-operations:run', { folder, runId }),
   githubOperationsAction: (folder, action, payload) => ipcRenderer.invoke('github-operations:action', { folder, action, payload }),
   githubOperationsDownload: (folder, url, name) => ipcRenderer.invoke('github-operations:download', { folder, url, name }),
+  diagnosticsGet: (limit) => ipcRenderer.invoke('diagnostics:get', { limit }),
+  diagnosticsSettings: (value) => ipcRenderer.invoke('diagnostics:settings', value),
+  diagnosticsRecord: (payload) => ipcRenderer.invoke('diagnostics:record', payload),
+  diagnosticsExport: () => ipcRenderer.invoke('diagnostics:export'),
 });

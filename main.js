@@ -4,13 +4,18 @@
 // directly — it only talks to this file through the safe bridge in
 // preload.js. That separation is what makes it safe to load web-ish UI code.
 
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session, crashReporter } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { writeJsonAtomic } = require('./atomicWrite');
 const os = require('os');
 const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
+const { performance } = require('perf_hooks');
+const { OperationalDiagnostics } = require('./operationalDiagnostics');
+const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
+const startupStartedAt = performance.now();
+crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
 const { pathToFileURL } = require('url');
 const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
 const { getProjectsRoot } = require('./projectSettings');
@@ -65,12 +70,14 @@ let exitSaveSequence = 0;
 // a visible notification, instead of vanishing into a terminal only a
 // developer running from source would ever see. ---
 process.on('uncaughtException', (err) => {
+  diagnostics.record('fatal', 'main', 'uncaughtException', { message: err.message, stack: err.stack });
   console.error('[Nexus] Uncaught exception in main process:', err);
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('main-process-error', { message: err.message, stack: err.stack });
   }
 });
 process.on('unhandledRejection', (reason) => {
+  diagnostics.record('error', 'main', 'unhandledRejection', { reason: reason?.stack || String(reason) });
   const message = reason instanceof Error ? reason.message : String(reason);
   const stack = reason instanceof Error ? reason.stack : null;
   console.error('[Nexus] Unhandled rejection in main process:', reason);
@@ -317,6 +324,7 @@ function setupPopupAllowlist() {
 app.whenReady().then(async () => {
   await initializeConfig();
   createWindow();
+  diagnostics.record('info', 'app', 'ready', { startupMs: Math.round(performance.now() - startupStartedAt), crashDumps: app.getPath('crashDumps') });
   setupPreviewSession();
   setupPopupAllowlist();
   initUpdater(mainWindow);
@@ -2004,6 +2012,10 @@ ipcMain.handle('github-operations:download', async (_event, { folder, url, name 
   const token = getGithubToken(); if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
   try { const buffer = await require('./githubClient').downloadGitHubArchive(token, url); const safeName = String(name || 'github-download').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 100); const target = path.join(app.getPath('downloads'), `${safeName}.zip`); fs.writeFileSync(target, buffer); return { ok: true, path: target }; } catch (error) { return { ok: false, error: error.message }; }
 });
+ipcMain.handle('diagnostics:get', (_event, { limit }) => ({ ok: true, settings: diagnostics.settings(), entries: diagnostics.recent(limit), crashDumps: app.getPath('crashDumps') }));
+ipcMain.handle('diagnostics:settings', (_event, value) => ({ ok: true, settings: diagnostics.saveSettings(value || {}) }));
+ipcMain.handle('diagnostics:record', (_event, { level, component, event, data, correlationId }) => ({ ok: true, correlationId: diagnostics.record(level || 'info', component || 'renderer', event || 'event', data || {}, correlationId) }));
+ipcMain.handle('diagnostics:export', async () => { const result = await dialog.showOpenDialog(mainWindow, { title: 'Choose support bundle destination', properties: ['openDirectory', 'createDirectory'] }); if (result.canceled || !result.filePaths[0]) return { ok: false, canceled: true }; try { return { ok: true, path: diagnostics.exportBundle(result.filePaths[0], { appVersion: app.getVersion(), crashDumps: app.getPath('crashDumps') }) }; } catch (error) { return { ok: false, error: error.message }; } });
 
 async function autoSyncProject(folder, projectName) {
   if (!folder || !fs.existsSync(folder)) return { ok: false, skipped: true, error: 'Folder not found.' };

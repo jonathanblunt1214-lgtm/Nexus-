@@ -1,0 +1,16 @@
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const os = require('os');
+
+const REDACT = /(token|secret|password|authorization|cookie|private.?key)/i;
+class OperationalDiagnostics {
+  constructor(root) { this.root = root; this.logDir = path.join(root, 'diagnostics'); this.logFile = path.join(this.logDir, 'nexus.jsonl'); this.settingsFile = path.join(this.logDir, 'privacy.json'); fs.mkdirSync(this.logDir, { recursive: true }); }
+  settings() { try { return { telemetry: false, includePaths: false, ...JSON.parse(fs.readFileSync(this.settingsFile, 'utf8')) }; } catch { return { telemetry: false, includePaths: false }; } }
+  saveSettings(value) { const settings = { telemetry: Boolean(value.telemetry), includePaths: Boolean(value.includePaths) }; fs.writeFileSync(this.settingsFile, JSON.stringify(settings, null, 2)); return settings; }
+  sanitize(value, key = '') { if (REDACT.test(key)) return '[REDACTED]'; if (typeof value === 'string') return value.replace(/(gh[pousr]_[A-Za-z0-9_]+|Bearer\s+\S+)/gi, '[REDACTED]'); if (Array.isArray(value)) return value.map((item) => this.sanitize(item)); if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, this.sanitize(v, k)])); return value; }
+  record(level, component, event, data = {}, correlationId = crypto.randomUUID()) { const entry = { timestamp: new Date().toISOString(), level, component, event, correlationId, pid: process.pid, data: this.sanitize(data) }; fs.appendFileSync(this.logFile, `${JSON.stringify(entry)}\n`); return correlationId; }
+  recent(limit = 300) { if (!fs.existsSync(this.logFile)) return []; return fs.readFileSync(this.logFile, 'utf8').trim().split('\n').filter(Boolean).slice(-Math.min(2000, Math.max(1, limit))).map((line) => JSON.parse(line)); }
+  exportBundle(destination, extra = {}) { const id = new Date().toISOString().replace(/[:.]/g, '-'); const folder = path.join(destination, `Nexus-Support-${id}`); fs.mkdirSync(folder, { recursive: true }); const settings = this.settings(); const privacy = (value) => { const sanitized = this.sanitize(value); if (settings.includePaths) return sanitized; return JSON.parse(JSON.stringify(sanitized).replaceAll(os.homedir().replaceAll('\\', '\\\\'), '[USER_HOME]')); }; fs.writeFileSync(path.join(folder, 'diagnostics.json'), JSON.stringify(privacy(this.recent(2000)), null, 2)); fs.writeFileSync(path.join(folder, 'system.json'), JSON.stringify(privacy({ platform: process.platform, arch: process.arch, versions: process.versions, uptime: process.uptime(), memory: process.memoryUsage(), ...extra }), null, 2)); if (extra.crashDumps && fs.existsSync(extra.crashDumps)) { const dumps = fs.readdirSync(extra.crashDumps).filter((name) => name.endsWith('.dmp')).slice(-5); if (dumps.length) { const target = path.join(folder, 'crash-dumps'); fs.mkdirSync(target); for (const dump of dumps) fs.copyFileSync(path.join(extra.crashDumps, dump), path.join(target, dump)); } } fs.writeFileSync(path.join(folder, 'README.txt'), 'Nexus support bundle. Secret-like fields are redacted. Review files before sharing.\n'); return folder; }
+}
+module.exports = { OperationalDiagnostics, REDACT };
