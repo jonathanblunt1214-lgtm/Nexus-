@@ -200,6 +200,16 @@ contextBridge.exposeInMainWorld('nexus', {
   // repository "Languages" bar equivalent).
   scanLanguages: (folder) => ipcRenderer.invoke('scan-languages', { folder }),
 
+  // Section 8: signed plugin platform. Project-root authorization is rechecked
+  // in the main process; the renderer receives only narrow lifecycle calls.
+  pluginsScan: (projectRoot) => ipcRenderer.invoke('plugins:scan', { projectRoot }),
+  pluginsList: (projectRoot) => ipcRenderer.invoke('plugins:list', { projectRoot }),
+  pluginsEnable: (projectRoot, pluginId) => ipcRenderer.invoke('plugins:enable', { projectRoot, pluginId }),
+  pluginsDisable: (projectRoot, pluginId) => ipcRenderer.invoke('plugins:disable', { projectRoot, pluginId }),
+  pluginsSlots: (projectRoot) => ipcRenderer.invoke('plugins:slots', { projectRoot }),
+  pluginsHealth: (projectRoot) => ipcRenderer.invoke('plugins:health', { projectRoot }),
+  pluginsInvokeSlot: (projectRoot, slot, payload) => ipcRenderer.invoke('plugins:invoke-slot', { projectRoot, slot, payload }),
+
   // Section 7: local-preview vision and isolated runtime debugging only.
   visionCapturePreview: (webContentsId, rect) => ipcRenderer.invoke('vision:capture-preview', { webContentsId, rect }),
   visionPrepareContext: (payload) => ipcRenderer.invoke('vision:prepare-context', payload),
