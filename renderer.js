@@ -48,6 +48,9 @@ window.addEventListener('unhandledrejection', (event) => {
 window.nexus.onMainProcessError(({ message }) => {
   showErrorToast('Main process error', message);
 });
+window.nexus.onExitSyncStatus(({ state, message }) => {
+  showToast(state === 'failed' ? 'error' : 'info', state === 'failed' ? 'Close blocked' : 'Syncing before close', message);
+});
 
 // ---------- Saved project list: schema versioning ----------
 // Project objects have gained new fields many times as Nexus grew
@@ -123,6 +126,7 @@ if (activeProjectId !== null && !projects.some((p) => p.id === activeProjectId))
   activeProjectId = null;
 }
 let openConfigProjectId = null; // which project's config panel is currently expanded, if any
+window.nexus.setProjectsForExitSync(projects);
 
 // ---------- Tabs ----------
 // ---------- Workspace grid resizers ----------
@@ -378,6 +382,7 @@ function persistProjects() {
   localStorage.setItem('nexus_projects', JSON.stringify(projects));
   localStorage.setItem('nexus_active', JSON.stringify(activeProjectId));
   localStorage.setItem('nexus_projects_schema_version', String(PROJECTS_SCHEMA_VERSION));
+  window.nexus.setProjectsForExitSync(projects);
 }
 
 let editingProjectId = null;

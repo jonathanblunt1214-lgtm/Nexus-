@@ -47,6 +47,10 @@ const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
 
 let mainWindow;
+let projectsForExitSync = [];
+let exitSyncInProgress = false;
+let exitSyncComplete = false;
+let relaunchAfterExitSync = false;
 
 // --- Global error surfacing: previously an uncaught exception or rejected
 // promise anywhere in the main process would fail silently - the app could
@@ -158,6 +162,11 @@ function createWindow() {
   // explicit setTitle() call the only thing that ever sets the title.
   mainWindow.webContents.on('page-title-updated', (event) => {
     event.preventDefault();
+  });
+  mainWindow.on('close', (event) => {
+    if (exitSyncComplete) return;
+    event.preventDefault();
+    syncProjectsBeforeExit();
   });
   // Uncomment while developing to see console errors from the UI:
   // mainWindow.webContents.openDevTools();
@@ -296,6 +305,13 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+ipcMain.on('set-projects-for-exit-sync', (_event, { projects }) => {
+  projectsForExitSync = Array.isArray(projects)
+    ? projects.filter((project) => project && typeof project.folder === 'string' && typeof project.name === 'string')
+      .map(({ folder, name }) => ({ folder, name }))
+    : [];
 });
 
 // =======================================================================
@@ -1271,8 +1287,9 @@ ipcMain.handle('pull-source-updates', async () => {
 });
 
 ipcMain.handle('restart-nexus', () => {
-  app.relaunch();
-  app.exit(0);
+  relaunchAfterExitSync = true;
+  syncProjectsBeforeExit();
+  return { ok: true };
 });
 
 // --- Sandboxed object pipeline (PowerShell-inspired). Real data in, real
@@ -1769,8 +1786,8 @@ ipcMain.handle('git-push', async (_event, { folder }) => {
   return runGit(folder, 'push -u origin HEAD');
 });
 
-ipcMain.handle('git-auto-sync', async (_event, { folder, projectName }) => {
-  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
+async function autoSyncProject(folder, projectName) {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, skipped: true, error: 'Folder not found.' };
 
   const nexusFolder = path.resolve(__dirname).toLowerCase();
   const projectFolder = path.resolve(folder).toLowerCase();
@@ -1785,19 +1802,52 @@ ipcMain.handle('git-auto-sync', async (_event, { folder, projectName }) => {
 
   const status = await runGitArgs(folder, ['status', '--porcelain']);
   if (!status.ok) return { ok: false, error: status.output || 'Could not read Git status.' };
-  if (!status.output.trim()) return { ok: true, changed: false };
+  const hadChanges = Boolean(status.output.trim());
+  if (hadChanges) {
+    const add = await runGitArgs(folder, ['add', '-A']);
+    if (!add.ok) return { ok: false, error: add.output || 'Could not stage project changes.' };
 
-  const add = await runGitArgs(folder, ['add', '-A']);
-  if (!add.ok) return { ok: false, error: add.output || 'Could not stage project changes.' };
-
-  const stamp = new Date().toISOString().replace('T', ' ').replace(/:\d{2}\.\d{3}Z$/, ' UTC');
-  const commit = await runGitArgs(folder, ['commit', '-m', `Nexus auto-sync ${stamp}`]);
-  if (!commit.ok) return { ok: false, error: commit.output || 'Could not commit project changes.' };
+    const stamp = new Date().toISOString().replace('T', ' ').replace(/:\d{2}\.\d{3}Z$/, ' UTC');
+    const commit = await runGitArgs(folder, ['commit', '-m', `Nexus auto-sync ${stamp}`]);
+    if (!commit.ok) return { ok: false, error: commit.output || 'Could not commit project changes.' };
+  }
 
   const push = await runGitArgs(folder, ['push', '-u', 'origin', 'HEAD']);
-  if (!push.ok) return { ok: false, committed: true, error: push.output || 'Committed locally, but GitHub push failed.' };
-  return { ok: true, changed: true, output: push.output };
+  if (!push.ok) return { ok: false, committed: hadChanges, error: push.output || 'GitHub push failed.' };
+  return { ok: true, changed: hadChanges, output: push.output };
+}
+
+ipcMain.handle('git-auto-sync', async (_event, { folder, projectName }) => {
+  return autoSyncProject(folder, projectName);
 });
+
+async function syncProjectsBeforeExit() {
+  if (exitSyncInProgress || exitSyncComplete) return;
+  exitSyncInProgress = true;
+  mainWindow?.webContents.send('exit-sync-status', {
+    state: 'syncing',
+    message: 'Nexus is committing and pushing project changes before closing. Keep this window open.',
+  });
+
+  const failures = [];
+  for (const project of projectsForExitSync) {
+    const result = await autoSyncProject(project.folder, project.name);
+    if (!result.ok && !result.skipped) failures.push(`${project.name}: ${result.error}`);
+  }
+
+  exitSyncInProgress = false;
+  if (failures.length) {
+    mainWindow?.webContents.send('exit-sync-status', {
+      state: 'failed',
+      message: `Nexus stayed open because these projects did not sync:\n${failures.join('\n')}`,
+    });
+    return;
+  }
+
+  exitSyncComplete = true;
+  if (relaunchAfterExitSync) app.relaunch();
+  mainWindow?.close();
+}
 
 // --- Deploy: run whatever script the user already uses (npm run deploy, a shell script, etc). ---
 const deployProcesses = new Map();

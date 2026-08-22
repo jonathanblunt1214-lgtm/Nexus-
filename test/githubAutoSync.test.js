@@ -24,3 +24,15 @@ test('auto-sync uses a narrow bridge and only accepts GitHub origins', () => {
   assert.match(main, /github\\\.com\[\/:\]/i);
   assert.match(main, /project is named exactly Nexus/);
 });
+
+test('closing Nexus is blocked until configured projects finish syncing', () => {
+  const preload = read('preload.js');
+  const renderer = read('renderer.js');
+  const main = read('main.js');
+  assert.match(preload, /setProjectsForExitSync:.*ipcRenderer\.send\('set-projects-for-exit-sync'/);
+  assert.match(renderer, /window\.nexus\.setProjectsForExitSync\(projects\)/);
+  assert.match(main, /mainWindow\.on\('close', \(event\) => \{[\s\S]*?event\.preventDefault\(\);[\s\S]*?syncProjectsBeforeExit\(\)/);
+  assert.match(main, /if \(failures\.length\)[\s\S]*?Nexus stayed open/);
+  assert.match(main, /exitSyncComplete = true;[\s\S]*?mainWindow\?\.close\(\)/);
+  assert.match(main, /const hadChanges = Boolean\(status\.output\.trim\(\)\);[\s\S]*?runGitArgs\(folder, \['push', '-u', 'origin', 'HEAD'\]\)/);
+});
