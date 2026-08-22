@@ -1461,6 +1461,14 @@ Type "help" for tips.
       </div>
 
       <div class="card" style="flex-shrink:0;">
+        <label class="label">Portable Project Setup — nexus.project.json</label>
+        <p class="muted small" style="margin-top:6px">Share commands, tools, environment schemas, services, deployments, debugger adapters, and Dev Container/WSL settings without committing secret values. Machine-only overrides live in ignored nexus.project.local.json.</p>
+        <div class="form-row" style="margin-top:8px"><button class="btn btn-secondary" onclick="loadPortableConfig()">↻ Inspect</button><button class="btn" onclick="savePortableConfig(false)">Save shared config</button><button class="btn btn-secondary" onclick="savePortableConfig(true)">Save local override</button></div>
+        <textarea id="portable-config-editor" class="mono" rows="14" style="width:100%; margin-top:8px" placeholder='{"schemaVersion":1,"requiredTools":[{"name":"node","version":">=22"}],"environment":{"API_URL":{"required":true}},"setup":[{"command":"npm","args":["ci"]}]}'></textarea>
+        <div id="portable-config-status" class="suggestions-list" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
         <label class="label">Stashes &amp; Conflicts</label>
         <div class="form-row" style="margin-top:8px;">
           <input id="git-stash-message" placeholder="Optional stash description">

@@ -48,6 +48,7 @@ const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
 const gitWorkflow = require('./gitWorkflow');
+const portableProjectConfig = require('./portableProjectConfig');
 
 let mainWindow;
 let projectsForExitSync = [];
@@ -1959,6 +1960,16 @@ ipcMain.handle('github-project-pr-merge', async (_event, { folder, number, metho
 ipcMain.handle('language-intelligence', (_event, payload) => {
   try { return queryLanguageIntelligence(payload || {}); }
   catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('portable-config:inspect', (_event, { folder }) => portableProjectConfig.inspect(folder));
+ipcMain.handle('portable-config:save', (_event, { folder, config, local }) => {
+  const denied = requireWorkspacePermission(folder, 'commands');
+  return denied || portableProjectConfig.save(folder, config, { local: Boolean(local) });
+});
+ipcMain.handle('portable-config:run-setup', (_event, { folder, index }) => {
+  const denied = requireWorkspacePermission(folder, 'commands');
+  return denied || portableProjectConfig.runSetup(folder, index);
 });
 
 async function autoSyncProject(folder, projectName) {

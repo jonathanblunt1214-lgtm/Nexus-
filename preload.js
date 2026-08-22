@@ -255,4 +255,7 @@ contextBridge.exposeInMainWorld('nexus', {
   debuggerDapStart: (folder, command, args, adapterId, configuration) => ipcRenderer.invoke('debugger:dap-start', { folder, command, args, adapterId, configuration }),
   debuggerDapRequest: (sessionId, method, args) => ipcRenderer.invoke('debugger:dap-request', { sessionId, method, args }),
   debuggerDapStop: (sessionId) => ipcRenderer.invoke('debugger:dap-stop', { sessionId }),
+  portableConfigInspect: (folder) => ipcRenderer.invoke('portable-config:inspect', { folder }),
+  portableConfigSave: (folder, config, local) => ipcRenderer.invoke('portable-config:save', { folder, config, local }),
+  portableConfigRunSetup: (folder, index) => ipcRenderer.invoke('portable-config:run-setup', { folder, index }),
 });

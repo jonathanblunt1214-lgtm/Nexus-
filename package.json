@@ -57,6 +57,7 @@
       "githubClient.js",
       "gitWorkflow.js",
       "debugAdapter.js",
+      "portableProjectConfig.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",
