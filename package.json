@@ -46,6 +46,7 @@
       "CONSTITUTION.md",
       "updater.js",
       "projectCloner.js",
+      "projectPortDetector.js",
       "projectSettings.js",
       "projectRegistry.js",
       "pureLogic.js",

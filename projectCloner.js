@@ -11,6 +11,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { detectProjectPort } = require('./projectPortDetector');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
 
@@ -129,4 +130,5 @@ module.exports = {
   repoNameFromUrl,
   cloneProject,
   resolveProjectPath,
+  detectProjectPort,
 };
