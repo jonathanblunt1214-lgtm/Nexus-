@@ -72,7 +72,6 @@
       "codeLibrary.js",
       "projectTemplates.js",
       "fullStackSupport.js",
-      "processManager.js",
       "aiInventory.js",
       "inventoryWorker.js",
       "atomicWrite.js",

@@ -38,7 +38,7 @@ const preload = read('preload.js');
 for (const api of ['visionCapturePreview', 'debuggerLaunchIsolated']) {
   if (!preload.includes(api)) fail(`preload bridge is missing Section 7 API: ${api}`);
 }
-for (const api of ['pluginsScan', 'pluginsList', 'pluginsEnable', 'pluginsDisable', 'pluginsHealth']) {
+for (const api of ['pluginsScan', 'pluginsImport', 'pluginsList', 'pluginsEnable', 'pluginsDisable', 'pluginsHealth']) {
   if (!preload.includes(api)) fail(`preload bridge is missing Section 8 API: ${api}`);
 }
 
