@@ -1,0 +1,46 @@
+name: Keep upgrade branch even with main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upgrade-branch
+  cancel-in-progress: false
+
+jobs:
+  fast-forward-upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out confirmed main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fast-forward upgrade branch without discarding work
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main upgrade/nexus-overhaul
+
+          main_sha="$(git rev-parse origin/main)"
+          upgrade_sha="$(git rev-parse origin/upgrade/nexus-overhaul)"
+
+          if [ "$main_sha" = "$upgrade_sha" ]; then
+            echo "upgrade/nexus-overhaul is already even with main at $main_sha."
+            exit 0
+          fi
+
+          if ! git merge-base --is-ancestor "$upgrade_sha" "$main_sha"; then
+            echo "::error::upgrade/nexus-overhaul contains work that is not in main. Refusing to force-push or discard it."
+            exit 1
+          fi
+
+          git push origin "$main_sha:refs/heads/upgrade/nexus-overhaul"
+          echo "upgrade/nexus-overhaul now matches confirmed main at $main_sha."
