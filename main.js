@@ -1972,6 +1972,39 @@ ipcMain.handle('portable-config:run-setup', (_event, { folder, index }) => {
   return denied || portableProjectConfig.runSetup(folder, index);
 });
 
+ipcMain.handle('github-operations:get', async (_event, { folder }) => {
+  const token = getGithubToken();
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  const coordinates = await githubCoordinatesForFolder(folder);
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  try { return { ok: true, coordinates, ...(await require('./githubClient').getRepositoryOperations(token, coordinates.owner, coordinates.repo)) }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('github-operations:run', async (_event, { folder, runId }) => {
+  const token = getGithubToken(); const coordinates = await githubCoordinatesForFolder(folder);
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  try { return { ok: true, ...(await require('./githubClient').getWorkflowRun(token, coordinates.owner, coordinates.repo, runId)) }; } catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('github-operations:action', async (_event, { folder, action, payload }) => {
+  const denied = requireWorkspacePermission(folder, action === 'release' || action === 'rollback' ? 'deploy' : 'commands'); if (denied) return denied;
+  const token = getGithubToken(); const coordinates = await githubCoordinatesForFolder(folder);
+  if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  if (!coordinates) return { ok: false, error: 'This project has no GitHub origin.' };
+  const client = require('./githubClient');
+  try {
+    if (action === 'rerun') await client.rerunWorkflow(token, coordinates.owner, coordinates.repo, payload.runId, payload.failedOnly);
+    else if (action === 'release') await client.createRelease(token, coordinates.owner, coordinates.repo, payload.tag, payload.name, payload.body, payload.target);
+    else if (action === 'rollback') await client.rollbackDeployment(token, coordinates.owner, coordinates.repo, payload.deploymentId);
+    else return { ok: false, error: 'Unsupported operations action.' };
+    return { ok: true };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('github-operations:download', async (_event, { folder, url, name }) => {
+  const token = getGithubToken(); if (!token) return { ok: false, authRequired: true, error: NOT_CONNECTED_ERROR };
+  try { const buffer = await require('./githubClient').downloadGitHubArchive(token, url); const safeName = String(name || 'github-download').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 100); const target = path.join(app.getPath('downloads'), `${safeName}.zip`); fs.writeFileSync(target, buffer); return { ok: true, path: target }; } catch (error) { return { ok: false, error: error.message }; }
+});
+
 async function autoSyncProject(folder, projectName) {
   if (!folder || !fs.existsSync(folder)) return { ok: false, skipped: true, error: 'Folder not found.' };
   const trustError = requireWorkspacePermission(folder, 'git-write');
