@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
+    "audit:architecture": "node scripts/verifyArchitecture.js",
     "dist": "electron-builder --win nsis",
     "dist:publish": "electron-builder --win nsis --publish always"
   },
@@ -44,6 +45,8 @@
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",
+      "inventoryWorker.js",
+      "atomicWrite.js",
       "aiMetrics.js",
       "aiGuardrailTester.js",
       "aiUpgradeOrchestrator.js",
