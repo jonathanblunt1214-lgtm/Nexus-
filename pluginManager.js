@@ -134,7 +134,7 @@ class PluginManager {
     if (record.status === 'ACTIVE') return this.publicRecord(record);
     try {
       if (!this.runtime.instances.has(pluginId)) {
-        this.runtime.load({ manifest: record.manifest, pluginRoot: record.pluginRoot, audit: (code, metadata) => this.audit(pluginId, code, metadata) });
+        await this.runtime.load({ manifest: record.manifest, pluginRoot: record.pluginRoot, audit: (code, metadata) => this.audit(pluginId, code, metadata) });
       }
       await this.runtime.activate(pluginId, (code, metadata) => this.audit(pluginId, code, metadata));
       record.status = 'ACTIVE';

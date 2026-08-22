@@ -3,3 +3,11 @@ dist/
 *.log
 .DS_Store
 push/
+
+# Never commit local Git repository internals or accidental duplicate exports.
+.git/
+COMMIT_EDITMSG
+FETCH_HEAD
+ORIG_HEAD
+packed-refs
+*[[]1[]]*

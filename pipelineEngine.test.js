@@ -125,10 +125,10 @@ test('runPipeline: error handling', async (t) => {
   await t.test('never touches fs, child_process, or any Node/Electron global - confirmed by construction: this module requires nothing but its own code', () => {
     const rawSource = require('node:fs').readFileSync(require.resolve('./pipelineEngine'), 'utf8');
     // Strip comments first - the file's own documentation legitimately
-    // mentions these terms when explaining what it does NOT do, which
-    // would otherwise produce false positives in a naive text scan.
+    // mentions these terms when explaining what it does NOT do. Normalize
+    // CRLF/LF so the assertion behaves identically on every supported OS.
     const codeOnly = rawSource
-      .split('\n')
+      .split(/\r?\n/)
       .map((line) => line.replace(/\/\/.*$/, ''))
       .join('\n');
     assert.ok(!/require\(['"]fs['"]\)/.test(codeOnly), 'pipelineEngine.js must never require fs');

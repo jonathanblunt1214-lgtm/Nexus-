@@ -7,6 +7,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { writeJsonAtomic } = require('./atomicWrite');
 const os = require('os');
 const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
@@ -69,19 +70,35 @@ process.on('unhandledRejection', (reason) => {
   }
 });
 
-// Where we persist small bits of config (encrypted Gemini key, GCP project id).
+// Where we persist small bits of config (encrypted provider keys, project secrets, GCP project id).
+// Disk I/O is asynchronous and writes are crash-safe: callers only see an initialized
+// in-memory snapshot, while replacements go through temp-file + atomic rename.
 const CONFIG_PATH = path.join(app.getPath('userData'), 'nexus-config.json');
+let configCache = {};
+let configWriteQueue = Promise.resolve();
 
-function loadConfig() {
+async function initializeConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  } catch {
-    return {};
+    configCache = JSON.parse(await fs.promises.readFile(CONFIG_PATH, 'utf8'));
+  } catch (err) {
+    if (err?.code !== 'ENOENT') {
+      console.error('[Nexus] Could not read nexus-config.json:', err.message);
+    }
+    configCache = {};
   }
 }
 
+function loadConfig() {
+  return JSON.parse(JSON.stringify(configCache));
+}
+
 function saveConfig(cfg) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+  configCache = JSON.parse(JSON.stringify(cfg || {}));
+  const snapshot = JSON.parse(JSON.stringify(configCache));
+  configWriteQueue = configWriteQueue
+    .catch(() => undefined)
+    .then(() => writeJsonAtomic(CONFIG_PATH, snapshot));
+  return configWriteQueue;
 }
 
 // ---- Terminal state -------------------------------------------------
@@ -247,6 +264,7 @@ function setupPopupAllowlist() {
 }
 
 app.whenReady().then(async () => {
+  await initializeConfig();
   createWindow();
   setupPreviewSession();
   setupPopupAllowlist();
@@ -646,7 +664,7 @@ ipcMain.handle('open-external', (_event, { url }) => {
 });
 
 // --- Gemini API key: stored encrypted at rest via Electron's safeStorage ---
-ipcMain.handle('save-gemini-key', (_event, { key }) => {
+ipcMain.handle('save-gemini-key', async (_event, { key }) => {
   const cfg = loadConfig();
   if (safeStorage.isEncryptionAvailable()) {
     cfg.geminiKeyEnc = safeStorage.encryptString(key).toString('base64');
@@ -654,7 +672,7 @@ ipcMain.handle('save-gemini-key', (_event, { key }) => {
     // Fallback for systems without OS-level encryption available.
     cfg.geminiKeyPlain = key;
   }
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -663,11 +681,11 @@ ipcMain.handle('has-gemini-key', () => {
   return Boolean(cfg.geminiKeyEnc || cfg.geminiKeyPlain);
 });
 
-ipcMain.handle('clear-gemini-key', () => {
+ipcMain.handle('clear-gemini-key', async () => {
   const cfg = loadConfig();
   delete cfg.geminiKeyEnc;
   delete cfg.geminiKeyPlain;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -685,14 +703,14 @@ function getGeminiKey() {
 // e.g. Smoke Stack's CharGPT is on Gemini today, but if it (or any project)
 // moves to OpenAI, Nexus already supports it as a first-class provider
 // rather than that being a gap discovered later. ---
-ipcMain.handle('save-openai-key', (_event, { key }) => {
+ipcMain.handle('save-openai-key', async (_event, { key }) => {
   const cfg = loadConfig();
   if (safeStorage.isEncryptionAvailable()) {
     cfg.openaiKeyEnc = safeStorage.encryptString(key).toString('base64');
   } else {
     cfg.openaiKeyPlain = key;
   }
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -701,11 +719,11 @@ ipcMain.handle('has-openai-key', () => {
   return Boolean(cfg.openaiKeyEnc || cfg.openaiKeyPlain);
 });
 
-ipcMain.handle('clear-openai-key', () => {
+ipcMain.handle('clear-openai-key', async () => {
   const cfg = loadConfig();
   delete cfg.openaiKeyEnc;
   delete cfg.openaiKeyPlain;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -717,10 +735,10 @@ function getOpenAiKey() {
   return cfg.openaiKeyPlain || null;
 }
 
-ipcMain.handle('save-gcp-project', (_event, { projectId }) => {
+ipcMain.handle('save-gcp-project', async (_event, { projectId }) => {
   const cfg = loadConfig();
   cfg.gcpProjectId = projectId;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -733,14 +751,14 @@ ipcMain.handle('get-gcp-project', () => loadConfig().gcpProjectId || '');
 // efficient coding-relevant model) that a consumer GPU doesn't have. The
 // hosted API is NVIDIA's own free/pay-as-you-go path that needs no local GPU
 // at all. ---
-ipcMain.handle('save-nim-key', (_event, { key }) => {
+ipcMain.handle('save-nim-key', async (_event, { key }) => {
   const cfg = loadConfig();
   if (safeStorage.isEncryptionAvailable()) {
     cfg.nimKeyEnc = safeStorage.encryptString(key).toString('base64');
   } else {
     cfg.nimKeyPlain = key;
   }
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -749,11 +767,11 @@ ipcMain.handle('has-nim-key', () => {
   return Boolean(cfg.nimKeyEnc || cfg.nimKeyPlain);
 });
 
-ipcMain.handle('clear-nim-key', () => {
+ipcMain.handle('clear-nim-key', async () => {
   const cfg = loadConfig();
   delete cfg.nimKeyEnc;
   delete cfg.nimKeyPlain;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -2098,7 +2116,7 @@ function projectSecretsKey(projectUid) {
   return `projectSecrets.${projectUid}`;
 }
 
-ipcMain.handle('save-project-secret', (_event, { projectUid, key, value }) => {
+ipcMain.handle('save-project-secret', async (_event, { projectUid, key, value }) => {
   if (!projectUid) return { ok: false, error: 'Missing project_uid — refusing to store an unscoped secret.' };
   const cfg = loadConfig();
   const storeKey = projectSecretsKey(projectUid);
@@ -2111,7 +2129,7 @@ ipcMain.handle('save-project-secret', (_event, { projectUid, key, value }) => {
   }
 
   cfg[storeKey] = secrets;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -2136,13 +2154,13 @@ ipcMain.handle('reveal-project-secret', (_event, { projectUid, key }) => {
   }
 });
 
-ipcMain.handle('delete-project-secret', (_event, { projectUid, key }) => {
+ipcMain.handle('delete-project-secret', async (_event, { projectUid, key }) => {
   const cfg = loadConfig();
   const storeKey = projectSecretsKey(projectUid);
   const secrets = cfg[storeKey] || {};
   delete secrets[key];
   cfg[storeKey] = secrets;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
@@ -2756,7 +2774,7 @@ ipcMain.handle('export-secrets-to-env', (_event, { folder, projectUid }) => {
 // GitHub personal access token: same encrypted-at-rest pattern as the
 // Gemini/NIM keys (see save-gemini-key above) - never stored in plaintext
 // when OS-level encryption is available.
-ipcMain.handle('save-github-token', (_event, { token }) => {
+ipcMain.handle('save-github-token', async (_event, { token }) => {
   const cfg = loadConfig();
   if (safeStorage.isEncryptionAvailable()) {
     cfg.githubTokenEnc = safeStorage.encryptString(token).toString('base64');
@@ -2764,18 +2782,18 @@ ipcMain.handle('save-github-token', (_event, { token }) => {
     cfg.githubTokenPlain = token;
   }
   delete cfg.githubToken; // drop any older plaintext value from before this was encrypted
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 
 ipcMain.handle('has-github-token', () => Boolean(getGithubToken()));
 
-ipcMain.handle('clear-github-token', () => {
+ipcMain.handle('clear-github-token', async () => {
   const cfg = loadConfig();
   delete cfg.githubToken;
   delete cfg.githubTokenEnc;
   delete cfg.githubTokenPlain;
-  saveConfig(cfg);
+  await saveConfig(cfg);
   return { ok: true };
 });
 

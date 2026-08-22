@@ -7,6 +7,7 @@
     "start": "electron .",
     "test": "node --test",
     "audit:architecture": "node scripts/verifyArchitecture.js",
+    "audit:release": "node scripts/releaseAudit.js",
     "dist": "electron-builder --win nsis",
     "dist:publish": "electron-builder --win nsis --publish always"
   },
@@ -66,6 +67,7 @@
       "section7Ipc.js",
       "pluginManifest.js",
       "pluginRuntime.js",
+      "pluginWorker.js",
       "pluginManager.js",
       "section8Ipc.js",
       "aiMetrics.js",

@@ -52,7 +52,8 @@ const requiredFiles = [
   ['runtimeDebugger.js', 'isolated runtime debugging'],
   ['section7Ipc.js', 'narrow vision/debugger IPC bridge'],
   ['pluginManifest.js', 'plugin manifest schema and compatibility validation'],
-  ['pluginRuntime.js', 'contained plugin runtime'],
+  ['pluginRuntime.js', 'killable plugin worker controller'],
+  ['pluginWorker.js', 'constrained plugin VM worker'],
   ['pluginManager.js', 'plugin lifecycle registry, health and audit ledger'],
   ['section8Ipc.js', 'narrow plugin platform IPC bridge'],
   ['bootstrap.js', 'upgrade IPC bootstrap entrypoint'],
@@ -129,9 +130,18 @@ if (!/ALLOWED_CAPABILITIES/.test(manifestSource) || !/ALLOWED_SLOTS/.test(manife
 }
 
 const pluginRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'pluginRuntime.js'), 'utf8');
-if (!/vm\.createContext/.test(pluginRuntimeSource) || /require:\s*require/.test(pluginRuntimeSource) || /process:\s*process/.test(pluginRuntimeSource)) {
+const pluginWorkerSource = fs.readFileSync(path.join(__dirname, '..', 'pluginWorker.js'), 'utf8');
+if (!/new Worker\(/.test(pluginRuntimeSource) || !/worker_threads/.test(pluginRuntimeSource) || !/terminate\(\)/.test(pluginRuntimeSource)) {
   failures += 1;
-  console.error('[FAIL] pluginRuntime.js must keep plugin code in a constrained VM without raw require/process injection.');
+  console.error('[FAIL] pluginRuntime.js must control plugins through killable worker threads.');
+}
+if (/vm\.createContext/.test(pluginRuntimeSource)) {
+  failures += 1;
+  console.error('[FAIL] pluginRuntime.js must not execute third-party VM code in the Electron main process.');
+}
+if (!/vm\.createContext/.test(pluginWorkerSource) || /require:\s*require/.test(pluginWorkerSource) || /process:\s*process/.test(pluginWorkerSource)) {
+  failures += 1;
+  console.error('[FAIL] pluginWorker.js must keep plugin code in a constrained VM without raw require/process injection.');
 }
 
 const pluginManagerSource = fs.readFileSync(path.join(__dirname, '..', 'pluginManager.js'), 'utf8');
@@ -145,11 +155,19 @@ if (!/plugins:scan/.test(pluginIpcSource) || !/plugins:enable/.test(pluginIpcSou
   failures += 1;
   console.error('[FAIL] Section 8 IPC must expose the bounded plugin lifecycle surface.');
 }
+if (!/isAuthorizedProjectRoot/.test(pluginIpcSource) || !/Plugin access denied/.test(pluginIpcSource)) {
+  failures += 1;
+  console.error('[FAIL] Section 8 IPC must enforce an authorized Nexus workspace boundary.');
+}
 
 const bootstrapSource = fs.readFileSync(path.join(__dirname, '..', 'bootstrap.js'), 'utf8');
 if (!/registerSection7Ipc/.test(bootstrapSource) || !/registerSection8Ipc/.test(bootstrapSource)) {
   failures += 1;
   console.error('[FAIL] bootstrap.js must register both Section 7 and Section 8 IPC boundaries.');
+}
+if (!/listProjects/.test(bootstrapSource) || !/isAuthorizedProjectRoot/.test(bootstrapSource)) {
+  failures += 1;
+  console.error('[FAIL] bootstrap.js must derive Section 8 authorization from the Nexus project registry.');
 }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
@@ -157,7 +175,7 @@ if (pkg.main !== 'bootstrap.js') {
   failures += 1;
   console.error('[FAIL] package.json must load bootstrap.js so upgrade IPC is registered before main.js.');
 }
-for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','pluginManager.js','section8Ipc.js']) {
+for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','pluginWorker.js','pluginManager.js','section8Ipc.js']) {
   if ((pkg.build?.files || []).includes(requiredPackageFile)) continue;
   failures += 1;
   console.error(`[FAIL] package.json must package ${requiredPackageFile}.`);
