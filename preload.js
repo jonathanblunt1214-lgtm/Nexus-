@@ -199,4 +199,12 @@ contextBridge.exposeInMainWorld('nexus', {
   // Real per-language byte breakdown for a project folder (GitHub
   // repository "Languages" bar equivalent).
   scanLanguages: (folder) => ipcRenderer.invoke('scan-languages', { folder }),
+
+  // Section 7: local-preview vision and isolated runtime debugging only.
+  visionCapturePreview: (webContentsId, rect) => ipcRenderer.invoke('vision:capture-preview', { webContentsId, rect }),
+  visionPrepareContext: (payload) => ipcRenderer.invoke('vision:prepare-context', payload),
+  debuggerLaunchIsolated: (folder, scriptPath, args) => ipcRenderer.invoke('debugger:launch-isolated', { folder, scriptPath, args }),
+  debuggerGetTarget: (folder, targetId) => ipcRenderer.invoke('debugger:get-target', { folder, targetId }),
+  debuggerPrepareEvaluation: (folder, targetId, pid, expression) => ipcRenderer.invoke('debugger:prepare-evaluation', { folder, targetId, pid, expression }),
+  debuggerStop: (folder, targetId) => ipcRenderer.invoke('debugger:stop', { folder, targetId }),
 });
