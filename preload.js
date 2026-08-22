@@ -259,6 +259,7 @@ contextBridge.exposeInMainWorld('nexus', {
   // Section 8: signed plugin platform. Project-root authorization is rechecked
   // in the main process; the renderer receives only narrow lifecycle calls.
   pluginsScan: (projectRoot) => ipcRenderer.invoke('plugins:scan', { projectRoot }),
+  pluginsImport: (projectRoot) => ipcRenderer.invoke('plugins:import', { projectRoot }),
   pluginsList: (projectRoot) => ipcRenderer.invoke('plugins:list', { projectRoot }),
   pluginsEnable: (projectRoot, pluginId) => ipcRenderer.invoke('plugins:enable', { projectRoot, pluginId }),
   pluginsDisable: (projectRoot, pluginId) => ipcRenderer.invoke('plugins:disable', { projectRoot, pluginId }),

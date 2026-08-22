@@ -92,6 +92,7 @@
       "pluginRuntime.js",
       "pluginWorker.js",
       "pluginManager.js",
+      "pluginSecurityScanner.js",
       "section8Ipc.js",
       "aiMetrics.js",
       "aiGuardrailTester.js",

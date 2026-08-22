@@ -9,7 +9,7 @@ function normalizeProjectRoot(value) {
   return fs.realpathSync(root);
 }
 
-function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot } = {}) {
+function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot, selectPluginFolder } = {}) {
   if (!ipcMain || typeof ipcMain.handle !== 'function') throw new Error('ipcMain.handle is required');
   if (typeof isAuthorizedProjectRoot !== 'function') throw new Error('isAuthorizedProjectRoot is required');
   const managers = new Map();
@@ -23,6 +23,12 @@ function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot 
   }
 
   ipcMain.handle('plugins:scan', async (_event, { projectRoot } = {}) => getManager(projectRoot).discover());
+  ipcMain.handle('plugins:import', async (_event, { projectRoot } = {}) => {
+    if (typeof selectPluginFolder !== 'function') throw new Error('Plug-in folder selection is unavailable.');
+    const sourceFolder = await selectPluginFolder();
+    if (!sourceFolder) return { ok: false, canceled: true };
+    return getManager(projectRoot).importFromFolder(sourceFolder);
+  });
   ipcMain.handle('plugins:list', async (_event, { projectRoot } = {}) => getManager(projectRoot).list());
   ipcMain.handle('plugins:enable', async (_event, { projectRoot, pluginId } = {}) => {
     if (typeof pluginId !== 'string' || !pluginId) throw new Error('pluginId is required');

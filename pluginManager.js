@@ -4,6 +4,7 @@ const path = require('path');
 const { validatePluginManifest } = require('./pluginManifest');
 const { PluginRuntime } = require('./pluginRuntime');
 const { writeJsonAtomicSync } = require('./atomicWrite');
+const { screenPlugin, hashPluginDirectory } = require('./pluginSecurityScanner');
 
 function stableManifestPayload(manifest) {
   const copy = { ...manifest };
@@ -90,12 +91,14 @@ class PluginManager {
         const raw = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
         const manifest = validatePluginManifest(raw, { nexusVersion: this.nexusVersion });
         const signed = verifyManifestSignature(raw, this.trustedPublicKeys);
-        if (this.requireSigned && !signed && !this.allowUnsignedDevelopment) throw new Error('Plugin signature is required and was not trusted');
+        const screened = this.loadState().screened?.[manifest.id] === hashPluginDirectory(pluginRoot);
+        if (this.requireSigned && !signed && !screened && !this.allowUnsignedDevelopment) throw new Error('Plugin signature is required unless a current Nexus malware screening approval exists');
         const record = {
           id: manifest.id,
           manifest,
           pluginRoot,
           signed,
+          screened,
           status: disabled.has(manifest.id) ? 'DISABLED' : 'DISCOVERED',
           error: null,
         };
@@ -117,6 +120,7 @@ class PluginManager {
       version: record.manifest?.version || null,
       status: record.status,
       signed: !!record.signed,
+      screened: !!record.screened,
       capabilities: record.manifest?.capabilities || [],
       slots: record.manifest?.slots || [],
       health: record.status === 'ACTIVE' ? this.runtime.health(record.id) : null,
@@ -126,6 +130,34 @@ class PluginManager {
 
   list() {
     return [...this.registry.values()].map((record) => this.publicRecord(record));
+  }
+
+  async importFromFolder(sourceFolder, options = {}) {
+    const source = fs.realpathSync(path.resolve(sourceFolder));
+    if (source === this.pluginsRoot || source.startsWith(`${this.pluginsRoot}${path.sep}`)) throw new Error('Choose a plug-in folder outside the installed plug-ins directory.');
+    const manifestPath = path.join(source, 'nexus.plugin.json');
+    if (!fs.existsSync(manifestPath)) throw new Error('The selected folder has no nexus.plugin.json manifest.');
+    const raw = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const manifest = validatePluginManifest(raw, { nexusVersion: this.nexusVersion });
+    if (!fs.existsSync(path.join(source, manifest.entry))) throw new Error('The plug-in entry file is missing.');
+    const report = await screenPlugin(source, options);
+    if (!report.passed) {
+      this.audit(manifest.id, 'PLUGIN_UPLOAD_BLOCKED', { score: report.behavior.score, findings: report.behavior.findings.map((item) => ({ rule: item.rule, severity: item.severity, file: item.file })) });
+      return { ok: false, blocked: true, pluginId: manifest.id, report };
+    }
+    fs.mkdirSync(this.pluginsRoot, { recursive: true });
+    const destination = path.join(this.pluginsRoot, manifest.id);
+    if (fs.existsSync(destination)) throw new Error('A plug-in with this ID is already installed. Remove it before importing a replacement.');
+    const staging = path.join(this.pluginsRoot, `.screened-${crypto.randomUUID()}`);
+    try { fs.cpSync(source, staging, { recursive: true, errorOnExist: true }); fs.renameSync(staging, destination); } catch (error) { fs.rmSync(staging, { recursive: true, force: true }); throw error; }
+    const digest = hashPluginDirectory(destination);
+    const state = this.loadState();
+    state.screened = { ...(state.screened || {}), [manifest.id]: digest };
+    state.disabled = [...new Set([...(state.disabled || []), manifest.id])];
+    this.saveState(state);
+    this.audit(manifest.id, 'PLUGIN_UPLOADED_AFTER_SCREENING', { digest, score: report.behavior.score, defender: report.defender.engine });
+    this.discover();
+    return { ok: true, plugin: this.registry.get(manifest.id) ? this.publicRecord(this.registry.get(manifest.id)) : null, report };
   }
 
   async enable(pluginId) {

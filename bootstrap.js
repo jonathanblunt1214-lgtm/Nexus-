@@ -1,7 +1,7 @@
 // Nexus bootstrap: registers narrowly scoped upgrade IPC before loading the legacy main process.
 const fs = require('fs');
 const path = require('path');
-const { ipcMain, webContents } = require('electron');
+const { ipcMain, webContents, dialog } = require('electron');
 const { registerSection7Ipc } = require('./section7Ipc');
 const { registerSection8Ipc } = require('./section8Ipc');
 const { listProjects } = require('./projectRegistry');
@@ -26,6 +26,13 @@ function isAuthorizedProjectRoot(projectRoot) {
 }
 
 registerSection7Ipc({ ipcMain, webContents, authorizeRuntime: (folder) => isAuthorizedProjectRoot(folder) && Boolean(global.nexusAuthorizeRuntime?.(folder)) });
-registerSection8Ipc({ ipcMain, isAuthorizedProjectRoot });
+registerSection8Ipc({
+  ipcMain,
+  isAuthorizedProjectRoot,
+  selectPluginFolder: async () => {
+    const selection = await dialog.showOpenDialog({ title: 'Choose a Nexus plug-in folder to screen', properties: ['openDirectory', 'dontAddToRecent'] });
+    return selection.canceled ? null : selection.filePaths[0];
+  },
+});
 global.nexusAssertTrustedIpcSender = assertTrustedSender;
 require('./main.js');

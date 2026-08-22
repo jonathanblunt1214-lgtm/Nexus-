@@ -4054,6 +4054,47 @@ async function accountVaultPlugins() {
   try { return await window.nexus.pluginsList(folder); } catch { return []; }
 }
 
+async function uploadScreenedPlugin() {
+  const folder = activeProjectFolder();
+  if (!folder) { showToast('error', 'Open a project first', 'Plug-ins are installed separately for each Nexus project.'); return; }
+  const status = document.getElementById('plugin-security-status');
+  status.innerText = 'Waiting for a plug-in folder, then screening it without running its code…';
+  let result;
+  try { result = await window.nexus.pluginsImport(folder); } catch (error) { result = { ok: false, error: error.message }; }
+  if (result?.canceled) { status.innerText = 'Upload canceled. Nothing was installed.'; return; }
+  if (result?.ok) {
+    const report = result.report?.behavior;
+    status.innerText = `${result.plugin?.name || result.plugin?.id} passed Defender and behavioral screening (${report?.fileCount || 0} files, risk score ${report?.score || 0}/100). It is installed but disabled until you enable it.`;
+    showToast('success', 'Plug-in passed security screening', 'Installed disabled. Review its permissions before enabling it.');
+  } else if (result?.blocked) {
+    const findings = result.report?.behavior?.findings || [];
+    status.innerText = `Upload blocked. Nothing was installed. ${findings.slice(0, 3).map((item) => `${item.file}: ${item.message}`).join(' ') || 'Microsoft Defender did not clear the folder.'}`;
+    showToast('error', 'Unsafe plug-in blocked', 'The plug-in was not copied into Nexus.');
+  } else {
+    status.innerText = `Upload failed. Nothing was installed. ${result?.error || 'Unknown screening error.'}`;
+    showToast('error', 'Plug-in upload failed', result?.error || 'Nothing was installed.');
+  }
+  refreshPluginSecurityList();
+}
+
+async function refreshPluginSecurityList() {
+  const folder = activeProjectFolder();
+  const panel = document.getElementById('plugin-security-list');
+  if (!folder) { panel.innerHTML = '<p class="muted small">Open a project to view its plug-ins.</p>'; return; }
+  let plugins = [];
+  try { plugins = await window.nexus.pluginsScan(folder); } catch (error) { panel.innerHTML = `<p class="muted small">${escapeHtml(error.message)}</p>`; return; }
+  panel.innerHTML = plugins.map((plugin) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.id)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.screened ? 'Nexus screened' : plugin.signed ? 'Publisher signed' : 'Not approved'} · ${escapeHtml(plugin.status || '')}</span><span class="muted small">Permissions: ${escapeHtml((plugin.capabilities || []).join(', ') || 'none')}</span>${plugin.status === 'ACTIVE' ? `<button class="btn tiny btn-secondary" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', false)">Disable</button>` : plugin.status !== 'REJECTED' ? `<button class="btn tiny" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', true)">Enable</button>` : ''}</div>`).join('') || '<p class="muted small">No plug-ins installed for this project.</p>';
+}
+
+async function setPluginEnabled(pluginId, enabled) {
+  const folder = activeProjectFolder(); if (!folder) return;
+  try {
+    if (enabled) await window.nexus.pluginsEnable(folder, pluginId); else await window.nexus.pluginsDisable(folder, pluginId);
+    showToast('success', enabled ? 'Plug-in enabled' : 'Plug-in disabled', pluginId);
+  } catch (error) { showToast('error', 'Plug-in action failed', error.message); }
+  refreshPluginSecurityList();
+}
+
 async function refreshAccountVaultStatus() {
   const result = await window.nexus.accountVaultStatus();
   const panel = document.getElementById('account-vault-status');
