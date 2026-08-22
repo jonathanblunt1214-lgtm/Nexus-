@@ -1,0 +1,19 @@
+name: Section 0 Stability Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - upgrade/section-0-stabilization
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/verifyArchitecture.js
+      - run: node --test
