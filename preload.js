@@ -270,6 +270,9 @@ contextBridge.exposeInMainWorld('nexus', {
   // in the main process; the renderer receives only narrow lifecycle calls.
   pluginsScan: (projectRoot) => ipcRenderer.invoke('plugins:scan', { projectRoot }),
   pluginsImport: (projectRoot) => ipcRenderer.invoke('plugins:import', { projectRoot }),
+  pluginsMarketplaceList: () => ipcRenderer.invoke('plugins:marketplace-list'),
+  pluginsMarketplacePublish: (projectRoot, pluginId, visibility) => ipcRenderer.invoke('plugins:marketplace-publish', { projectRoot, pluginId, visibility }),
+  pluginsMarketplaceInstall: (projectRoot, marketplaceId) => ipcRenderer.invoke('plugins:marketplace-install', { projectRoot, marketplaceId }),
   pluginsList: (projectRoot) => ipcRenderer.invoke('plugins:list', { projectRoot }),
   pluginsEnable: (projectRoot, pluginId) => ipcRenderer.invoke('plugins:enable', { projectRoot, pluginId }),
   pluginsDisable: (projectRoot, pluginId) => ipcRenderer.invoke('plugins:disable', { projectRoot, pluginId }),

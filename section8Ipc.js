@@ -29,6 +29,18 @@ function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot,
     if (!sourceFolder) return { ok: false, canceled: true };
     return getManager(projectRoot).importFromFolder(sourceFolder);
   });
+  ipcMain.handle('plugins:marketplace-list', async () => {
+    if (!global.nexusPluginMarketplaceApi) throw new Error('Plug-in marketplace is unavailable.');
+    return global.nexusPluginMarketplaceApi.list();
+  });
+  ipcMain.handle('plugins:marketplace-publish', async (_event, { projectRoot, pluginId, visibility } = {}) => {
+    if (typeof pluginId !== 'string' || !pluginId) throw new Error('pluginId is required');
+    return global.nexusPluginMarketplaceApi.publish(getManager(projectRoot), pluginId, visibility);
+  });
+  ipcMain.handle('plugins:marketplace-install', async (_event, { projectRoot, marketplaceId } = {}) => {
+    if (typeof marketplaceId !== 'string' || !/^[a-f0-9]{64}$/.test(marketplaceId)) throw new Error('marketplaceId is invalid');
+    return global.nexusPluginMarketplaceApi.install(getManager(projectRoot), marketplaceId);
+  });
   ipcMain.handle('plugins:list', async (_event, { projectRoot } = {}) => getManager(projectRoot).list());
   ipcMain.handle('plugins:enable', async (_event, { projectRoot, pluginId } = {}) => {
     if (typeof pluginId !== 'string' || !pluginId) throw new Error('pluginId is required');

@@ -13,5 +13,22 @@ service cloud.firestore {
         && request.resource.data.encryptedVault.size() <= 2097152
         && request.resource.data.schemaVersion == 1;
     }
+    match /pluginMarketplace/{packageId} {
+      allow read: if resource.data.visibility == 'public'
+        || (request.auth != null && request.auth.uid == resource.data.ownerUid);
+      allow create: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.uid == request.resource.data.ownerUid
+        && request.resource.data.visibility in ['public', 'private']
+        && request.resource.data.keys().hasOnly(['pluginId', 'name', 'version', 'description', 'capabilities', 'visibility', 'digest', 'packageDigest', 'signed', 'screened', 'ownerUid', 'packageId', 'objectName', 'updatedAt']);
+      allow update: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.uid == resource.data.ownerUid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.packageId == resource.data.packageId
+        && request.resource.data.visibility in ['public', 'private']
+        && request.resource.data.keys().hasOnly(['pluginId', 'name', 'version', 'description', 'capabilities', 'visibility', 'digest', 'packageDigest', 'signed', 'screened', 'ownerUid', 'packageId', 'objectName', 'updatedAt']);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+    }
   }
 }

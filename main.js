@@ -3407,6 +3407,7 @@ function firebaseAccountConfiguration() {
   return {
     apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY || cfg.firebaseWebApiKey || '',
     projectId: process.env.NEXUS_FIREBASE_PROJECT_ID || cfg.firebaseProjectId || '',
+    storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET || cfg.firebaseStorageBucket || '',
   };
 }
 
@@ -3444,11 +3445,12 @@ async function getFirebaseSession({ requireVerified = false, refreshProfile = fa
   return { idToken, uid: cfg.firebaseUid, email: cfg.firebaseEmail, emailVerified: cfg.firebaseEmailVerified === true, configuration };
 }
 
-ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey }; });
+ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey, storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET ? '' : value.storageBucket }; });
 ipcMain.handle('email-account:configure', async (_event, value = {}) => {
-  const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim();
+  const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim(); const storageBucket = String(value.storageBucket || '').trim();
   require('./firebaseAccountClient').requireConfiguration(apiKey, projectId);
-  const cfg = loadConfig(); cfg.firebaseWebApiKey = apiKey; cfg.firebaseProjectId = projectId; await saveConfig(cfg); return { ok: true };
+  if (storageBucket && !/^[a-z0-9._-]+$/.test(storageBucket)) throw new Error('Enter a valid Firebase Storage bucket name.');
+  const cfg = loadConfig(); cfg.firebaseWebApiKey = apiKey; cfg.firebaseProjectId = projectId; cfg.firebaseStorageBucket = storageBucket; await saveConfig(cfg); return { ok: true };
 });
 ipcMain.handle('email-account:sign-up', async (_event, value = {}) => {
   try {
@@ -3479,6 +3481,31 @@ ipcMain.handle('email-account:status', async () => {
 ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase()); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('email-account:sign-out', async () => { const cfg = loadConfig(); clearFirebaseSession(cfg); await saveConfig(cfg); return { ok: true }; });
+
+global.nexusPluginMarketplaceApi = {
+  async list() {
+    const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
+    const session = await getFirebaseSession().catch(() => null);
+    return require('./pluginMarketplaceClient').listPlugins({ projectId:configuration.projectId, idToken:session?.idToken, uid:session?.uid });
+  },
+  async publish(manager, pluginId, visibility) {
+    if (!['public', 'private'].includes(visibility)) throw new Error('Marketplace visibility must be public or private.');
+    const session = await getFirebaseSession({ requireVerified:true }); if (!session) throw new Error('Sign in with a verified email account to publish a plug-in.');
+    const storageBucket = session.configuration.storageBucket || `${session.configuration.projectId}.firebasestorage.app`;
+    const pkg = manager.createMarketplacePackage(pluginId);
+    const metadata = { pluginId, name:pkg.manifest.name, version:pkg.manifest.version, description:pkg.manifest.description || '', capabilities:(pkg.manifest.capabilities || []).join(','), visibility, digest:pkg.digest, packageDigest:pkg.packageDigest, signed:pkg.signed, screened:pkg.screened };
+    return require('./pluginMarketplaceClient').publishPlugin({ projectId:session.configuration.projectId, storageBucket, idToken:session.idToken, uid:session.uid, metadata, packageContent:pkg.content });
+  },
+  async install(manager, marketplaceId) {
+    const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
+    const session = await getFirebaseSession().catch(() => null);
+    const items = await require('./pluginMarketplaceClient').listPlugins({ projectId:configuration.projectId, idToken:session?.idToken, uid:session?.uid });
+    const item = items.find((entry) => entry.id === marketplaceId); if (!item) throw new Error('Marketplace plug-in was not found or is private.');
+    const storageBucket = configuration.storageBucket || `${configuration.projectId}.firebasestorage.app`;
+    const content = await require('./pluginMarketplaceClient').downloadPlugin({ storageBucket, idToken:session?.idToken, item });
+    return manager.importMarketplacePackage(content);
+  },
+};
 
 ipcMain.handle('oauth:configuration', () => { const c = oauthConfiguration(); return { ok: true, githubConfigured: Boolean(c.githubClientId), googleConfigured: Boolean(c.googleClientId), githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID ? '' : c.githubClientId, googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID ? '' : c.googleClientId }; });
 ipcMain.handle('oauth:configure', async (_event, value) => {

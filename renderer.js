@@ -4007,6 +4007,7 @@ setInterval(async () => {
   loadOAuthConfiguration();
   loadEmailAccountConfiguration();
   refreshEmailAccountStatus();
+  refreshPluginMarketplace();
   refreshOpenAiStatus();
   renderGitHubAutoSyncSettings();
   scheduleGitHubAutoSync();
@@ -4034,11 +4035,12 @@ async function loadEmailAccountConfiguration() {
   if (!result.ok) return;
   document.getElementById('firebase-project-id').value = result.projectId || '';
   document.getElementById('firebase-web-api-key').value = result.apiKey || '';
+  document.getElementById('firebase-storage-bucket').value = result.storageBucket || '';
 }
 
 async function saveEmailAccountConfiguration() {
   let result;
-  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim() }); }
+  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim(), storageBucket: document.getElementById('firebase-storage-bucket').value.trim() }); }
   catch (error) { result = { ok: false, error: error.message }; }
   showToast(result.ok ? 'success' : 'error', result.ok ? 'Email account configuration saved' : 'Configuration could not be saved', result.error || 'Firebase email sign-in is ready.');
   refreshEmailAccountStatus();
@@ -4147,7 +4149,49 @@ async function refreshPluginSecurityList() {
   if (!folder) { panel.innerHTML = '<p class="muted small">Open a project to view its plug-ins.</p>'; return; }
   let plugins = [];
   try { plugins = await window.nexus.pluginsScan(folder); } catch (error) { panel.innerHTML = `<p class="muted small">${escapeHtml(error.message)}</p>`; return; }
-  panel.innerHTML = plugins.map((plugin) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.id)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.screened ? 'Nexus screened' : plugin.signed ? 'Publisher signed' : 'Not approved'} · ${escapeHtml(plugin.status || '')}</span><span class="muted small">Permissions: ${escapeHtml((plugin.capabilities || []).join(', ') || 'none')}</span>${plugin.status === 'ACTIVE' ? `<button class="btn tiny btn-secondary" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', false)">Disable</button>` : plugin.status !== 'REJECTED' ? `<button class="btn tiny" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', true)">Enable</button>` : ''}</div>`).join('') || '<p class="muted small">No plug-ins installed for this project.</p>';
+  panel.innerHTML = plugins.map((plugin) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.id)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.screened ? 'Nexus screened' : plugin.signed ? 'Publisher signed' : 'Not approved'} · ${escapeHtml(plugin.status || '')}</span><span class="muted small">Permissions: ${escapeHtml((plugin.capabilities || []).join(', ') || 'none')}</span><div>${plugin.status === 'ACTIVE' ? `<button class="btn tiny btn-secondary" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', false)">Disable</button>` : plugin.status !== 'REJECTED' ? `<button class="btn tiny" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', true)">Enable</button>` : ''}${plugin.status !== 'REJECTED' && plugin.screened ? ` <button class="btn tiny btn-secondary" onclick="publishPluginToMarketplace('${escapeHtml(plugin.id)}')">Publish</button>` : ''}</div></div>`).join('') || '<p class="muted small">No plug-ins installed for this project.</p>';
+}
+
+let pluginMarketplaceItems = [];
+
+async function refreshPluginMarketplace() {
+  const panel = document.getElementById('plugin-marketplace-list');
+  const status = document.getElementById('plugin-marketplace-status');
+  if (!panel || !status) return;
+  status.innerText = 'Loading public plug-ins and your private plug-ins…';
+  try {
+    pluginMarketplaceItems = await window.nexus.pluginsMarketplaceList();
+    status.innerText = `${pluginMarketplaceItems.length} plug-in${pluginMarketplaceItems.length === 1 ? '' : 's'} available. Public entries work without signing in; private entries require their owner account.`;
+    panel.innerHTML = pluginMarketplaceItems.map((plugin, index) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.pluginId)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.visibility === 'private' ? 'Private to you' : 'Public'} · ${plugin.screened ? 'screened publisher copy' : 'publisher signed'}</span><span class="muted small">${escapeHtml(plugin.description || 'No description provided.')}</span><span class="muted small">Permissions: ${escapeHtml(String(plugin.capabilities || '').split(',').filter(Boolean).join(', ') || 'none')}</span><button class="btn tiny" onclick="installMarketplacePlugin(${index})">Install and screen</button></div>`).join('') || '<p class="muted small">No plug-ins have been published yet.</p>';
+  } catch (error) {
+    pluginMarketplaceItems = []; panel.innerHTML = '';
+    status.innerText = `Plug-in database is unavailable. ${error.message}`;
+  }
+}
+
+async function publishPluginToMarketplace(pluginId) {
+  const folder = activeProjectFolder(); if (!folder) return;
+  const visibility = document.getElementById('plugin-marketplace-visibility').value;
+  try {
+    await window.nexus.pluginsMarketplacePublish(folder, pluginId, visibility);
+    showToast('success', visibility === 'public' ? 'Plug-in published for everyone' : 'Private plug-in saved', 'The uploaded package is tied to its screened content hash.');
+    refreshPluginMarketplace();
+  } catch (error) { showToast('error', 'Plug-in could not be published', error.message); }
+}
+
+async function installMarketplacePlugin(index) {
+  const folder = activeProjectFolder();
+  if (!folder) { showToast('error', 'Open a project first', 'Marketplace plug-ins are installed separately for each project.'); return; }
+  const plugin = pluginMarketplaceItems[index]; if (!plugin) return;
+  const status = document.getElementById('plugin-marketplace-status');
+  status.innerText = `Downloading ${plugin.name || plugin.pluginId}, verifying its contents, and running both security screens…`;
+  try {
+    const result = await window.nexus.pluginsMarketplaceInstall(folder, plugin.id);
+    if (!result.ok) throw new Error(result.blocked ? 'The downloaded plug-in failed security screening and was not installed.' : 'The plug-in could not be installed.');
+    status.innerText = `${result.plugin?.name || plugin.name} passed the fresh Defender and behavioral inspection. It is installed but remains disabled.`;
+    showToast('success', 'Marketplace plug-in passed screening', 'Review its permissions before enabling it.');
+    refreshPluginSecurityList();
+  } catch (error) { status.innerText = `Installation blocked. Nothing was activated. ${error.message}`; showToast('error', 'Marketplace installation blocked', error.message); }
 }
 
 async function setPluginEnabled(pluginId, enabled) {

@@ -5,6 +5,7 @@ const { validatePluginManifest } = require('./pluginManifest');
 const { PluginRuntime } = require('./pluginRuntime');
 const { writeJsonAtomicSync } = require('./atomicWrite');
 const { screenPlugin, hashPluginDirectory } = require('./pluginSecurityScanner');
+const { enumeratePluginFiles } = require('./pluginSecurityScanner');
 
 function stableManifestPayload(manifest) {
   const copy = { ...manifest };
@@ -158,6 +159,35 @@ class PluginManager {
     this.audit(manifest.id, 'PLUGIN_UPLOADED_AFTER_SCREENING', { digest, score: report.behavior.score, defender: report.defender.engine });
     this.discover();
     return { ok: true, plugin: this.registry.get(manifest.id) ? this.publicRecord(this.registry.get(manifest.id)) : null, report };
+  }
+
+  createMarketplacePackage(pluginId) {
+    this.discover();
+    const record = this.registry.get(pluginId);
+    if (!record || !record.screened) throw new Error('A plug-in must pass the current Nexus security screening before it can be published.');
+    const inventory = enumeratePluginFiles(record.pluginRoot);
+    const payload = { format:'nexus-plugin-package', version:1, pluginId, digest:hashPluginDirectory(record.pluginRoot), files:inventory.files.map((file) => ({ path:file.relative.replace(/\\/g, '/'), data:fs.readFileSync(file.full).toString('base64') })) };
+    const content = JSON.stringify(payload);
+    return { content, digest:payload.digest, packageDigest:crypto.createHash('sha256').update(content).digest('hex'), manifest:record.manifest, signed:record.signed, screened:record.screened };
+  }
+
+  async importMarketplacePackage(serialized, options = {}) {
+    let payload;
+    try { payload = JSON.parse(serialized); } catch { throw new Error('Marketplace package is not valid JSON.'); }
+    if (payload?.format !== 'nexus-plugin-package' || payload.version !== 1 || !Array.isArray(payload.files) || payload.files.length > 250) throw new Error('Marketplace package format is invalid.');
+    const staging = path.join(this.projectRoot, '.nexus', `.marketplace-${crypto.randomUUID()}`);
+    fs.mkdirSync(staging, { recursive:true });
+    let total = 0;
+    try {
+      for (const item of payload.files) {
+        if (typeof item.path !== 'string' || path.isAbsolute(item.path)) throw new Error('Marketplace package contains an unsafe path.');
+        const destination = path.resolve(staging, item.path); if (!destination.startsWith(`${staging}${path.sep}`)) throw new Error('Marketplace package path escapes staging.');
+        const data = Buffer.from(String(item.data || ''), 'base64'); total += data.length; if (total > 15 * 1024 * 1024) throw new Error('Marketplace package exceeds 15 MB.');
+        fs.mkdirSync(path.dirname(destination), { recursive:true }); fs.writeFileSync(destination, data);
+      }
+      if (hashPluginDirectory(staging) !== payload.digest) throw new Error('Marketplace package contents failed digest verification.');
+      return await this.importFromFolder(staging, options);
+    } finally { fs.rmSync(staging, { recursive:true, force:true }); }
   }
 
   async enable(pluginId) {

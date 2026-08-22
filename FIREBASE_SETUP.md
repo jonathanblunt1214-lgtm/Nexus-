@@ -8,8 +8,9 @@ Nexus uses Firebase Authentication for email/password identity and Cloud Firesto
 2. In **Authentication → Sign-in method**, enable **Email/Password**.
 3. Create a Cloud Firestore database in production mode.
 4. Open **Firestore Database → Rules**, replace the rules with the contents of `firestore.rules`, and publish them.
-5. In **Project settings → General**, copy the project ID and Web API key.
-6. In Nexus, open **Settings → Connected Services → Account provider configuration**, enter those two values, and save.
+5. Enable Cloud Storage, open **Storage → Rules**, replace the rules with `storage.rules`, and publish them.
+6. In **Project settings → General**, copy the project ID, Web API key, and Storage bucket name.
+7. In Nexus, open **Settings → Connected Services → Account provider configuration**, enter those values, and save.
 
 Packaged builds can instead provide `NEXUS_FIREBASE_PROJECT_ID` and `NEXUS_FIREBASE_WEB_API_KEY` at build/runtime configuration. The Firebase Web API key identifies the Firebase project; it is not a user password or an administrative credential. Firestore rules are the authorization boundary and must be deployed exactly as reviewed.
 
@@ -20,4 +21,5 @@ Packaged builds can instead provide `NEXUS_FIREBASE_PROJECT_ID` and `NEXUS_FIREB
 - Users must verify their email before reading or writing an email-account vault.
 - Firestore stores only the passphrase-encrypted Nexus vault envelope.
 - Each verified user can access only `nexusAccountVaults/{their Firebase UID}`.
+- Public marketplace plug-ins can be discovered by everyone; private plug-ins and packages are readable only by their verified owner.
 - Losing the vault passphrase still makes the vault unrecoverable; resetting the account password does not reset vault encryption.

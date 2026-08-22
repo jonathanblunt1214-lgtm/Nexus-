@@ -93,6 +93,7 @@
       "pluginWorker.js",
       "pluginManager.js",
       "pluginSecurityScanner.js",
+      "pluginMarketplaceClient.js",
       "section8Ipc.js",
       "aiMetrics.js",
       "aiGuardrailTester.js",
