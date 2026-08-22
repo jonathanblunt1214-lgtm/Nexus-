@@ -707,6 +707,7 @@ let codeEditorOpenFiles = []; // [{ relPath, absPath, content, dirty }]
 let codeEditorCurrentRelPath = null;
 let codeEditorExpandedFolders = new Set();
 let codeEditorFolder = null;
+let languageDiagnosticsTimer = null;
 
 function editorAbsPath(folder, relPath) {
   return folder.replace(/[\\/]+$/, '') + '/' + relPath.replace(/\\/g, '/');
@@ -1416,11 +1417,17 @@ async function toggleCodeEditor() {
         entry.dirty = true;
         entry.content = codeEditorCM.getValue();
         renderCodeEditorTabs();
+        clearTimeout(languageDiagnosticsTimer);
+        languageDiagnosticsTimer = setTimeout(() => editorLanguageAction('diagnostics', { quiet: true }), 500);
       }
     });
     codeEditorCM.setOption('extraKeys', {
       'Ctrl-S': () => { saveCurrentEditorFile(); return false; },
       'Cmd-S': () => { saveCurrentEditorFile(); return false; },
+      'Ctrl-Space': () => { editorLanguageAction('complete'); return false; },
+      'F12': () => { editorLanguageAction('definition'); return false; },
+      'Shift-F12': () => { editorLanguageAction('references'); return false; },
+      'F2': () => { editorLanguageAction('rename'); return false; },
     });
   }
 
@@ -3233,6 +3240,103 @@ function readGitHubAutoSyncSettings() {
   const requested = Number.parseInt(localStorage.getItem('nexus_github_auto_sync_seconds') || '300', 10);
   const seconds = Math.max(GITHUB_AUTO_SYNC_MIN_SECONDS, Math.min(GITHUB_AUTO_SYNC_MAX_SECONDS, Number.isFinite(requested) ? requested : 300));
   return { enabled, seconds };
+}
+
+function currentLanguagePayload(action) {
+  const entry = codeEditorOpenFiles.find((file) => file.relPath === codeEditorCurrentRelPath);
+  if (!entry || !codeEditorCM) return null;
+  const cursor = codeEditorCM.getCursor();
+  return { folder: codeEditorFolder, filePath: entry.absPath, content: codeEditorCM.getValue(), line: cursor.line, column: cursor.ch, action };
+}
+
+async function editorLanguageAction(action, options = {}) {
+  const payload = currentLanguagePayload(action);
+  if (!payload) { if (!options.quiet) showToast('info', 'Language intelligence', 'Open a JavaScript or TypeScript file first.'); return; }
+  if (action === 'rename') {
+    const newName = prompt('Rename this symbol to:');
+    if (!newName) return;
+    payload.newName = newName.trim();
+  }
+  const result = await window.nexus.languageIntelligence(payload);
+  if (!result.ok) { if (!options.quiet) showToast('error', 'Language intelligence failed', result.error); return; }
+
+  if (action === 'complete') {
+    const items = result.items || [];
+    if (!items.length) { showToast('info', 'Completions', 'No completion is available here.'); return; }
+    const choice = prompt(`Choose a completion number:\n\n${items.slice(0, 20).map((item, index) => `${index + 1}. ${item.name}${item.source ? ` — auto-import from ${item.source}` : ''}`).join('\n')}`);
+    const selected = items[Number.parseInt(choice, 10) - 1];
+    if (selected) {
+      const originalOffset = codeEditorCM.indexFromPos(codeEditorCM.getCursor());
+      let updated = codeEditorCM.getValue();
+      let deltaBeforeCursor = 0;
+      for (const edit of (selected.importEdits || []).sort((a, b) => b.start - a.start)) {
+        updated = updated.slice(0, edit.start) + edit.newText + updated.slice(edit.start + edit.length);
+        if (edit.start <= originalOffset) deltaBeforeCursor += edit.newText.length - edit.length;
+      }
+      if (selected.importEdits?.length) {
+        codeEditorCM.setValue(updated);
+        codeEditorCM.setCursor(codeEditorCM.posFromIndex(originalOffset + deltaBeforeCursor));
+      }
+      codeEditorCM.replaceSelection(selected.name, 'end');
+    }
+    return;
+  }
+  if (action === 'definition') {
+    const target = result.locations?.[0];
+    if (!target) { showToast('info', 'Definition', 'No definition found.'); return; }
+    await openFileInEditor(target.file);
+    codeEditorCM.setCursor({ line: target.line, ch: target.column });
+    codeEditorCM.focus();
+    return;
+  }
+  if (action === 'hover') {
+    const hover = result.hover;
+    showToast('info', hover?.signature || 'No symbol information', hover?.documentation || '');
+    return;
+  }
+  if (action === 'diagnostics') {
+    const diagnostics = result.diagnostics || [];
+    renderLintResults(diagnostics.map((item) => ({ ...item, line: item.line + 1, ruleId: `TS${item.code}` })));
+    return;
+  }
+  if (action === 'references') {
+    renderLanguageLocations('References', result.locations || []);
+    return;
+  }
+  if (action === 'symbols') {
+    renderLanguageLocations('Outline', (result.symbols || []).map((item) => ({ ...item, label: `${'  '.repeat(item.depth)}${item.name} · ${item.kind}` })));
+    return;
+  }
+  if (action === 'rename') {
+    const files = result.files || [];
+    const edits = files.reduce((sum, file) => sum + file.edits, 0);
+    if (!files.length || !confirm(`Apply ${edits} rename edit(s) across ${files.length} file(s)?`)) return;
+    for (const file of files) {
+      const applied = await window.nexus.applyFileChange(file.filePath, file.content, 'Language service rename');
+      if (!applied.ok) { showToast('error', 'Rename stopped', `${file.relPath}: ${applied.error}`); return; }
+      const open = codeEditorOpenFiles.find((entry) => entry.absPath === file.filePath);
+      if (open) { open.content = file.content; open.dirty = false; }
+    }
+    if (codeEditorCurrentRelPath) await openFileInEditor(codeEditorCurrentRelPath);
+    showToast('success', 'Symbol renamed', `${edits} edit(s) applied.`);
+  }
+}
+
+function renderLanguageLocations(title, locations) {
+  const panel = document.getElementById('ce-lint-panel');
+  document.getElementById('ce-lint-summary').innerText = `${title}: ${locations.length}`;
+  panel.innerHTML = locations.slice(0, 200).map((item) => `
+    <div class="ce-lint-item" onclick="openLanguageLocation('${escapeHtml(item.file)}', ${item.line}, ${item.column})">
+      <span class="ce-lint-line">${escapeHtml(item.file)}:${item.line + 1}</span>
+      <span>${escapeHtml(item.label || title.slice(0, -1))}</span>
+    </div>`).join('') || `<p class="muted small">No ${escapeHtml(title.toLowerCase())} found.</p>`;
+  panel.classList.add('open');
+}
+
+async function openLanguageLocation(relPath, line, column) {
+  await openFileInEditor(relPath);
+  codeEditorCM.setCursor({ line, ch: column });
+  codeEditorCM.focus();
 }
 
 async function refreshWorkspaceTrustBadges() {

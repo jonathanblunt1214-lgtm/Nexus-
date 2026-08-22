@@ -2063,6 +2063,10 @@ Measure-Object</pre>
               <input type="checkbox" id="ce-format-on-save"> Format on save
             </label>
             <span id="ce-lint-summary" class="muted small"></span>
+            <button class="btn tiny btn-secondary" onclick="editorLanguageAction('symbols')" title="Document symbols">Outline</button>
+            <button class="btn tiny btn-secondary" onclick="editorLanguageAction('diagnostics')" title="Type and syntax diagnostics">Problems</button>
+            <button class="btn tiny btn-secondary" onclick="editorLanguageAction('references')" title="Find references (Shift+F12)">References</button>
+            <button class="btn tiny btn-secondary" onclick="editorLanguageAction('rename')" title="Rename symbol (F2)">Rename</button>
             <button class="btn tiny btn-secondary" id="ce-format-btn" style="display:none;" onclick="formatCurrentEditorFile()">🧹 Format</button>
             <button class="btn tiny" onclick="saveCurrentEditorFile()">💾 Save (Ctrl+S)</button>
           </div>
