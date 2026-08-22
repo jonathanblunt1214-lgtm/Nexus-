@@ -8,6 +8,7 @@ const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { writeJsonAtomicSync } = require('./atomicWrite');
 
 const REGISTRY_FILE = path.join(app.getPath('userData'), 'nexus-projects.json');
 
@@ -24,8 +25,7 @@ function readRegistry() {
 }
 
 function writeRegistry(projects) {
-  fs.mkdirSync(path.dirname(REGISTRY_FILE), { recursive: true });
-  fs.writeFileSync(REGISTRY_FILE, JSON.stringify(projects, null, 2), 'utf-8');
+  writeJsonAtomicSync(REGISTRY_FILE, projects);
 }
 
 /**
