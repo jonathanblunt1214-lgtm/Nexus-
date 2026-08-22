@@ -201,6 +201,8 @@ contextBridge.exposeInMainWorld('nexus', {
   accountVaultStatus: () => ipcRenderer.invoke('account-vault:status'),
   accountVaultSync: (value) => ipcRenderer.invoke('account-vault:sync', value),
   accountVaultRestore: (value) => ipcRenderer.invoke('account-vault:restore', value),
+  accountVaultAirgapExport: (value) => ipcRenderer.invoke('account-vault:airgap-export', value),
+  accountVaultAirgapRestore: (value) => ipcRenderer.invoke('account-vault:airgap-restore', value),
   emailAccountConfiguration: () => ipcRenderer.invoke('email-account:configuration'),
   emailAccountConfigure: (value) => ipcRenderer.invoke('email-account:configure', value),
   emailAccountSignUp: (email, password) => ipcRenderer.invoke('email-account:sign-up', { email, password }),
