@@ -62,6 +62,7 @@
       "operationalDiagnostics.js",
       "secretScanner.js",
       "advancedTesting.js",
+      "gameProjectDetector.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",

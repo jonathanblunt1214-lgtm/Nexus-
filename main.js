@@ -13,6 +13,7 @@ const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 const { OperationalDiagnostics } = require('./operationalDiagnostics');
+const { detectGameProject } = require('./gameProjectDetector');
 const { discover: discoverTests, snapshots: discoverSnapshots, TestHistory, readCoverage } = require('./advancedTesting');
 const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
 const testHistory = new TestHistory(app.getPath('userData'));
@@ -3440,6 +3441,7 @@ ipcMain.handle('scan-full-stack-config', wrapAsync(({ folder }) => {
   if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Folder not found.' };
   return { ok: true, ...fullStackSupport.createFullStackConfig(folder) };
 }));
+ipcMain.handle('detect-game-project', wrapAsync(({ folder }) => detectGameProject(folder)));
 
 // Real per-language byte breakdown for the active project - the GitHub
 // repository "Languages" bar equivalent. Walks the actual files on disk;

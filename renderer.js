@@ -434,6 +434,7 @@ async function generateNewProjectUI(e) {
     running: false,
   };
   projects.push(newProject);
+  await classifyGameProject(newProject, { showGuide: true });
   activeProjectId = newProject.id;
   persistProjects();
   renderProjects();
@@ -478,6 +479,8 @@ async function addProject(e) {
       // turned into a real local path. Use Browse in the form if the
       // folder itself genuinely needs to change.
       if (rawInput !== p.folder) p.folder = rawInput;
+      p.gameDetectionVersion = 0;
+      await classifyGameProject(p, { showGuide: true });
     }
     editingProjectId = null;
     saveBtn.innerText = 'Save Project';
@@ -512,7 +515,9 @@ async function addProject(e) {
     showToast('info', `Detected port ${port}`, `Found from ${result.detectedPort.source}.`);
   }
 
-  projects.push({ id: Date.now(), name, folder, command, port, running: false });
+  const project = { id: Date.now(), name, folder, command, port, running: false };
+  projects.push(project);
+  await classifyGameProject(project, { showGuide: true });
   document.getElementById('project-name').value = '';
   document.getElementById('project-path').value = '';
   document.getElementById('project-port').value = '';
@@ -666,6 +671,7 @@ function renderProjects() {
         </div>
         <p class="path">${escapeHtml(p.folder)}</p>
         <p class="meta">${escapeHtml(p.command)} — port ${escapeHtml(p.port)}</p>
+        ${p.gameDevelopment?.isGame ? `<div class="row" style="margin-top:6px; align-items:center;"><span class="pill on">GAME · ${escapeHtml(p.gameDevelopment.engine)}</span><button class="btn tiny btn-secondary" onclick="showGameDevelopmentGuide(${p.id}, event)">Where to develop it</button></div>` : ''}
         <div class="row" style="margin-top:6px; align-items:center;">
           <span class="pill" id="project-trust-${p.id}">RESTRICTED</span>
           <button class="btn tiny btn-secondary" onclick="configureWorkspaceTrust(${p.id}, event)">Review permissions</button>
@@ -694,7 +700,46 @@ function renderProjects() {
   refreshWorkspaceTrustBadges();
   const active = projects.find((p) => p.id === activeProjectId);
   document.getElementById('header-active-name').innerText = active ? active.name : 'None';
+  backfillGameProjectClassifications();
 }
+
+let activeGameGuideProjectId = null;
+let gameClassificationBackfillRunning = false;
+async function classifyGameProject(project, { showGuide = false } = {}) {
+  if (!project?.folder) return null;
+  const result = await window.nexus.detectGameProject(project.folder);
+  project.gameDetectionVersion = 1;
+  project.gameDevelopment = result?.isGame ? result : null;
+  if (result?.isGame && showGuide) displayGameDevelopmentGuide(project);
+  return result;
+}
+async function backfillGameProjectClassifications() {
+  if (gameClassificationBackfillRunning) return;
+  const pending = projects.filter((project) => project.gameDetectionVersion !== 1);
+  if (!pending.length) return;
+  gameClassificationBackfillRunning = true;
+  let foundGame = null;
+  for (const project of pending) { const result = await classifyGameProject(project); if (!foundGame && result?.isGame) foundGame = project; }
+  gameClassificationBackfillRunning = false;
+  persistProjects();
+  renderProjects();
+  if (foundGame) displayGameDevelopmentGuide(foundGame);
+}
+function displayGameDevelopmentGuide(project) {
+  const guide = project?.gameDevelopment;
+  if (!guide?.isGame) return;
+  activeGameGuideProjectId = project.id;
+  document.getElementById('game-guide-title').innerText = `${project.name} is a ${guide.engine} project`;
+  document.getElementById('game-guide-reason').innerText = `For proper development, use ${guide.tool}. ${guide.reason}`;
+  document.getElementById('game-guide-evidence').innerText = `Why Nexus identified it as a game: ${guide.evidence.join(', ')}.`;
+  document.getElementById('game-guide-tool-button').innerText = `Open ${guide.tool}`;
+  const card = document.getElementById('game-development-guide');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function showGameDevelopmentGuide(id, event) { event?.stopPropagation(); const project = projects.find((item) => item.id === id); if (project) displayGameDevelopmentGuide(project); }
+function hideGameDevelopmentGuide() { document.getElementById('game-development-guide').style.display = 'none'; }
+function openGameDevelopmentLink(kind) { const project = projects.find((item) => item.id === activeGameGuideProjectId); const guide = project?.gameDevelopment; const url = kind === 'docs' ? guide?.docsUrl : guide?.url; if (url) window.nexus.openExternal(url); }
 
 function escapeHtml(str) {
   const d = document.createElement('div');
