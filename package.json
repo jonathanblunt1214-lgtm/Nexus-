@@ -64,6 +64,7 @@
       "advancedTesting.js",
       "gameProjectDetector.js",
       "codeLibrary.js",
+      "projectTemplates.js",
       "fullStackSupport.js",
       "processManager.js",
       "aiInventory.js",

@@ -16,7 +16,7 @@ contextBridge.exposeInMainWorld('nexus', {
   getWorkspaceTrust: (folder) => ipcRenderer.invoke('workspace-trust:get', { folder }),
   setWorkspaceTrust: (folder, permissions) => ipcRenderer.invoke('workspace-trust:set', { folder, permissions }),
   revokeWorkspaceTrust: (folder) => ipcRenderer.invoke('workspace-trust:revoke', { folder }),
-  generateNewProject: (name, description) => ipcRenderer.invoke('generate-new-project', { name, description }),
+  generateNewProject: (name, description, templateId) => ipcRenderer.invoke('generate-new-project', { name, description, templateId }),
   aiEditFileWithPrompt: (filePath, instruction, folder) => ipcRenderer.invoke('ai-edit-file-with-prompt', { filePath, instruction, folder }),
   searchProject: (folder, query, caseSensitive) => ipcRenderer.invoke('search-project', { folder, query, caseSensitive }),
   replaceInProject: (folder, query, replacement, caseSensitive) => ipcRenderer.invoke('replace-in-project', { folder, query, replacement, caseSensitive }),

@@ -17,6 +17,7 @@ const { detectGameProject } = require('./gameProjectDetector');
 const { searchCodeLibrary, libraryFacets } = require('./codeLibrary');
 const { discover: discoverTests, snapshots: discoverSnapshots, TestHistory, readCoverage } = require('./advancedTesting');
 const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
+const { getProjectTemplate } = require('./projectTemplates');
 const testHistory = new TestHistory(app.getPath('userData'));
 const testWatchers = new Map();
 const startupStartedAt = performance.now();
@@ -485,9 +486,11 @@ ipcMain.handle('clear-preview-cache', async () => {
 // a strict parseable format; every file gets genuinely written to disk in
 // a fresh local folder. Nothing is silently dropped - if parsing fails, the
 // raw response is returned so the failure is visible, not masked. ---
-ipcMain.handle('generate-new-project', async (_event, { name, description }) => {
+ipcMain.handle('generate-new-project', async (_event, { name, description, templateId }) => {
   if (!name || !name.trim()) return { ok: false, error: 'Project name is required.' };
   if (!description || !description.trim()) return { ok: false, error: 'Describe what the project should do.' };
+  const template = getProjectTemplate(templateId);
+  if (!template) return { ok: false, error: 'Choose a Website, App, or API template.' };
 
   const projectsRoot = getProjectsRoot();
   const folderName = sanitizeProjectFolderName(name);
@@ -516,6 +519,7 @@ ipcMain.handle('generate-new-project', async (_event, { name, description }) => 
     '  reasonable (a genuinely minimal but functional starter), but every file must be complete.',
     '- Do NOT include node_modules, package-lock.json, or any build/generated output.',
     '- Do NOT wrap individual file contents in markdown code fences (no ```).',
+    `- TEMPLATE: ${template.label}. ${template.requirements}`,
     '',
     `PROJECT NAME: ${name}`,
     `DESCRIPTION: ${description}`,
@@ -552,6 +556,8 @@ ipcMain.handle('generate-new-project', async (_event, { name, description }) => 
     path: destPath,
     files: files.map((f) => f.relPath),
     suggestedCommand,
+    suggestedPort: template.port,
+    templateId: template.id,
   };
 });
 
