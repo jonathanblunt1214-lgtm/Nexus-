@@ -80,6 +80,33 @@ async function getPullRequests(token, owner, repo, state = 'open') {
   }));
 }
 
+const NEXUS_VAULT_FILE = 'nexus-account-vault.json';
+const NEXUS_VAULT_DESCRIPTION = 'Nexus Account Vault (encrypted)';
+
+async function findAccountVaultGist(token) {
+  const gists = await githubRequest(token, 'GET', '/gists?per_page=100');
+  return gists.find((gist) => gist.description === NEXUS_VAULT_DESCRIPTION && gist.files?.[NEXUS_VAULT_FILE]) || null;
+}
+
+async function saveAccountVaultGist(token, encryptedVault) {
+  const existing = await findAccountVaultGist(token);
+  const files = { [NEXUS_VAULT_FILE]: { content: encryptedVault } };
+  if (existing) return githubRequest(token, 'PATCH', `/gists/${existing.id}`, { description: NEXUS_VAULT_DESCRIPTION, files });
+  return githubRequest(token, 'POST', '/gists', { description: NEXUS_VAULT_DESCRIPTION, public: false, files });
+}
+
+async function loadAccountVaultGist(token) {
+  const found = await findAccountVaultGist(token);
+  if (!found) return null;
+  const gist = await githubRequest(token, 'GET', `/gists/${found.id}`);
+  const file = gist.files?.[NEXUS_VAULT_FILE];
+  if (!file) return null;
+  if (!file.truncated) return { content: file.content, modifiedTime: gist.updated_at, source: 'github' };
+  const response = await fetch(file.raw_url);
+  if (!response.ok) throw new Error('GitHub could not download the complete account vault.');
+  return { content: await response.text(), modifiedTime: gist.updated_at, source: 'github' };
+}
+
 async function getPullRequestReview(token, owner, repo, number) {
   const pr = await githubRequest(token, 'GET', `/repos/${owner}/${repo}/pulls/${number}`);
   const [files, reviews, checks] = await Promise.all([
@@ -192,4 +219,6 @@ module.exports = {
   putActionsSecret,
   createBranch,
   getCommits,
+  saveAccountVaultGist,
+  loadAccountVaultGist,
 };

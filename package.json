@@ -59,6 +59,7 @@
       "githubGitAuth.js",
       "oauthIntegrations.js",
       "googleDriveClient.js",
+      "accountVault.js",
       "codingModelProviders.js",
       "providerDiscovery.js",
       "gitWorkflow.js",

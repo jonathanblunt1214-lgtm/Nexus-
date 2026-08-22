@@ -5,7 +5,7 @@ const jsonHeaders = { Accept: 'application/json', 'Content-Type': 'application/x
 
 async function startGitHubDeviceFlow(clientId) {
   if (!clientId) throw new Error('This Nexus build has no GitHub OAuth client ID configured.');
-  const body = new URLSearchParams({ client_id: clientId, scope: 'repo read:user user:email' });
+  const body = new URLSearchParams({ client_id: clientId, scope: 'repo gist read:user user:email' });
   const response = await fetch('https://github.com/login/device/code', { method: 'POST', headers: jsonHeaders, body });
   const data = await response.json();
   if (!response.ok || data.error) throw new Error(data.error_description || data.error || 'GitHub sign-in could not start.');
