@@ -1414,6 +1414,29 @@ Type "help" for tips.
 
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
+      <div class="card update-card" aria-labelledby="update-card-title">
+        <div class="update-card-heading">
+          <div>
+            <label class="label" id="update-card-title">Nexus Updates</label>
+            <p class="muted small" id="update-current-version">Installed version —</p>
+          </div>
+          <span class="pill" id="update-state-pill">Ready to check</span>
+        </div>
+        <p class="muted small" id="update-message">Check GitHub Releases for a newer version of Nexus.</p>
+        <div class="update-notes" id="update-notes" hidden>
+          <label class="label">What’s new</label>
+          <pre id="update-notes-content"></pre>
+        </div>
+        <div class="update-progress" id="update-progress" hidden aria-label="Update download progress">
+          <div class="update-progress-bar" id="update-progress-bar"></div>
+        </div>
+        <div class="form-row update-actions">
+          <button class="btn btn-secondary" id="update-check-btn" onclick="checkForReleaseUpdate()">Check for updates</button>
+          <button class="btn" id="update-download-btn" onclick="downloadReleaseUpdate()" hidden>Download update</button>
+          <button class="btn" id="update-install-btn" onclick="installReleaseUpdate()" hidden>Restart &amp; Update</button>
+        </div>
+      </div>
+
       <div class="card">
         <label class="label">NVIDIA NIM API Key — powers Bug Fix Assist, Feature Builder, Feature Suggestions, Changelog, New Project generation, and Code Editor prompts</label>
         <p class="muted small" style="margin-top:6px;">This is NVIDIA's hosted API (build.nvidia.com), not a self-hosted deployment — get a free key there, no local GPU needed. Currently calling <code>qwen/qwen3-coder-next</code>.</p>

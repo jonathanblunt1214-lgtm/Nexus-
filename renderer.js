@@ -3203,6 +3203,61 @@ async function runPipeline() {
 // actions that deserve a real decision, not a silent background swap.
 let pendingSourceUpdate = null;
 
+function renderReleaseUpdateStatus(status) {
+  const current = document.getElementById('update-current-version');
+  if (!current) return;
+  const pill = document.getElementById('update-state-pill');
+  const message = document.getElementById('update-message');
+  const check = document.getElementById('update-check-btn');
+  const download = document.getElementById('update-download-btn');
+  const install = document.getElementById('update-install-btn');
+  const progress = document.getElementById('update-progress');
+  const bar = document.getElementById('update-progress-bar');
+  const notes = document.getElementById('update-notes');
+  const notesContent = document.getElementById('update-notes-content');
+  const labels = {
+    idle: 'Ready to check', checking: 'Checking…', available: 'Update available',
+    downloading: `Downloading ${status.percent || 0}%`, ready: 'Ready to install',
+    'up-to-date': 'Up to date', error: 'Update failed', development: 'Development copy',
+  };
+
+  current.innerText = `Installed version ${status.currentVersion || '—'}`;
+  pill.innerText = labels[status.state] || 'Updater';
+  pill.classList.toggle('on', status.state === 'up-to-date' || status.state === 'ready');
+  check.disabled = !status.canCheck || status.state === 'checking' || status.state === 'downloading';
+  download.hidden = status.state !== 'available';
+  install.hidden = status.state !== 'ready';
+  progress.hidden = status.state !== 'downloading';
+  bar.style.width = `${Math.max(0, Math.min(100, status.percent || 0))}%`;
+
+  const releaseNotes = Array.isArray(status.releaseNotes)
+    ? status.releaseNotes.map((entry) => entry.note || entry.version || '').filter(Boolean).join('\n\n')
+    : String(status.releaseNotes || '').trim();
+  notes.hidden = !releaseNotes;
+  notesContent.textContent = releaseNotes;
+
+  if (status.state === 'available') message.innerText = `Nexus ${status.availableVersion} is available from GitHub Releases.`;
+  else if (status.state === 'ready') message.innerText = `Nexus ${status.availableVersion} has downloaded. Restart when you're ready.`;
+  else if (status.state === 'up-to-date') message.innerText = `Nexus ${status.currentVersion} is the latest release.`;
+  else if (status.state === 'downloading') message.innerText = 'Downloading the update securely from GitHub Releases…';
+  else if (status.state === 'checking') message.innerText = 'Checking GitHub Releases…';
+  else message.innerText = status.message || 'Check GitHub Releases for a newer version of Nexus.';
+}
+
+async function checkForReleaseUpdate() {
+  try { await window.nexus.checkForUpdates(); }
+  catch (error) { renderReleaseUpdateStatus({ ...(await window.nexus.getUpdaterStatus()), state: 'error', message: error.message }); }
+}
+
+async function downloadReleaseUpdate() {
+  try { await window.nexus.downloadUpdate(); }
+  catch (error) { renderReleaseUpdateStatus({ ...(await window.nexus.getUpdaterStatus()), state: 'error', message: error.message }); }
+}
+
+async function installReleaseUpdate() {
+  await window.nexus.installUpdateAndRestart();
+}
+
 async function checkForUpdatesNow() {
   if (pendingSourceUpdate) {
     promptPullSourceUpdates();
@@ -3301,6 +3356,9 @@ setInterval(async () => {
   if (gcp) document.getElementById('gcp-project-id').value = gcp;
 
   await loadBuildInfoAndCheckUpdates();
+
+  renderReleaseUpdateStatus(await window.nexus.getUpdaterStatus());
+  window.nexus.onUpdaterStatus(renderReleaseUpdateStatus);
 
   updateActivityDot();
 })();
