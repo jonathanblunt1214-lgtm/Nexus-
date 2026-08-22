@@ -146,6 +146,10 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (!app.isPackaged) return;
+    checkForUpdates().catch((err) => console.error('Startup update check failed:', err.message));
+  });
   // Electron normally syncs the window title to the page's own <title> tag
   // whenever it loads/changes. Since we set a real title (with build info)
   // ourselves after an async git lookup, that sync would otherwise race
@@ -269,9 +273,6 @@ app.whenReady().then(async () => {
   setupPreviewSession();
   setupPopupAllowlist();
   initUpdater(mainWindow);
-  if (app.isPackaged) {
-    checkForUpdates().catch((err) => console.error('Update check failed:', err.message));
-  }
 
   const buildInfo = await computeBuildInfo();
   if (mainWindow && !mainWindow.isDestroyed()) {

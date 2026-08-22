@@ -26,6 +26,13 @@ test('Settings exposes installed version, progress, and explicit restart action'
   assert.match(renderer, /onUpdaterStatus\(renderReleaseUpdateStatus\)/);
 });
 
+test('installed Nexus checks for updates every time the application opens', () => {
+  const main = read('main.js');
+  assert.match(main, /webContents\.once\(['"]did-finish-load['"]/);
+  assert.match(main, /if \(!app\.isPackaged\) return;\s*checkForUpdates\(\)/);
+  assert.match(main, /Startup update check failed/);
+});
+
 test('release configuration publishes GitHub updater metadata', () => {
   const pkg = JSON.parse(read('package.json'));
   assert.deepEqual(pkg.build.publish, {
