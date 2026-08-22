@@ -8,6 +8,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session, crashR
 const path = require('path');
 const fs = require('fs');
 const { writeJsonAtomic } = require('./atomicWrite');
+const { normalizeBuildState, nextBuildNumber, approveNextBuild } = require('./buildNumber');
 const os = require('os');
 const { exec, spawn, execFile } = require('child_process');
 const crypto = require('crypto');
@@ -338,7 +339,8 @@ app.whenReady().then(async () => {
   const buildInfo = await computeBuildInfo();
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (buildInfo.ok) {
-      mainWindow.setTitle(`NEXUS — v${buildInfo.version} · build ${buildInfo.buildNumber} (${buildInfo.commitHash})`);
+      const identity = buildInfo.buildNumber ? `build ${buildInfo.buildNumber}` : `next build ${buildInfo.nextBuildNumber} awaiting approval`;
+      mainWindow.setTitle(`NEXUS — v${buildInfo.version} · ${identity}${buildInfo.commitHash ? ` (${buildInfo.commitHash})` : ''}`);
     } else if (buildInfo.version) {
       mainWindow.setTitle(`NEXUS — v${buildInfo.version}`);
     }
@@ -1342,13 +1344,10 @@ ipcMain.handle('replace-in-project', (_event, { folder, query, replacement, case
 
 ipcMain.handle('get-app-dir', () => __dirname);
 
-// --- Build number: the actual git commit count in Nexus's own repo, not a
-// manually-maintained counter. Every real commit is a real build increment
-// automatically - nothing to remember to bump, and it can never drift out
-// of sync with what's actually been shipped. Falls back gracefully (shows
-// just the package.json version) if this ever runs somewhere without a
-// .git folder, e.g. a packaged build with .git excluded. Used both for the
-// IPC call the renderer makes, and to set the real OS window title. ---
+// --- Approval-gated Nexus build identity. A number is never assigned merely
+// because source changed or a command ran. The user previews the next number
+// and must explicitly approve it; the approval is then persisted with its
+// timestamp and source commit for traceability. ---
 async function computeBuildInfo() {
   let version = null;
   try {
@@ -1356,22 +1355,32 @@ async function computeBuildInfo() {
     version = pkg.version;
   } catch { /* ignore - version stays null */ }
 
-  const countResult = await runGit(__dirname, 'rev-list --count HEAD');
   const hashResult = await runGit(__dirname, 'rev-parse --short HEAD');
-
-  if (!countResult.ok || !hashResult.ok) {
-    return { ok: false, version };
-  }
+  const state = normalizeBuildState(loadConfig().nexusBuildNumbers);
 
   return {
     ok: true,
     version,
-    buildNumber: parseInt(countResult.output, 10) || 0,
-    commitHash: hashResult.output,
+    buildNumber: state.current,
+    nextBuildNumber: nextBuildNumber(state.current),
+    approvedAt: state.history.at(-1)?.approvedAt || null,
+    commitHash: hashResult.ok ? hashResult.output : null,
   };
 }
 
 ipcMain.handle('get-build-info', () => computeBuildInfo());
+let buildNumberApprovalQueue = Promise.resolve();
+ipcMain.handle('build-number:approve', (_event, value = {}) => {
+  buildNumberApprovalQueue = buildNumberApprovalQueue.catch(() => undefined).then(async () => {
+    if (value.approved !== true) throw new Error('Build approval was not confirmed.');
+    const hashResult = await runGit(__dirname, 'rev-parse --short HEAD');
+    const cfg = loadConfig();
+    cfg.nexusBuildNumbers = approveNextBuild(cfg.nexusBuildNumbers, { approved:true, commitHash:hashResult.ok ? hashResult.output : null });
+    await saveConfig(cfg);
+    return computeBuildInfo();
+  });
+  return buildNumberApprovalQueue;
+});
 
 // =======================================================================
 // Auto-sync from GitHub: replaces manually downloading and copying files

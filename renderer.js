@@ -3966,7 +3966,8 @@ async function loadBuildInfoAndCheckUpdates() {
   const buildInfo = await window.nexus.getBuildInfo();
   const badge = document.getElementById('build-badge');
   if (buildInfo.ok) {
-    badge.innerText = `Build #${buildInfo.buildNumber} (${buildInfo.commitHash})`;
+    badge.innerText = buildInfo.buildNumber ? `Build ${buildInfo.buildNumber}${buildInfo.commitHash ? ` (${buildInfo.commitHash})` : ''}` : `Next build ${buildInfo.nextBuildNumber} — approval required`;
+    renderApprovedBuildNumber(buildInfo);
   } else if (buildInfo.version) {
     badge.innerText = `v${buildInfo.version}`;
   } else {
@@ -4028,6 +4029,32 @@ async function loadOAuthConfiguration() {
   if (!result.ok) return;
   document.getElementById('oauth-github-client-id').value = result.githubClientId || '';
   document.getElementById('oauth-google-client-id').value = result.googleClientId || '';
+}
+
+function renderApprovedBuildNumber(buildInfo) {
+  const current = document.getElementById('approved-build-current');
+  const next = document.getElementById('approved-build-next');
+  if (!current || !next) return;
+  current.innerText = buildInfo.buildNumber
+    ? `Current approved build: ${buildInfo.buildNumber}${buildInfo.approvedAt ? ` · approved ${new Date(buildInfo.approvedAt).toLocaleString()}` : ''}`
+    : 'No build number has been approved yet.';
+  next.innerText = `Next build awaiting approval: ${buildInfo.nextBuildNumber || '0.0.01'}`;
+}
+
+async function approveBuildNumber() {
+  const preview = await window.nexus.getBuildInfo();
+  const next = preview.nextBuildNumber || '0.0.01';
+  if (!confirm(`Approve Nexus build ${next}?\n\nThis permanently records the next build number for this Nexus installation. It will not run or publish the installer by itself.`)) return;
+  const button = document.getElementById('approve-build-number-btn');
+  button.disabled = true;
+  try {
+    const result = await window.nexus.approveNextBuildNumber();
+    renderApprovedBuildNumber(result);
+    const badge = document.getElementById('build-badge');
+    badge.innerText = `Build ${result.buildNumber}${result.commitHash ? ` (${result.commitHash})` : ''}`;
+    showToast('success', `Build ${result.buildNumber} approved`, `Next available build number: ${result.nextBuildNumber}.`);
+  } catch (error) { showToast('error', 'Build number was not approved', error.message); }
+  finally { button.disabled = false; }
 }
 
 async function loadEmailAccountConfiguration() {

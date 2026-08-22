@@ -63,10 +63,19 @@ test('local Windows builds use and verify the trusted Nexus certificate', () => 
   const script = read('scripts/buildLocalSigned.js');
   const signer = read('scripts/signLocalWindows.js');
   assert.equal(pkg.scripts['dist:local-signed'], 'node scripts/buildLocalSigned.js');
+  assert.match(script, /signtoolOptions:\s*\{/);
   assert.match(script, /sign:\s*path\.join\(__dirname, 'signLocalWindows\.js'\)/);
+  assert.match(script, /X509Store\]\:\:new\('Root', 'CurrentUser'\)/);
+  assert.match(script, /\$root\.Add\(\$cert\)/);
   assert.match(script, /Get-AuthenticodeSignature/);
   assert.match(script, /result\.Status !== 'Valid'/);
+  assert.match(script, /MIN_INSTALLER_BYTES/);
+  assert.match(script, /removeStaleArtifacts/);
+  assert.match(script, /validateArtifacts/);
+  assert.match(script, /process\.exit\(1\)/);
   assert.match(script, /publish:\s*'never'/);
+  assert.match(signer, /getSignToolPath/);
+  assert.doesNotMatch(signer, /getSignVendorPath/);
   assert.match(signer, /'\/sha1', thumbprint, '\/s', 'My'/);
   assert.match(signer, /timestamp\.acs\.microsoft\.com/);
 });
@@ -90,4 +99,17 @@ test('portable signing identity can be restored without putting its password on 
   assert.match(restore, /Read-Host 'Enter the PFX recovery password' -AsSecureString/);
   assert.match(restore, /Import-PfxCertificate/);
   assert.match(restore, /Cert:\\CurrentUser\\Root/);
+});
+
+test('signed build validation rejects a truncated installer even if a stale file exists', () => {
+  const os = require('node:os');
+  const { validateArtifacts, MIN_INSTALLER_BYTES } = require('../scripts/buildLocalSigned');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-signed-artifact-'));
+  const artifacts = { installer:path.join(dir, 'setup.exe'), blockMap:path.join(dir, 'setup.exe.blockmap'), executable:path.join(dir, 'Nexus.exe') };
+  fs.writeFileSync(artifacts.installer, Buffer.alloc(189828));
+  fs.writeFileSync(artifacts.blockMap, Buffer.alloc(200));
+  fs.writeFileSync(artifacts.executable, Buffer.alloc(200));
+  assert.ok(fs.statSync(artifacts.installer).size < MIN_INSTALLER_BYTES);
+  assert.throws(() => validateArtifacts(artifacts, 'thumbprint', () => {}), /installer is only 189828 bytes/);
+  fs.rmSync(dir, { recursive:true, force:true });
 });

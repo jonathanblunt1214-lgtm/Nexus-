@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { writeJsonAtomicSync } = require('../atomicWrite');
+const { writeJsonAtomicSync, writeJsonAtomic } = require('../atomicWrite');
 const { scanProject } = require('../aiInventory');
 
 test('atomic JSON write replaces the target only after a complete temp write', () => {
@@ -42,6 +42,17 @@ test('atomic JSON write preserves the previous file when rename fails', () => {
   assert.equal(fs.existsSync(`${target}.tmp`), false);
 
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('concurrent atomic writes to the same target use isolated temporary files', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-atomic-concurrent-'));
+  const target = path.join(dir, 'config.json');
+  await Promise.all(Array.from({ length:500 }, (_, index) => writeJsonAtomic(target, { index, payload:'x'.repeat(2048) })));
+  const result = JSON.parse(fs.readFileSync(target, 'utf8'));
+  assert.ok(Number.isInteger(result.index));
+  assert.equal(result.payload.length, 2048);
+  assert.deepEqual(fs.readdirSync(dir), ['config.json']);
+  fs.rmSync(dir, { recursive:true, force:true });
 });
 
 test('AI inventory scanning runs through the worker and preserves inventory semantics', async () => {
