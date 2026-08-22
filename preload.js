@@ -97,6 +97,7 @@ contextBridge.exposeInMainWorld('nexus', {
   listProjectFiles: (folder) => ipcRenderer.invoke('list-project-files', { folder }),
   getAppDir: () => ipcRenderer.invoke('get-app-dir'),
   readFile: (filePath) => ipcRenderer.invoke('read-file', { filePath }),
+  languageIntelligence: (payload) => ipcRenderer.invoke('language-intelligence', payload),
   aiProposeFix: (filePath, errorText, folder) => ipcRenderer.invoke('ai-propose-fix', { filePath, errorText, folder }),
   applyFileChange: (filePath, newContent, source) => ipcRenderer.invoke('apply-file-change', { filePath, newContent, source }),
   getRecentChanges: () => ipcRenderer.invoke('get-recent-changes'),

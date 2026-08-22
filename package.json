@@ -18,20 +18,21 @@
   "license": "MIT",
   "dependencies": {
     "electron-updater": "^6.3.9",
-    "web-tree-sitter": "0.25.10",
     "tree-sitter-javascript": "0.25.0",
-    "tree-sitter-typescript": "0.23.2"
+    "tree-sitter-typescript": "0.23.2",
+    "typescript": "~5.8.2",
+    "web-tree-sitter": "0.25.10"
   },
   "devDependencies": {
-    "electron": "^31.3.1",
-    "electron-builder": "^24.13.3",
-    "typescript": "~5.8.2",
-    "tsx": "^4.21.0",
-    "@types/node": "^26.2.0"
+    "@types/node": "^26.2.0",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "tsx": "^4.21.0"
   },
   "build": {
     "appId": "com.nexus.devos",
     "productName": "Nexus",
+    "npmRebuild": false,
     "directories": {
       "output": "dist"
     },
@@ -89,7 +90,8 @@
       "aiAlerts.js",
       "aiCostOptimizer.js",
       "aiPerformanceTuner.js",
-      "languageBreakdown.js"
+      "languageBreakdown.js",
+      "languageIntelligence.js"
     ],
     "publish": {
       "provider": "github",

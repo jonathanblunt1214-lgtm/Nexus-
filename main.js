@@ -46,6 +46,7 @@ const aiCostOptimizer = require('./aiCostOptimizer');
 const aiPerformanceTuner = require('./aiPerformanceTuner');
 const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
+const { queryLanguageIntelligence } = require('./languageIntelligence');
 
 let mainWindow;
 let projectsForExitSync = [];
@@ -1850,6 +1851,11 @@ ipcMain.handle('git-push', async (_event, { folder }) => {
   const trustError = requireWorkspacePermission(folder, 'git-write');
   if (trustError) return trustError;
   return runGit(folder, 'push -u origin HEAD');
+});
+
+ipcMain.handle('language-intelligence', (_event, payload) => {
+  try { return queryLanguageIntelligence(payload || {}); }
+  catch (error) { return { ok: false, error: error.message }; }
 });
 
 async function autoSyncProject(folder, projectName) {
