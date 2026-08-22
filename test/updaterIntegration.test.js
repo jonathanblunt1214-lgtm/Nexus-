@@ -58,3 +58,16 @@ test('release configuration publishes GitHub updater metadata', () => {
   assert.match(workflow, /GH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
   assert.match(workflow, /contents:\s*write/);
 });
+
+test('local Windows builds use and verify the trusted Nexus certificate', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const script = read('scripts/buildLocalSigned.js');
+  const signer = read('scripts/signLocalWindows.js');
+  assert.equal(pkg.scripts['dist:local-signed'], 'node scripts/buildLocalSigned.js');
+  assert.match(script, /sign:\s*path\.join\(__dirname, 'signLocalWindows\.js'\)/);
+  assert.match(script, /Get-AuthenticodeSignature/);
+  assert.match(script, /result\.Status !== 'Valid'/);
+  assert.match(script, /publish:\s*'never'/);
+  assert.match(signer, /'\/sha1', thumbprint, '\/s', 'My'/);
+  assert.match(signer, /timestamp\.acs\.microsoft\.com/);
+});

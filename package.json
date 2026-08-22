@@ -9,6 +9,7 @@
     "audit:architecture": "node scripts/verifyArchitecture.js",
     "audit:release": "node scripts/releaseAudit.js",
     "dist": "electron-builder --win nsis",
+    "dist:local-signed": "node scripts/buildLocalSigned.js",
     "dist:publish": "electron-builder --win nsis --publish always"
   },
   "author": "",
