@@ -51,6 +51,7 @@ let projectsForExitSync = [];
 let exitSyncInProgress = false;
 let exitSyncComplete = false;
 let relaunchAfterExitSync = false;
+let exitSaveSequence = 0;
 
 // --- Global error surfacing: previously an uncaught exception or rejected
 // promise anywhere in the main process would fail silently - the app could
@@ -1826,10 +1827,22 @@ async function syncProjectsBeforeExit() {
   exitSyncInProgress = true;
   mainWindow?.webContents.send('exit-sync-status', {
     state: 'syncing',
-    message: 'Nexus is committing and pushing project changes before closing. Keep this window open.',
+    message: 'Nexus is saving local files, then syncing GitHub projects before closing. Keep this window open.',
   });
 
   const failures = [];
+  const saveResult = await requestRendererSaveBeforeExit();
+  if (!saveResult.ok) failures.push(...saveResult.failures.map((failure) => `Local save: ${failure}`));
+
+  if (failures.length) {
+    exitSyncInProgress = false;
+    mainWindow?.webContents.send('exit-sync-status', {
+      state: 'failed',
+      message: `Nexus stayed open because local project files could not be saved:\n${failures.join('\n')}`,
+    });
+    return;
+  }
+
   for (const project of projectsForExitSync) {
     const result = await autoSyncProject(project.folder, project.name);
     if (!result.ok && !result.skipped) failures.push(`${project.name}: ${result.error}`);
@@ -1847,6 +1860,29 @@ async function syncProjectsBeforeExit() {
   exitSyncComplete = true;
   if (relaunchAfterExitSync) app.relaunch();
   mainWindow?.close();
+}
+
+function requestRendererSaveBeforeExit() {
+  return new Promise((resolve) => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      resolve({ ok: false, failures: ['The Nexus window was unavailable.'] });
+      return;
+    }
+    const requestId = `exit-save-${Date.now()}-${++exitSaveSequence}`;
+    const timeout = setTimeout(() => {
+      ipcMain.removeListener('exit-save-complete', onComplete);
+      resolve({ ok: false, failures: ['Timed out while saving open project files.'] });
+    }, 30_000);
+    const onComplete = (_event, payload) => {
+      if (payload?.requestId !== requestId) return;
+      clearTimeout(timeout);
+      ipcMain.removeListener('exit-save-complete', onComplete);
+      const result = payload.result;
+      resolve(result?.ok ? result : { ok: false, failures: result?.failures || ['Unknown save failure.'] });
+    };
+    ipcMain.on('exit-save-complete', onComplete);
+    mainWindow.webContents.send('exit-save-request', { requestId });
+  });
 }
 
 // --- Deploy: run whatever script the user already uses (npm run deploy, a shell script, etc). ---
