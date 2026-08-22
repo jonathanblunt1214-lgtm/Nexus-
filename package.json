@@ -47,6 +47,7 @@
       "updater.js",
       "projectCloner.js",
       "projectPortDetector.js",
+      "backgroundGitSync.js",
       "projectSettings.js",
       "projectRegistry.js",
       "pureLogic.js",
