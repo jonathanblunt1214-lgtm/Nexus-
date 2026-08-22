@@ -22,7 +22,7 @@ test('modern shell keeps navigation readable at compact Electron widths', () => 
   assert.ok(styles.includes(marker), 'missing compact responsive breakpoint');
   const compactBlock = styles.slice(styles.indexOf(marker));
   assert.match(compactBlock, /#sidebar\s*\{[\s\S]*?flex-direction:\s*row/);
-  assert.match(compactBlock, /\.nav-btn::after\s*\{[\s\S]*?font-size:\s*12px/);
+  assert.match(compactBlock, /\.nav-btn::after\s*\{\s*font-size:\s*12px/);
 });
 
 test('modern shell avoids neon/retro global visual language', () => {
