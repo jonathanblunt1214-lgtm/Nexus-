@@ -6,12 +6,61 @@ const { queryLanguageIntelligence } = require('./languageIntelligence');
 const registry = new Map();
 const extensionIndex = new Map();
 
+function checkerKey(filePath) {
+  return path.basename(filePath || '').toLowerCase() === 'dockerfile' ? 'dockerfile' : path.extname(filePath || '').toLowerCase();
+}
+
 function registerChecker(adapter) {
   if (!adapter?.id || !Array.isArray(adapter.extensions) || typeof adapter.check !== 'function') throw new Error('A checker needs an id, extensions, and check function.');
-  const normalized = Object.freeze({ external:false, ...adapter, extensions:adapter.extensions.map((ext) => ext.toLowerCase()) });
+  const normalized = Object.freeze({ external:false, fix:genericStructuralFix, ...adapter, extensions:adapter.extensions.map((ext) => ext.toLowerCase()) });
   registry.set(normalized.id, normalized);
   for (const extension of normalized.extensions) extensionIndex.set(extension, normalized.id);
   return normalized;
+}
+
+function genericStructuralFix({ content, language = 'Code' }) {
+  const pairs = { '(' : ')', '[' : ']', '{' : '}' }; const closing = new Set(Object.values(pairs)); const stack = [];
+  let quote = null; let escaped = false;
+  for (const char of String(content ?? '')) {
+    if (escaped) { escaped = false; continue; }
+    if (char === '\\' && quote) { escaped = true; continue; }
+    if (quote) { if (char === quote) quote = null; continue; }
+    if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
+    if (pairs[char]) stack.push(char);
+    else if (closing.has(char)) {
+      if (!stack.length || pairs[stack.at(-1)] !== char) return { ok:true, correctedContent:content, fixesApplied:0, source:`${language} deterministic fix database` };
+      stack.pop();
+    }
+  }
+  const suffix = `${quote || ''}${stack.reverse().map((char) => pairs[char]).join('')}`;
+  return { ok:true, correctedContent:`${content}${suffix}`, fixesApplied:suffix.length ? 1 : 0, source:`${language} deterministic fix database` };
+}
+
+function markupFix({ content, filePath }) {
+  let correctedContent = String(content ?? '');
+  const html = /\.html?$/i.test(filePath); const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+  const stack = []; const replacements = []; const pattern = /<!--[\s\S]*?-->|<\/?([A-Za-z][\w:.-]*)(?:\s[^<>]*?)?\s*\/?>/g; let match;
+  while ((match = pattern.exec(correctedContent))) {
+    if (!match[1]) continue; const tag = match[1].toLowerCase(); const closes = match[0].startsWith('</'); const self = match[0].endsWith('/>') || (html && voids.has(tag));
+    if (closes) { const expected = stack.pop(); if (expected && expected !== tag) replacements.push({ start:match.index, length:match[0].length, text:`</${expected}>` }); }
+    else if (!self) stack.push(tag);
+  }
+  for (const item of replacements.sort((a, b) => b.start - a.start)) correctedContent = correctedContent.slice(0, item.start) + item.text + correctedContent.slice(item.start + item.length);
+  if (stack.length) correctedContent += stack.reverse().map((tag) => `</${tag}>`).join('');
+  const structural = genericStructuralFix({ content:correctedContent, language:'Markup' });
+  return { ...structural, fixesApplied:(replacements.length || stack.length || structural.fixesApplied) ? 1 : 0, source:'Markup deterministic fix database' };
+}
+
+function jsonFix({ content }) {
+  let correctedContent = String(content ?? '').replace(/,\s*([}\]])/g, '$1');
+  const structural = genericStructuralFix({ content:correctedContent, language:'JSON' });
+  correctedContent = structural.correctedContent;
+  return { ok:true, correctedContent, fixesApplied:correctedContent === content ? 0 : 1, source:'JSON deterministic fix database' };
+}
+
+function yamlFix({ content }) {
+  const correctedContent = String(content ?? '').replace(/^\t+/gm, (tabs) => '  '.repeat(tabs.length)).replace(/[ \t]+$/gm, '');
+  return { ok:true, correctedContent, fixesApplied:correctedContent === content ? 0 : 1, source:'YAML deterministic fix database' };
 }
 
 function diagnostic(message, { line = 0, column = 0, severity = 'error', code = 'syntax', source = 'Nexus' } = {}) {
@@ -69,20 +118,22 @@ function diagnosticsFromTool(output, source) {
 }
 
 function externalAdapter({ id, language, extensions, command, args, install }) {
-  registerChecker({ id, language, extensions, external:true, install, async check({ content, folder, allowExternal }) {
+  registerChecker({ id, language, extensions, external:true, install, fix:(input) => genericStructuralFix({ ...input, language }), async check({ content, folder, allowExternal }) {
     const structural = structuralDiagnostics(content, language);
-    if (structural.length || !allowExternal) return { diagnostics:structural, available:false, restricted:!allowExternal, install };
+    if (structural.length) return { diagnostics:structural, available:true, install };
+    if (!allowExternal) return { diagnostics:[], available:false, restricted:true, install };
     const result = await runExternal(command, args, content, folder);
     return { diagnostics:result.passed ? [] : diagnosticsFromTool(result.output, language), available:result.available, install };
   } });
 }
 
-registerChecker({ id:'typescript', language:'JavaScript / TypeScript', extensions:['.js','.jsx','.mjs','.cjs','.ts','.tsx','.mts','.cts'], async check(input) { return queryLanguageIntelligence({ ...input, action:'diagnostics' }); }, async fix(input) { return queryLanguageIntelligence({ ...input, action:'fix' }); } });
-registerChecker({ id:'json', language:'JSON', extensions:['.json','.jsonc'], async check({ content, filePath }) { try { JSON.parse(path.extname(filePath).toLowerCase() === '.jsonc' ? content.replace(/\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm, '$1') : content); return { diagnostics:[] }; } catch (error) { const position = Number(error.message.match(/position (\d+)/)?.[1] || 0); const before = content.slice(0, position); return { diagnostics:[diagnostic(error.message, { line:before.split('\n').length - 1, column:position - (before.lastIndexOf('\n') + 1), source:'JSON' })] }; } } });
-registerChecker({ id:'yaml', language:'YAML', extensions:['.yml','.yaml'], async check({ content }) { try { yaml.load(content); return { diagnostics:[] }; } catch (error) { return { diagnostics:[diagnostic(error.reason || error.message, { line:error.mark?.line, column:error.mark?.column, source:'YAML' })] }; } } });
-registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:['.html','.htm','.xml','.vue','.svelte'], async check({ content, filePath }) { return { diagnostics:markupDiagnostics(content, path.extname(filePath).slice(1).toUpperCase(), /\.html?$/.test(filePath)) }; } });
+registerChecker({ id:'typescript', language:'JavaScript / TypeScript', extensions:['.js','.jsx','.mjs','.cjs','.ts','.tsx','.mts','.cts'], async check(input) { return queryLanguageIntelligence({ ...input, action:'diagnostics' }); }, async fix(input) { const result = queryLanguageIntelligence({ ...input, action:'fix' }); return result.fixesApplied ? result : genericStructuralFix({ ...input, language:'JavaScript / TypeScript' }); } });
+registerChecker({ id:'json', language:'JSON', extensions:['.json','.jsonc'], fix:jsonFix, async check({ content, filePath }) { try { JSON.parse(path.extname(filePath).toLowerCase() === '.jsonc' ? content.replace(/\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm, '$1') : content); return { diagnostics:[] }; } catch (error) { const position = Number(error.message.match(/position (\d+)/)?.[1] || 0); const before = content.slice(0, position); return { diagnostics:[diagnostic(error.message, { line:before.split('\n').length - 1, column:position - (before.lastIndexOf('\n') + 1), source:'JSON' })] }; } } });
+registerChecker({ id:'yaml', language:'YAML', extensions:['.yml','.yaml'], fix:yamlFix, async check({ content }) { try { yaml.load(content); return { diagnostics:[] }; } catch (error) { return { diagnostics:[diagnostic(error.reason || error.message, { line:error.mark?.line, column:error.mark?.column, source:'YAML' })] }; } } });
+registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:['.html','.htm','.xml','.vue','.svelte'], fix:markupFix, async check({ content, filePath }) { return { diagnostics:markupDiagnostics(content, path.extname(filePath).slice(1).toUpperCase(), /\.html?$/.test(filePath)) }; } });
 registerChecker({ id:'styles', language:'CSS / Sass / Less', extensions:['.css','.scss','.sass','.less'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Stylesheet') }; } });
 registerChecker({ id:'text-structure', language:'Structured text', extensions:['.md','.mdx','.sql','.graphql','.toml'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Structure') }; } });
+registerChecker({ id:'dockerfile', language:'Dockerfile', extensions:['dockerfile'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Dockerfile') }; } });
 externalAdapter({ id:'python', language:'Python', extensions:['.py'], command:'python', args:['-c','import ast,sys; ast.parse(sys.stdin.read())'], install:'Install Python and ensure python is on PATH.' });
 externalAdapter({ id:'ruby', language:'Ruby', extensions:['.rb'], command:'ruby', args:['-c','-'], install:'Install Ruby and ensure ruby is on PATH.' });
 externalAdapter({ id:'go', language:'Go', extensions:['.go'], command:'gofmt', args:[], install:'Install Go; Nexus uses gofmt syntax validation.' });
@@ -103,7 +154,7 @@ externalAdapter({ id:'elm', language:'Elm', extensions:['.elm'], command:'elm', 
 externalAdapter({ id:'perl', language:'Perl', extensions:['.pl'], command:'perl', args:['-c'], install:'Install Perl and ensure perl is on PATH.' });
 
 async function checkCode({ folder, filePath, content, allowExternal = false }) {
-  const extension = path.extname(filePath || '').toLowerCase(); const id = extensionIndex.get(extension); const adapter = id && registry.get(id);
+  const extension = checkerKey(filePath); const id = extensionIndex.get(extension); const adapter = id && registry.get(id);
   if (!adapter) return { ok:true, recognized:false, language:extension || 'Plain text', checker:null, diagnostics:[], available:false, message:'No checker adapter is registered for this file type yet.' };
   try {
     const result = await adapter.check({ folder, filePath, content:String(content ?? ''), allowExternal });
@@ -111,9 +162,9 @@ async function checkCode({ folder, filePath, content, allowExternal = false }) {
   } catch (error) { return { ok:false, recognized:true, language:adapter.language, checker:adapter.id, diagnostics:[diagnostic(error.message, { source:adapter.language })], error:error.message }; }
 }
 
-function checkerCatalog() { return [...registry.values()].map(({ check, fix, ...adapter }) => adapter); }
+function checkerCatalog() { return [...registry.values()].map(({ check, fix, ...adapter }) => ({ ...adapter, correctionAdapter:true })); }
 async function proposeCheckerFix({ folder, filePath, content, allowExternal = false }) {
-  const extension = path.extname(filePath || '').toLowerCase(); const adapter = registry.get(extensionIndex.get(extension));
+  const extension = checkerKey(filePath); const adapter = registry.get(extensionIndex.get(extension));
   const before = await checkCode({ folder, filePath, content, allowExternal });
   if (!adapter?.fix || !before.available || !before.diagnostics.some((item) => item.severity === 'error')) return { ok:true, available:false, before, reason:'The checker has no deterministic correction for this diagnostic.' };
   const proposal = await adapter.fix({ folder, filePath, content:String(content ?? ''), allowExternal });

@@ -19,6 +19,8 @@ test('every language Nexus recognizes has a checker adapter', async (t) => {
     assert.equal(result.recognized, true, `missing checker for ${extension}`);
     assert.ok(result.checker, `missing checker id for ${extension}`);
   }
+  assert.equal((await checkCode({ folder, filePath:path.join(folder, 'Dockerfile'), content:'FROM node:20' })).recognized, true);
+  assert.ok(checkerCatalog().every((adapter) => adapter.correctionAdapter), 'every checker needs a deterministic correction adapter');
 });
 
 test('built-in JSON, YAML, markup, and structural checks return normalized diagnostics', async (t) => {
@@ -64,6 +66,21 @@ test('checker fix database authors and independently verifies corrections withou
   assert.equal(result.correctedContent, 'let value = 1;\nvalue = 2;\n');
   assert.ok(result.before.diagnostics.length);
   assert.deepEqual(result.after.diagnostics, []);
+});
+
+test('built-in checker fix databases correct JSON, markup, and structural languages', async (t) => {
+  const folder = workspace(t);
+  const samples = [
+    ['sample.json', '{"ready": true,}', '{"ready": true}'],
+    ['sample.html', '<main><section></main>', '<main><section></section></main>'],
+    ['sample.css', '.card { color: red;', '.card { color: red;}'],
+  ];
+  for (const [name, content, expected] of samples) {
+    const result = await proposeCheckerFix({ folder, filePath:path.join(folder, name), content });
+    assert.equal(result.available, true, `${name} should have a verified checker-authored fix`);
+    assert.equal(result.correctedContent, expected);
+    assert.deepEqual(result.after.diagnostics, []);
+  }
 });
 
 test('coding AI receives checker evidence and autonomous edits reject checker errors', () => {
