@@ -4201,8 +4201,19 @@ function accountVaultPreferences() {
 async function accountVaultPlugins() {
   const folder = activeProjectFolder();
   if (!folder) return [];
-  try { return await window.nexus.pluginsList(folder); } catch { return []; }
+  try { const plugins = await window.nexus.pluginsList(folder); const links = accountLinkedPluginMap(); return plugins.map((plugin) => ({ ...plugin, ...(links[plugin.id] || {}) })); } catch { return []; }
 }
+
+function accountLinkedPluginMap() { try { return JSON.parse(localStorage.getItem('nexus_account_linked_plugins') || '{}'); } catch { return {}; } }
+async function linkPluginToAccount(pluginId) {
+  const folder = activeProjectFolder(); if (!folder) return;
+  try {
+    const published = await window.nexus.pluginsMarketplacePublish(folder, pluginId, 'private');
+    const links = accountLinkedPluginMap(); links[pluginId] = { accountLinked:true, marketplaceId:published.id, digest:published.digest, packageDigest:published.packageDigest }; localStorage.setItem('nexus_account_linked_plugins', JSON.stringify(links));
+    showToast('success', 'Plug-in linked to account', 'Its private signed package reference will be included the next time you sync.'); refreshPluginSecurityList();
+  } catch (error) { showToast('error', 'Plug-in could not be linked', error.message); }
+}
+function unlinkPluginFromAccount(pluginId) { const links = accountLinkedPluginMap(); delete links[pluginId]; localStorage.setItem('nexus_account_linked_plugins', JSON.stringify(links)); showToast('info', 'Plug-in unlinked from account', 'The installed copy remains on this computer.'); refreshPluginSecurityList(); }
 
 async function uploadScreenedPlugin() {
   const folder = activeProjectFolder();
@@ -4233,10 +4244,25 @@ async function refreshPluginSecurityList() {
   if (!folder) { panel.innerHTML = '<p class="muted small">Open a project to view its plug-ins.</p>'; return; }
   let plugins = [];
   try { plugins = await window.nexus.pluginsScan(folder); } catch (error) { panel.innerHTML = `<p class="muted small">${escapeHtml(error.message)}</p>`; return; }
-  panel.innerHTML = plugins.map((plugin) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.id)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.screened ? 'Nexus screened' : plugin.signed ? 'Publisher signed' : 'Not approved'} · ${escapeHtml(plugin.status || '')}</span><span class="muted small">Permissions: ${escapeHtml((plugin.capabilities || []).join(', ') || 'none')}</span><div>${plugin.status === 'ACTIVE' ? `<button class="btn tiny btn-secondary" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', false)">Disable</button>` : plugin.status !== 'REJECTED' ? `<button class="btn tiny" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', true)">Enable</button>` : ''}${plugin.status !== 'REJECTED' && plugin.screened ? ` <button class="btn tiny btn-secondary" onclick="publishPluginToMarketplace('${escapeHtml(plugin.id)}')">Publish</button>` : ''}</div></div>`).join('') || '<p class="muted small">No plug-ins installed for this project.</p>';
+  const links = accountLinkedPluginMap();
+  panel.innerHTML = plugins.map((plugin) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.id)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.screened ? 'Nexus screened' : plugin.signed ? 'Publisher signed' : 'Not approved'} · ${escapeHtml(plugin.status || '')}${links[plugin.id] ? ' · linked to account' : ''}</span><span class="muted small">Permissions: ${escapeHtml((plugin.capabilities || []).join(', ') || 'none')}</span><div>${plugin.status === 'ACTIVE' ? `<button class="btn tiny btn-secondary" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', false)">Disable</button>` : plugin.status !== 'REJECTED' ? `<button class="btn tiny" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', true)">Enable</button>` : ''}${plugin.status !== 'REJECTED' && plugin.screened ? ` <button class="btn tiny btn-secondary" onclick="publishPluginToMarketplace('${escapeHtml(plugin.id)}')">Publish</button> ${links[plugin.id] ? `<button class="btn tiny btn-secondary" onclick="unlinkPluginFromAccount('${escapeHtml(plugin.id)}')">Unlink from account</button>` : `<button class="btn tiny btn-secondary" onclick="linkPluginToAccount('${escapeHtml(plugin.id)}')">Link to account</button>`}` : ''}</div></div>`).join('') || '<p class="muted small">No plug-ins installed for this project.</p>';
 }
 
 let pluginMarketplaceItems = [];
+let pendingLinkedPluginRestores = [];
+function queueLinkedPluginRestores(plugins = []) { pendingLinkedPluginRestores = plugins.filter((item) => item.accountLinked && item.marketplaceId && item.packageDigest); const button = document.getElementById('restore-linked-plugins-btn'); if (button) button.style.display = pendingLinkedPluginRestores.length ? 'inline-block' : 'none'; }
+async function restoreLinkedAccountPlugins() {
+  const folder = activeProjectFolder(); if (!folder) { showToast('error', 'Open the destination project first'); return; }
+  if (!pendingLinkedPluginRestores.length || !confirm(`Download, verify, and screen ${pendingLinkedPluginRestores.length} account-linked plug-in(s)? They will be installed disabled.`)) return;
+  const catalog = await window.nexus.pluginsMarketplaceList(); let installed = 0; const failures = [];
+  for (const reference of pendingLinkedPluginRestores) {
+    const item = catalog.find((entry) => entry.id === reference.marketplaceId);
+    if (!item || item.packageDigest !== reference.packageDigest || (reference.digest && item.digest !== reference.digest)) { failures.push(`${reference.id}: account reference no longer matches the signed package`); continue; }
+    try { const result = await window.nexus.pluginsMarketplaceInstall(folder, reference.marketplaceId); if (!result.ok) throw new Error('security screening blocked installation'); installed += 1; } catch (error) { failures.push(`${reference.id}: ${error.message}`); }
+  }
+  pendingLinkedPluginRestores = failures.length ? pendingLinkedPluginRestores.filter((item) => failures.some((failure) => failure.startsWith(`${item.id}:`))) : []; queueLinkedPluginRestores(pendingLinkedPluginRestores); refreshPluginSecurityList();
+  showToast(failures.length ? 'error' : 'success', `${installed} linked plug-in(s) restored`, failures.join(' ') || 'Every package was hash-verified, screened again, and installed disabled.');
+}
 
 async function refreshPluginMarketplace() {
   const panel = document.getElementById('plugin-marketplace-list');
@@ -4323,6 +4349,7 @@ async function restoreAccountVault() {
   if (result.ok) {
     for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
     applyNexusPreferences(); await loadNexusProfile();
+    queueLinkedPluginRestores(result.plugins || []);
     const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
     renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
     showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
@@ -4334,6 +4361,7 @@ async function restoreAccountVault() {
 function applyRestoredVaultResult(result) {
   for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
   applyNexusPreferences(); loadNexusProfile();
+  queueLinkedPluginRestores(result.plugins || []);
   const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
   renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
   refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();

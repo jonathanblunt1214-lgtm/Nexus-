@@ -1485,7 +1485,7 @@ Type "help" for tips.
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label" for="plugin-marketplace-visibility">Community Plug-in Database</label>
         <p class="muted small" style="margin-top:6px;">Public plug-ins are available to every Nexus user. Private plug-ins are visible only to the verified account that published them. Every download is verified and fully screened again before installation.</p>
-        <div class="form-row" style="margin-top:8px;"><select id="plugin-marketplace-visibility"><option value="public">Publish for everyone</option><option value="private">Keep private</option></select><button class="btn btn-secondary" onclick="refreshPluginMarketplace()">Refresh database</button></div>
+        <div class="form-row" style="margin-top:8px;"><select id="plugin-marketplace-visibility"><option value="public">Publish for everyone</option><option value="private">Keep private</option></select><button class="btn btn-secondary" onclick="refreshPluginMarketplace()">Refresh database</button><button class="btn btn-secondary" id="restore-linked-plugins-btn" onclick="restoreLinkedAccountPlugins()" style="display:none">Restore account-linked plug-ins</button></div>
         <p id="plugin-marketplace-status" class="muted small" style="margin-top:8px;">Loading public plug-ins…</p>
         <div id="plugin-marketplace-list" class="suggestions-list" style="margin-top:8px; max-height:300px; overflow:auto;"></div>
       </div>

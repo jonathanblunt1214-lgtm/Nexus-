@@ -68,3 +68,17 @@ test('Nexus profiles and creative-app preferences are saved and included in the 
   const serializedReturn = builder.split('\n').find((line) => line.includes('return { schemaVersion')) || '';
   assert.doesNotMatch(serializedReturn, /githubToken|googleAccessToken|googleRefreshToken|wordpressAccessToken/);
 });
+
+test('executable plug-ins are optionally account-linked by immutable private package references', () => {
+  const fs = require('fs'); const main = fs.readFileSync(require.resolve('../main'), 'utf8'); const renderer = fs.readFileSync(require.resolve('../renderer'), 'utf8'); const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(main, /accountLinked:item\.accountLinked === true/);
+  assert.match(main, /marketplaceId:item\.accountLinked/);
+  assert.match(main, /packageDigest:item\.accountLinked/);
+  assert.match(renderer, /pluginsMarketplacePublish\(folder, pluginId, 'private'\)/);
+  assert.match(renderer, /item\.packageDigest !== reference\.packageDigest/);
+  assert.match(renderer, /pluginsMarketplaceInstall\(folder, reference\.marketplaceId\)/);
+  assert.match(renderer, /installed disabled/);
+  assert.match(html, /Restore account-linked plug-ins/);
+  const serializedReturn = (main.match(/function buildAccountVaultPayload[\s\S]*?\n}/)?.[0] || '').split('\n').find((line) => line.includes('return { schemaVersion')) || '';
+  assert.doesNotMatch(serializedReturn, /pluginRoot|sourceCode|executable|packageContent/);
+});
