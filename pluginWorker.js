@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 const { parentPort, workerData } = require('worker_threads');
 
-const { manifest, pluginRoot, timeoutMs } = workerData;
+const { manifest, pluginRoot, timeoutMs, startupTimeoutMs } = workerData;
 let registration = null;
 let active = false;
 let nextCapabilityId = 1;
@@ -71,7 +71,7 @@ function loadPlugin() {
     codeGeneration: { strings: false, wasm: false },
   });
   const script = new vm.Script(`"use strict";\n${source}`, { filename: entryPath });
-  script.runInContext(context, { timeout: timeoutMs });
+  script.runInContext(context, { timeout: startupTimeoutMs });
   if (!registration) throw new Error('Plugin did not call register(...)');
   for (const slotName of Object.keys(registration.slots)) {
     if (!(manifest.slots || []).includes(slotName)) throw new Error(`Plugin registered undeclared slot: ${slotName}`);

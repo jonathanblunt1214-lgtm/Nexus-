@@ -53,3 +53,12 @@ test('terminates a plugin worker when a slot handler never yields', async () => 
   await assert.rejects(() => runtime.invokeSlot(manifest.id, 'sidebar', {}), /timed out/);
   assert.equal(runtime.health(manifest.id).status, 'NOT_LOADED');
 });
+
+test('worker startup allowance remains separate from strict handler execution limits', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'pluginRuntime.js'), 'utf8');
+  assert.match(source, /startupTimeoutMs = Math\.max\(5000, this\.timeoutMs \+ 250\)/);
+  assert.match(source, /workerData: \{ manifest:[^\n]*startupTimeoutMs \}/);
+  const worker = fs.readFileSync(path.join(__dirname, '..', 'pluginWorker.js'), 'utf8');
+  assert.match(worker, /runInContext\(context, \{ timeout: startupTimeoutMs \}\)/);
+  assert.match(source, /Plugin \$\{command\} timed out after \$\{this\.timeoutMs\}ms/);
+});

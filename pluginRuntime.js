@@ -79,8 +79,9 @@ class PluginRuntime {
   async load({ manifest, pluginRoot, audit }) {
     if (this.instances.has(manifest.id)) throw new Error(`Plugin already loaded: ${manifest.id}`);
     const root = path.resolve(pluginRoot);
+    const startupTimeoutMs = Math.max(5000, this.timeoutMs + 250);
     const worker = new Worker(path.join(__dirname, 'pluginWorker.js'), {
-      workerData: { manifest: cloneJson(manifest), pluginRoot: root, timeoutMs: this.timeoutMs },
+      workerData: { manifest: cloneJson(manifest), pluginRoot: root, timeoutMs: this.timeoutMs, startupTimeoutMs },
     });
     const instance = {
       manifest: cloneJson(manifest),
@@ -100,7 +101,10 @@ class PluginRuntime {
     const ready = new Promise((resolve, reject) => {
       instance.readyResolve = resolve;
       instance.readyReject = reject;
-      instance.readyTimer = setTimeout(() => reject(new Error(`Plugin load timed out after ${this.timeoutMs}ms`)), this.timeoutMs + 250);
+      // Worker startup competes for CPU during builds and large test runs. Keep
+      // the strict per-handler timeout below, but do not mistake scheduler
+      // contention for malicious plug-in code before the worker is even ready.
+      instance.readyTimer = setTimeout(() => reject(new Error(`Plugin load timed out after ${startupTimeoutMs}ms`)), startupTimeoutMs);
     });
     worker.on('message', (message) => this._handleWorkerMessage(instance, message, audit));
     worker.on('error', (error) => instance.readyReject?.(error));
