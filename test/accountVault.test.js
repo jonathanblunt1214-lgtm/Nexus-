@@ -83,14 +83,19 @@ test('executable plug-ins are optionally account-linked by immutable private pac
   assert.doesNotMatch(serializedReturn, /pluginRoot|sourceCode|executable|packageContent/);
 });
 
-test('account vault automatically syncs every 15 minutes only after a successful manual unlock', () => {
+test('account vault automatically syncs every 15 minutes until the Nexus user signs out', () => {
   const fs = require('fs');
+  const main = fs.readFileSync(require.resolve('../main'), 'utf8');
+  const preload = fs.readFileSync(require.resolve('../preload'), 'utf8');
   const renderer = fs.readFileSync(require.resolve('../renderer'), 'utf8');
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(renderer, /ACCOUNT_VAULT_SYNC_INTERVAL_MS = 15 \* 60 \* 1000/);
-  assert.match(renderer, /if \(result\.ok && !automatic\) scheduleAccountVaultAutoSync\(value\.passphrase\)/);
+  assert.match(renderer, /if \(result\.ok && !automatic\) scheduleAccountVaultAutoSync\(\)/);
   assert.match(renderer, /setInterval\(\(\) => runAccountVaultSync\(true\), ACCOUNT_VAULT_SYNC_INTERVAL_MS\)/);
   assert.match(renderer, /stopAccountVaultAutoSync\(\);[\s\S]*emailAccountSignOut/);
-  assert.doesNotMatch(renderer, /localStorage\.setItem\([^\n]*accountVaultSessionPassphrase/);
-  assert.match(html, /every 15 minutes until the app closes or you sign out/);
+  assert.match(main, /accountVaultAutoSyncPassphraseEnc = safeStorage\.encryptString/);
+  assert.match(main, /delete cfg\.accountVaultAutoSyncPassphraseEnc/);
+  assert.match(preload, /accountVaultAutoSync/);
+  assert.doesNotMatch(renderer, /accountVaultSessionPassphrase|localStorage\.setItem\([^\n]*Passphrase/);
+  assert.match(html, /closing and reopening the app[\s\S]*until you sign out/);
 });

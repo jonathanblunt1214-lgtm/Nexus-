@@ -3655,7 +3655,14 @@ ipcMain.handle('email-account:status', async () => {
 });
 ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase()); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
-ipcMain.handle('email-account:sign-out', async () => { const cfg = loadConfig(); clearFirebaseSession(cfg); await saveConfig(cfg); return { ok: true }; });
+ipcMain.handle('email-account:sign-out', async () => {
+  const cfg = loadConfig();
+  clearFirebaseSession(cfg);
+  delete cfg.accountVaultAutoSyncPassphraseEnc;
+  delete cfg.accountVaultAutoSyncProviders;
+  await saveConfig(cfg);
+  return { ok: true };
+});
 
 global.nexusPluginMarketplaceApi = {
   async list() {
@@ -3836,18 +3843,40 @@ async function saveEncryptedAccountVault(encrypted, providers) {
 
 ipcMain.handle('account-vault:status', () => {
   const cfg = loadConfig();
-  return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), email: Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), emailVerified: cfg.firebaseEmailVerified === true, lastSyncedAt: cfg.accountVaultLastSyncedAt || null };
+  return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), email: Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), emailVerified: cfg.firebaseEmailVerified === true, lastSyncedAt: cfg.accountVaultLastSyncedAt || null, autoSyncEnabled: Boolean(cfg.accountVaultAutoSyncPassphraseEnc) };
 });
 
 ipcMain.handle('account-vault:sync', async (_event, value = {}) => {
   try {
     const providers = { github: value.providers?.github !== false, google: value.providers?.google !== false, email: value.providers?.email === true };
     if (!providers.github && !providers.google && !providers.email) return { ok: false, error: 'Choose the email account, GitHub, Google Drive, or more than one.' };
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows encryption is required to keep automatic vault sync enabled after Nexus closes.');
     const payload = buildAccountVaultPayload(value);
     const encrypted = require('./accountVault').encryptVault(payload, value.passphrase);
     const results = await saveEncryptedAccountVault(encrypted, providers);
     const ok = Object.values(results).some((result) => result.ok);
-    if (ok) { const cfg = loadConfig(); cfg.accountVaultLastSyncedAt = payload.updatedAt; await saveConfig(cfg); }
+    if (ok) {
+      const cfg = loadConfig();
+      cfg.accountVaultLastSyncedAt = payload.updatedAt;
+      cfg.accountVaultAutoSyncPassphraseEnc = safeStorage.encryptString(String(value.passphrase)).toString('base64');
+      cfg.accountVaultAutoSyncProviders = providers;
+      await saveConfig(cfg);
+    }
+    return { ok, results, updatedAt: ok ? payload.updatedAt : null, error: ok ? null : Object.values(results).map((r) => r.error).filter(Boolean).join(' ') };
+  } catch (error) { return { ok: false, error: error.message }; }
+});
+
+ipcMain.handle('account-vault:auto-sync', async (_event, value = {}) => {
+  try {
+    const cfg = loadConfig();
+    if (!cfg.accountVaultAutoSyncPassphraseEnc || !safeStorage.isEncryptionAvailable()) return { ok: false, stopped: true, error: 'Automatic vault sync is not unlocked.' };
+    const passphrase = safeStorage.decryptString(Buffer.from(cfg.accountVaultAutoSyncPassphraseEnc, 'base64'));
+    const providers = cfg.accountVaultAutoSyncProviders || {};
+    const payload = buildAccountVaultPayload(value);
+    const encrypted = require('./accountVault').encryptVault(payload, passphrase);
+    const results = await saveEncryptedAccountVault(encrypted, providers);
+    const ok = Object.values(results).some((result) => result.ok);
+    if (ok) { cfg.accountVaultLastSyncedAt = payload.updatedAt; await saveConfig(cfg); }
     return { ok, results, updatedAt: ok ? payload.updatedAt : null, error: ok ? null : Object.values(results).map((r) => r.error).filter(Boolean).join(' ') };
   } catch (error) { return { ok: false, error: error.message }; }
 });

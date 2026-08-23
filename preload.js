@@ -208,6 +208,7 @@ contextBridge.exposeInMainWorld('nexus', {
   googleDriveDownload: (id, name) => ipcRenderer.invoke('drive:download', { id, name }),
   accountVaultStatus: () => ipcRenderer.invoke('account-vault:status'),
   accountVaultSync: (value) => ipcRenderer.invoke('account-vault:sync', value),
+  accountVaultAutoSync: (value) => ipcRenderer.invoke('account-vault:auto-sync', value),
   accountVaultRestore: (value) => ipcRenderer.invoke('account-vault:restore', value),
   accountVaultAirgapExport: (value) => ipcRenderer.invoke('account-vault:airgap-export', value),
   accountVaultAirgapRestore: (value) => ipcRenderer.invoke('account-vault:airgap-restore', value),
