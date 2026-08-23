@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { pathToFileURL } = require('url');
 const { spawn } = require('child_process');
 
 const PROVIDERS = Object.freeze({
@@ -16,7 +17,7 @@ const PROVIDERS = Object.freeze({
 
 let configuredPaths = {};
 function configureOfficialLanguageServices(paths = {}) { configuredPaths = { ...paths }; }
-function fileUri(filePath) { return `file:///${path.resolve(filePath).replace(/\\/g, '/')}`; }
+function fileUri(filePath) { return pathToFileURL(path.resolve(filePath)).href; }
 function providerFor(filePath) { const ext = path.extname(filePath || '').toLowerCase(); const provider = Object.values(PROVIDERS).find((item) => item.extensions.includes(ext)) || null; if (provider?.id !== 'clangd') return provider; const languageId = ext === '.m' ? 'objective-c' : ext === '.mm' ? 'objective-cpp' : ext === '.c' || ext === '.h' ? 'c' : 'cpp'; return { ...provider, languageId }; }
 function serviceData(folder, name) { const id = crypto.createHash('sha256').update(path.resolve(folder)).digest('hex').slice(0, 16); const target = path.join(os.tmpdir(), 'nexus-language-services', id, name); fs.mkdirSync(target, { recursive:true }); return target; }
 
@@ -97,4 +98,4 @@ async function languageServerStatus() {
   return Object.values(PROVIDERS).map((provider) => ({ ...provider, configured:provider.bundled || Boolean(configuredPaths[keys[provider.id] || provider.id]) }));
 }
 
-module.exports = { PROVIDERS, configureOfficialLanguageServices, providerFor, runLanguageServer, languageServerStatus, applyTextEdits };
+module.exports = { PROVIDERS, configureOfficialLanguageServices, providerFor, runLanguageServer, languageServerStatus, applyTextEdits, fileUri };

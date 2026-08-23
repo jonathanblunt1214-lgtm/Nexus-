@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { PROVIDERS, runLanguageServer, applyTextEdits } = require('../officialLanguageServers');
+const { PROVIDERS, runLanguageServer, applyTextEdits, fileUri } = require('../officialLanguageServers');
 
 test('licensed first-party language server registry covers the requested providers', () => {
   assert.deepEqual(Object.values(PROVIDERS).map((item) => item.id), ['pyright','jdtls','roslyn','clangd','powershell-editor-services','dart-language-server','sourcekit-lsp']);
@@ -25,6 +25,13 @@ test('language-server edits are applied deterministically without executing code
   const content = 'alpha beta';
   const updated = applyTextEdits(content, [{ range:{ start:{ line:0, character:6 }, end:{ line:0, character:10 } }, newText:'gamma' }]);
   assert.equal(updated, 'alpha gamma');
+});
+
+test('language-server file URIs are valid on both Windows and POSIX paths', () => {
+  const uri = fileUri(path.join(os.tmpdir(), 'nexus uri test', 'sample.py'));
+  assert.match(uri, /^file:\/\/\//);
+  assert.doesNotMatch(uri, /^file:\/\/\/\//);
+  assert.match(uri, /nexus%20uri%20test/);
 });
 
 test('Settings exposes narrow local service selection and license status', () => {
