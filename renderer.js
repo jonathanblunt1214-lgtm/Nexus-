@@ -4048,6 +4048,8 @@ async function loadOAuthConfiguration() {
   if (!result.ok) return;
   document.getElementById('oauth-github-client-id').value = result.githubClientId || '';
   document.getElementById('oauth-google-client-id').value = result.googleClientId || '';
+  document.getElementById('oauth-wordpress-client-id').value = result.wordpressClientId || '';
+  document.getElementById('oauth-wordpress-redirect-uri').value = result.wordpressRedirectUri || 'http://127.0.0.1:42819/oauth/wordpress/callback';
 }
 
 function renderApprovedBuildNumber(buildInfo) {
@@ -4140,15 +4142,15 @@ async function refreshEmailAccountStatus() {
 }
 
 async function saveOAuthConfiguration() {
-  const result = await window.nexus.oauthConfigure({ githubClientId: document.getElementById('oauth-github-client-id').value.trim(), googleClientId: document.getElementById('oauth-google-client-id').value.trim(), googleClientSecret: document.getElementById('oauth-google-client-secret').value.trim() });
-  if (result.ok) document.getElementById('oauth-google-client-secret').value = '';
+  const result = await window.nexus.oauthConfigure({ githubClientId: document.getElementById('oauth-github-client-id').value.trim(), googleClientId: document.getElementById('oauth-google-client-id').value.trim(), googleClientSecret: document.getElementById('oauth-google-client-secret').value.trim(), wordpressClientId:document.getElementById('oauth-wordpress-client-id').value.trim(), wordpressClientSecret:document.getElementById('oauth-wordpress-client-secret').value.trim() });
+  if (result.ok) { document.getElementById('oauth-google-client-secret').value = ''; document.getElementById('oauth-wordpress-client-secret').value = ''; }
   showToast(result.ok ? 'success' : 'error', result.ok ? 'OAuth configuration saved' : 'Could not save configuration', result.error || '');
 }
 
 async function refreshOAuthServices() {
   const result = await window.nexus.oauthStatus();
   if (!result.ok) return;
-  document.getElementById('oauth-service-status').innerText = `GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'}`;
+  document.getElementById('oauth-service-status').innerText = `GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `connected${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not connected'}`;
 }
 
 const ACCOUNT_VAULT_PREFERENCE_KEYS = [
@@ -4348,6 +4350,23 @@ async function connectGoogleOAuth() {
 async function disconnectGoogleOAuth() {
   if (!confirm('Disconnect Google and revoke the Nexus session?')) return;
   await window.nexus.googleOAuthDisconnect(); googleDriveFiles = []; document.getElementById('google-drive-files').innerHTML = ''; refreshOAuthServices();
+}
+
+async function connectWordPressOAuth() {
+  document.getElementById('oauth-service-status').innerText = 'Complete WordPress.com sign-in and permission approval in your browser…';
+  const result = await window.nexus.wordpressOAuthConnect();
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'WordPress.com connected' : 'WordPress.com sign-in failed', result.error || 'Your WordPress.com sites are ready.');
+  await refreshOAuthServices(); if (result.ok) loadWordPressSites();
+}
+async function disconnectWordPressOAuth() {
+  if (!confirm('Disconnect WordPress.com and remove its encrypted Nexus access token?')) return;
+  await window.nexus.wordpressOAuthDisconnect(); document.getElementById('wordpress-sites').innerHTML = ''; refreshOAuthServices();
+}
+async function loadWordPressSites() {
+  const panel = document.getElementById('wordpress-sites'); panel.innerHTML = '<p class="muted small">Loading WordPress.com sites…</p>';
+  const result = await window.nexus.wordpressSites();
+  if (!result.ok) { panel.innerHTML = `<p class="muted small">${escapeHtml(result.error)}</p>`; return; }
+  panel.innerHTML = result.sites.map((site) => `<div class="suggestion-item"><strong>${escapeHtml(site.name)}</strong><span class="muted small">${escapeHtml(site.url)} · ${site.private ? 'private' : 'public'}${site.jetpack ? ' · Jetpack' : ''}</span><span class="muted small">Access: ${escapeHtml(Object.keys(site.capabilities || {}).filter((key) => site.capabilities[key]).join(', ') || 'view only')}</span></div>`).join('') || '<p class="muted small">No WordPress.com or Jetpack-connected sites were returned by this account.</p>';
 }
 
 async function uploadGoogleDriveFile() {

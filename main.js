@@ -3553,6 +3553,8 @@ function oauthConfiguration() {
     githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID || cfg.githubOAuthClientId || '',
     googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID || cfg.googleOAuthClientId || '',
     googleClientSecret: process.env.NEXUS_GOOGLE_CLIENT_SECRET || encryptedConfigValue(cfg, 'googleOAuthClientSecret') || '',
+    wordpressClientId: process.env.NEXUS_WORDPRESS_CLIENT_ID || cfg.wordpressOAuthClientId || '',
+    wordpressClientSecret: process.env.NEXUS_WORDPRESS_CLIENT_SECRET || encryptedConfigValue(cfg, 'wordpressOAuthClientSecret') || '',
   };
 }
 
@@ -3661,12 +3663,14 @@ global.nexusPluginMarketplaceApi = {
   },
 };
 
-ipcMain.handle('oauth:configuration', () => { const c = oauthConfiguration(); return { ok: true, githubConfigured: Boolean(c.githubClientId), googleConfigured: Boolean(c.googleClientId), githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID ? '' : c.githubClientId, googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID ? '' : c.googleClientId }; });
+ipcMain.handle('oauth:configuration', () => { const c = oauthConfiguration(); return { ok: true, githubConfigured: Boolean(c.githubClientId), googleConfigured: Boolean(c.googleClientId), wordpressConfigured:Boolean(c.wordpressClientId && c.wordpressClientSecret), githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID ? '' : c.githubClientId, googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID ? '' : c.googleClientId, wordpressClientId:process.env.NEXUS_WORDPRESS_CLIENT_ID ? '' : c.wordpressClientId, wordpressRedirectUri:'http://127.0.0.1:42819/oauth/wordpress/callback' }; });
 ipcMain.handle('oauth:configure', async (_event, value) => {
   const cfg = loadConfig();
   cfg.githubOAuthClientId = String(value.githubClientId || '').trim();
   cfg.googleOAuthClientId = String(value.googleClientId || '').trim();
   if (value.googleClientSecret !== undefined) setEncryptedConfigValue(cfg, 'googleOAuthClientSecret', String(value.googleClientSecret || '').trim());
+  cfg.wordpressOAuthClientId = String(value.wordpressClientId || '').trim();
+  if (value.wordpressClientSecret !== undefined) setEncryptedConfigValue(cfg, 'wordpressOAuthClientSecret', String(value.wordpressClientSecret || '').trim());
   await saveConfig(cfg); return { ok: true };
 });
 
@@ -3708,6 +3712,18 @@ ipcMain.handle('oauth:google-disconnect', async () => {
   delete cfg.googleAccessTokenExpiresAt; await saveConfig(cfg); return { ok: true };
 });
 
+ipcMain.handle('oauth:wordpress-connect', async () => {
+  try {
+    const config = oauthConfiguration();
+    const tokens = await require('./oauthIntegrations').authorizeWordPress({ clientId:config.wordpressClientId, clientSecret:config.wordpressClientSecret, openExternal:(url) => shell.openExternal(url) });
+    const profile = await require('./wordpressComClient').getProfile(tokens.access_token);
+    const cfg = loadConfig(); setEncryptedConfigValue(cfg, 'wordpressAccessToken', tokens.access_token); cfg.wordpressProfile = profile; await saveConfig(cfg);
+    return { ok:true, profile };
+  } catch (error) { return { ok:false, error:error.message }; }
+});
+ipcMain.handle('oauth:wordpress-disconnect', async () => { const cfg = loadConfig(); delete cfg.wordpressAccessToken; delete cfg.wordpressAccessTokenEnc; delete cfg.wordpressProfile; await saveConfig(cfg); return { ok:true }; });
+ipcMain.handle('wordpress:sites', async () => { try { const token = encryptedConfigValue(loadConfig(), 'wordpressAccessToken'); if (!token) return { ok:false, authRequired:true, error:'Connect WordPress.com first.' }; return { ok:true, sites:await require('./wordpressComClient').listSites(token) }; } catch (error) { return { ok:false, error:error.message }; } });
+
 async function getGoogleAccessToken() {
   const cfg = loadConfig();
   let accessToken = encryptedConfigValue(cfg, 'googleAccessToken');
@@ -3721,7 +3737,7 @@ async function getGoogleAccessToken() {
   return accessToken;
 }
 
-ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')) }; });
+ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile || null }; });
 
 const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiKey', 'glmApiKey', 'deepseekApiKey'];
 const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([

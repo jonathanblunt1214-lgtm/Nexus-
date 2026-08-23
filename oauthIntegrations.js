@@ -71,4 +71,35 @@ async function refreshGoogleToken(clientId, clientSecret, refreshToken) {
   return data;
 }
 
-module.exports = { startGitHubDeviceFlow, pollGitHubDeviceFlow, authorizeGoogle, refreshGoogleToken };
+async function authorizeWordPress({ clientId, clientSecret, openExternal, timeoutMs = 180000, port = 42819 }) {
+  if (!clientId || !clientSecret) throw new Error('Configure the Nexus WordPress.com OAuth client ID and client secret first.');
+  const state = base64Url(crypto.randomBytes(32));
+  const redirectUri = `http://127.0.0.1:${port}/oauth/wordpress/callback`;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error, value) => { if (settled) return; settled = true; clearTimeout(timer); server.close(); error ? reject(error) : resolve(value); };
+    const server = http.createServer(async (request, response) => {
+      const reply = (status, heading, text) => { response.statusCode = status; response.setHeader('Content-Type', 'text/html; charset=utf-8'); response.setHeader('Cache-Control', 'no-store'); response.end(`<h2>${heading}</h2><p>${text}</p>`); };
+      try {
+        const url = new URL(request.url, `http://127.0.0.1:${port}`);
+        if (url.pathname !== '/oauth/wordpress/callback') { reply(404, 'Not found', 'Return to Nexus.'); return; }
+        if (url.searchParams.get('state') !== state) throw new Error('WordPress.com sign-in state validation failed.');
+        const code = url.searchParams.get('code'); if (!code) throw new Error(url.searchParams.get('error') || 'WordPress.com did not return an authorization code.');
+        const body = new URLSearchParams({ client_id:clientId, client_secret:clientSecret, code, grant_type:'authorization_code', redirect_uri:redirectUri });
+        const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', { method:'POST', headers:jsonHeaders, body });
+        const tokens = await tokenResponse.json();
+        if (!tokenResponse.ok || !tokens.access_token) throw new Error(tokens.error_description || tokens.error || 'WordPress.com token exchange failed.');
+        reply(200, 'WordPress.com connected to Nexus', 'You can close this window and return to Nexus.'); finish(null, tokens);
+      } catch (error) { reply(400, 'WordPress.com sign-in failed', 'Return to Nexus and review the connection settings.'); finish(error); }
+    });
+    server.on('error', (error) => finish(new Error(error.code === 'EADDRINUSE' ? `Port ${port} is already in use. Close the other program and try again.` : error.message)));
+    const timer = setTimeout(() => finish(new Error('WordPress.com sign-in timed out.')), timeoutMs);
+    server.listen(port, '127.0.0.1', () => {
+      const auth = new URL('https://public-api.wordpress.com/oauth2/authorize');
+      auth.search = new URLSearchParams({ client_id:clientId, redirect_uri:redirectUri, response_type:'code', scope:'global', state });
+      Promise.resolve(openExternal(auth.toString())).catch((error) => finish(error));
+    });
+  });
+}
+
+module.exports = { startGitHubDeviceFlow, pollGitHubDeviceFlow, authorizeGoogle, refreshGoogleToken, authorizeWordPress };

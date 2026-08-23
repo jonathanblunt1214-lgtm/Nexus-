@@ -64,6 +64,7 @@
       "githubClient.js",
       "githubGitAuth.js",
       "oauthIntegrations.js",
+      "wordpressComClient.js",
       "googleDriveClient.js",
       "accountVault.js",
       "firebaseAccountClient.js",
