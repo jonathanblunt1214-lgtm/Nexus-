@@ -16,6 +16,7 @@ const { performance } = require('perf_hooks');
 const { OperationalDiagnostics } = require('./operationalDiagnostics');
 const { detectGameProject } = require('./gameProjectDetector');
 const { searchCodeLibrary, libraryFacets } = require('./codeLibrary');
+const { buildLearningContext } = require('./webDevelopmentKnowledge');
 const { discover: discoverTests, snapshots: discoverSnapshots, TestHistory, readCoverage } = require('./advancedTesting');
 const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
 const { getProjectTemplate } = require('./projectTemplates');
@@ -960,7 +961,9 @@ async function callSelectedCodingModel(prompt, meta = {}, maxTokens = 4000) {
   const cfg = loadConfig();
   const id = require('./codingModelProviders').provider(cfg.codingModelProvider) ? cfg.codingModelProvider : 'nim';
   const startedAt = Date.now();
-  const result = await require('./codingModelProviders').callProvider(id, getCodingProviderKey(id), prompt, maxTokens, cfg[`${id}Model`] || '');
+  const learningContext = buildLearningContext(prompt);
+  const groundedPrompt = learningContext ? `${learningContext}\n\nCURRENT USER TASK:\n${prompt}` : prompt;
+  const result = await require('./codingModelProviders').callProvider(id, getCodingProviderKey(id), groundedPrompt, maxTokens, cfg[`${id}Model`] || '');
   recordAiCallMetric({ folder:meta.folder, model:result.model || id, tag:meta.tag, startedAt, ok:result.ok, error:result.error, tokensIn:result.usage?.prompt_tokens, tokensOut:result.usage?.completion_tokens });
   return result;
 }
@@ -992,6 +995,8 @@ async function callNim(prompt, meta = {}) {
   const key = getNimKey();
   if (!key) return { ok: false, error: 'No NVIDIA NIM API key saved yet. Add one in the Cloud tab (get one free at build.nvidia.com).' };
 
+  const learningContext = buildLearningContext(prompt);
+  prompt = learningContext ? `${learningContext}\n\nCURRENT USER TASK:\n${prompt}` : prompt;
   const startedAt = Date.now();
   try {
     const res = await fetch(NIM_API_URL, {
