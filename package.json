@@ -116,6 +116,7 @@
       "learning_sources/scriptsprocess_logs.py.txt",
       "learning_sources/system_instruction.md.txt",
       "learning_sources/TECHNICAL_MANUAL.md.txt",
+      "learning_sources/SPEC.md.txt",
       "release-notes.md"
     ],
     "releaseInfo": {

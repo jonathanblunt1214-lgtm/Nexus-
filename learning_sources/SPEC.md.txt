@@ -1,0 +1,20 @@
+2. Architectural Approach
+Design Pattern: [e.g., Sequential Pipeline, Fan-Out, or Manager-Worker (Hierarchy)]
+Frontend Strategy: [Specific components, container queries (@container), CSS layers (@layer)]
+Backend Strategy: [API contract (REST/GraphQL/gRPC), Database schema updates, Authentication flow]
+Security/Auth: [Mandatory FIDO2/WebAuthn Passkeys and OAuth 2.1 requirements]
+3. Agent Roles & Decomposition
+Lead Orchestrator: [Define high-level goal decomposition and validation criteria]
+Frontend Specialist: [Define component development and accessibility (WCAG 2.2) goals]
+Backend/Data Specialist: [Define API, database integrity, and session management tasks]
+Critic/Auditor Agent: [Define security red-teaming and pass/fail assessment criteria]
+4. Affected Files & Artifacts
+[List specific files to be created or modified]
+5. Quality Gates & Test Plan
+Static Analysis (ESLint/Snyk): [Security/Compliance check requirements]
+Functional Testing (Playwright): [Core user journey validations]
+Accessibility (axe-core): [WCAG 2.2 Level AA compliance check]
+Performance (Lighthouse CI): [LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.10 targets]
+6. Validation Criteria
+[List the "Pass" conditions required for the Critic/Auditor to sign off on this task]
+

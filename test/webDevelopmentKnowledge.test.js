@@ -4,12 +4,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { SOURCES, readSourceDocuments, searchSourceDocuments, searchWebDevelopmentKnowledge, buildLearningContext, curriculumInfo } = require('../webDevelopmentKnowledge');
 
-test('curriculum records all four supplied text sources', () => {
+test('curriculum records all five supplied text sources', () => {
   assert.deepEqual(SOURCES.map((source) => source.name), [
     'AGENTS.md.txt',
     'scriptsprocess_logs.py.txt',
     'system_instruction.md.txt',
     'TECHNICAL_MANUAL.md.txt',
+    'SPEC.md.txt',
   ]);
   assert.equal(curriculumInfo().lessons >= 10, true);
   assert.match(curriculumInfo().fingerprint, /^[a-f0-9]{64}$/);
@@ -17,12 +18,14 @@ test('curriculum records all four supplied text sources', () => {
 
 test('complete supplied documents are packaged and searchable, including training directions', () => {
   const documents = readSourceDocuments();
-  assert.equal(documents.length, 4);
+  assert.equal(documents.length, 5);
   assert.ok(documents.every((document) => document.content.length > 100));
   assert.match(documents.find((document) => document.name === 'system_instruction.md.txt').content, /Continuous Improvement Loop/);
   assert.match(documents.find((document) => document.name === 'TECHNICAL_MANUAL.md.txt').content, /Recursive Prompt Optimization/);
   assert.match(documents.find((document) => document.name === 'scriptsprocess_logs.py.txt').content, /training_data\.jsonl/);
+  assert.match(documents.find((document) => document.name === 'SPEC.md.txt').content, /Quality Gates & Test Plan/);
   assert.ok(searchSourceDocuments('recursive prompt optimization training').some((result) => result.source === 'TECHNICAL_MANUAL.md.txt'));
+  assert.ok(searchSourceDocuments('architecture quality gates validation').some((result) => result.source === 'SPEC.md.txt'));
 });
 
 test('retrieval selects applicable web-development teaching', () => {

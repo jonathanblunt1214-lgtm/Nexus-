@@ -7,6 +7,7 @@ const SOURCES = Object.freeze([
   { id:'log-pipeline', name:'scriptsprocess_logs.py.txt', file:'scriptsprocess_logs.py.txt', role:'feedback-dataset pipeline' },
   { id:'engineering-protocol', name:'system_instruction.md.txt', file:'system_instruction.md.txt', role:'Nexus AI operating and improvement instructions' },
   { id:'technical-manual', name:'TECHNICAL_MANUAL.md.txt', file:'TECHNICAL_MANUAL.md.txt', role:'complete coding and web-development training manual' },
+  { id:'project-spec', name:'SPEC.md.txt', file:'SPEC.md.txt', role:'architecture, decomposition, and validation template' },
 ]);
 
 const lesson = (value) => Object.freeze(value);
