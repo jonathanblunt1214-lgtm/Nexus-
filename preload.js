@@ -127,6 +127,7 @@ contextBridge.exposeInMainWorld('nexus', {
 
   // Ship: git actions, deploy runner, feature planner
   gitStatus: (folder) => ipcRenderer.invoke('git-status', { folder }),
+  projectAccountReference: (folder) => ipcRenderer.invoke('project-account-reference', { folder }),
   gitCreateBranch: (folder, branchName) => ipcRenderer.invoke('git-create-branch', { folder, branchName }),
   gitCommit: (folder, message, allowSecrets) => ipcRenderer.invoke('git-commit', { folder, message, allowSecrets }),
   gitPush: (folder) => ipcRenderer.invoke('git-push', { folder }),

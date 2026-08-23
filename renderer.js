@@ -79,7 +79,7 @@ window.nexus.onExitSyncStatus(({ state, message }) => {
 // defaults are filled in for genuinely optional fields; identity fields
 // like projectUid are never fabricated here - they're real backend-issued
 // values, left alone or created later by ensureActiveProjectConfig().
-const PROJECTS_SCHEMA_VERSION = 1;
+const PROJECTS_SCHEMA_VERSION = 2;
 
 function migrateProjects(rawProjects) {
   if (!Array.isArray(rawProjects)) return [];
@@ -103,6 +103,13 @@ function migrateProjects(rawProjects) {
       deployCommand: p.deployCommand || '',
       services: Array.isArray(p.services) ? p.services : [],
       projectUid: p.projectUid || undefined,
+      templateId: ['website','app','api'].includes(p.templateId) ? p.templateId : undefined,
+      sandboxed: p.sandboxed === true,
+      accountLinked: p.accountLinked === true,
+      accountProjectId: p.accountProjectId || undefined,
+      accountRepositoryUrl: p.accountRepositoryUrl || undefined,
+      accountSourceProvider: p.accountSourceProvider || undefined,
+      accountLinkedAt: p.accountLinkedAt || undefined,
     });
   }
   return migrated;
@@ -657,6 +664,33 @@ function toggleSandboxed(id, e) {
   renderProjects();
 }
 
+async function linkProjectToAccount(id, event) {
+  event.stopPropagation();
+  const project = projects.find((item) => item.id === id);
+  if (!project) return;
+  const account = await window.nexus.accountVaultStatus();
+  if (!account.email) { showToast('error', 'Sign in to your Nexus account first', 'Account-linked projects belong to the signed-in Nexus profile.'); return; }
+  const reference = await window.nexus.projectAccountReference(project.folder);
+  if (!reference.ok) { showToast('error', 'Project cannot be linked yet', reference.error); return; }
+  project.accountLinked = true;
+  project.accountProjectId ||= (globalThis.crypto?.randomUUID?.() || `project-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  project.accountRepositoryUrl = reference.repositoryUrl;
+  project.accountSourceProvider = reference.provider;
+  project.accountLinkedAt = new Date().toISOString();
+  persistProjects(); renderProjects();
+  showToast('success', 'Project linked to account', 'Its safe metadata and GitHub reference will be included in the encrypted vault. Source files and secrets remain separate.');
+}
+
+function unlinkProjectFromAccount(id, event) {
+  event.stopPropagation();
+  const project = projects.find((item) => item.id === id);
+  if (!project || !confirm(`Unlink ${project.name} from your Nexus account? The local project and GitHub repository will not be deleted.`)) return;
+  project.accountLinked = false;
+  delete project.accountRepositoryUrl; delete project.accountSourceProvider; delete project.accountLinkedAt;
+  persistProjects(); renderProjects();
+  showToast('info', 'Project unlinked from account', 'Use Sync now to remove it from the encrypted account project list.');
+}
+
 // Moves the single shared config panel into whichever project card's slot
 // is currently open, or hides it if none is open. Called both when a card's
 // Config button is clicked, and again automatically at the end of every
@@ -725,6 +759,10 @@ function renderProjects() {
           <span class="pill" id="project-trust-${p.id}">RESTRICTED</span>
           <button class="btn tiny btn-secondary" onclick="configureWorkspaceTrust(${p.id}, event)">Review permissions</button>
           <button class="btn tiny btn-secondary" onclick="revokeWorkspaceTrust(${p.id}, event)">Revoke</button>
+        </div>
+        <div class="row" style="margin-top:6px; align-items:center;">
+          <span class="pill ${p.accountLinked ? 'on' : ''}">${p.accountLinked ? 'ACCOUNT LINKED' : 'THIS COMPUTER'}</span>
+          ${p.accountLinked ? `<button class="btn tiny btn-secondary" onclick="unlinkProjectFromAccount(${p.id}, event)">Unlink account</button>` : `<button class="btn tiny btn-secondary" onclick="linkProjectToAccount(${p.id}, event)">Link to account</button>`}
         </div>
         <label class="muted small" style="display:flex; align-items:center; gap:6px; margin-top:4px; cursor:pointer;" title="Run inside a Docker container that can only see this project's own folder - it can't read or write anything else on this machine, including Nexus itself.">
           <input type="checkbox" ${p.sandboxed ? 'checked' : ''} ${p.running ? 'disabled' : ''} onclick="toggleSandboxed(${p.id}, event)">
@@ -4207,6 +4245,30 @@ async function accountVaultPlugins() {
   try { const plugins = await window.nexus.pluginsList(folder); const links = accountLinkedPluginMap(); return plugins.map((plugin) => ({ ...plugin, ...(links[plugin.id] || {}) })); } catch { return []; }
 }
 
+function accountVaultProjects() {
+  return projects.filter((project) => project.accountLinked).map((project) => ({ accountLinked:true, accountProjectId:project.accountProjectId, name:project.name, repositoryUrl:project.accountRepositoryUrl, sourceProvider:project.accountSourceProvider, command:project.command, port:project.port, deployCommand:project.deployCommand || '', templateId:project.templateId || null, sandboxed:project.sandboxed === true, linkedAt:project.accountLinkedAt }));
+}
+
+let pendingAccountProjects = [];
+function queueAccountProjectRestores(items = []) {
+  pendingAccountProjects = items.filter((item) => item.accountLinked && item.accountProjectId && item.repositoryUrl && !projects.some((project) => project.accountProjectId === item.accountProjectId));
+  const panel = document.getElementById('account-project-list');
+  if (!panel) return;
+  panel.innerHTML = pendingAccountProjects.map((project, index) => `<div class="suggestion-item"><strong>${escapeHtml(project.name)}</strong><span class="muted small">${escapeHtml(project.repositoryUrl)} · available from your Nexus account</span><button class="btn tiny" onclick="restoreAccountProject(${index})">Restore from GitHub</button></div>`).join('') || '<p class="muted small">No account-linked projects are waiting to be restored on this computer.</p>';
+}
+
+async function restoreAccountProject(index) {
+  const linked = pendingAccountProjects[index];
+  if (!linked) return;
+  const panel = document.getElementById('account-project-list');
+  panel.innerHTML = '<p class="muted small">Cloning the project through your connected GitHub account…</p>';
+  const result = await window.nexus.resolveProjectPath(linked.repositoryUrl);
+  if (!result.ok) { queueAccountProjectRestores(pendingAccountProjects); showToast('error', 'Account project could not be restored', result.error); return; }
+  projects.push({ id:Date.now(), name:linked.name, folder:result.path, command:linked.command || 'npm run dev', port:linked.port || result.detectedPort?.port || '', deployCommand:linked.deployCommand || '', templateId:linked.templateId || undefined, sandboxed:linked.sandboxed === true, running:false, accountLinked:true, accountProjectId:linked.accountProjectId, accountRepositoryUrl:linked.repositoryUrl, accountSourceProvider:'github', accountLinkedAt:linked.linkedAt || new Date().toISOString() });
+  persistProjects(); renderProjects(); queueAccountProjectRestores(pendingAccountProjects);
+  showToast('success', 'Account project restored', `${linked.name} was cloned from GitHub. Review Workspace Trust before running it.`);
+}
+
 function accountLinkedPluginMap() { try { return JSON.parse(localStorage.getItem('nexus_account_linked_plugins') || '{}'); } catch { return {}; } }
 async function linkPluginToAccount(pluginId) {
   const folder = activeProjectFolder(); if (!folder) return;
@@ -4354,7 +4416,7 @@ async function runAccountVaultSync(automatic = false) {
   accountVaultSyncInProgress = true;
   document.getElementById('account-vault-status').innerText = automatic ? 'Running the scheduled 15-minute account-vault sync…' : 'Encrypting and syncing the account vault…';
   try {
-    const currentContent = { preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() };
+    const currentContent = { preferences: accountVaultPreferences(), plugins: await accountVaultPlugins(), projects: accountVaultProjects() };
     const result = automatic ? await window.nexus.accountVaultAutoSync(currentContent) : await window.nexus.accountVaultSync({ ...value, ...currentContent });
     const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : name === 'google' ? 'Google Drive' : 'Nexus email account').join(', ');
     if (!automatic || !result.ok) showToast(result.ok ? 'success' : 'error', result.ok ? 'Account vault synced' : 'Account vault sync failed', result.ok ? `Encrypted backup saved to ${destinations}. Automatic sync will repeat every 15 minutes until you sign out.` : result.error);
@@ -4382,6 +4444,7 @@ async function restoreAccountVault() {
     for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
     applyNexusPreferences(); await loadNexusProfile();
     queueLinkedPluginRestores(result.plugins || []);
+    queueAccountProjectRestores(result.projects || []);
     const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
     renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
     showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
@@ -4394,6 +4457,7 @@ function applyRestoredVaultResult(result) {
   for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
   applyNexusPreferences(); loadNexusProfile();
   queueLinkedPluginRestores(result.plugins || []);
+  queueAccountProjectRestores(result.projects || []);
   const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
   renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
   refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
@@ -4404,7 +4468,7 @@ async function exportAirGappedVault() {
   const passphrase = document.getElementById('account-vault-passphrase').value;
   if (passphrase.length < 12) { showToast('error', 'Enter a 12+ character vault passphrase', 'The same passphrase is required for restore.'); return; }
   const status = document.getElementById('airgap-vault-status'); status.innerText = 'Creating an encrypted offline vault without contacting cloud services…';
-  const result = await window.nexus.accountVaultAirgapExport({ passphrase, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() });
+  const result = await window.nexus.accountVaultAirgapExport({ passphrase, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins(), projects: accountVaultProjects() });
   if (result.canceled) { status.innerText = 'Offline export canceled.'; return; }
   if (result.ok) {
     status.innerText = `Encrypted vault exported to ${result.path}. Disconnect the removable drive to complete the air gap.`;

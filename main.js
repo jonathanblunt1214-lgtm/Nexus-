@@ -2194,6 +2194,17 @@ ipcMain.handle('language-intelligence', async (_event, payload) => {
     return queryLanguageIntelligence(payload || {});
   } catch (error) { return { ok: false, error: error.message }; }
 });
+
+ipcMain.handle('project-account-reference', async (_event, { folder }) => {
+  if (!folder || !fs.existsSync(folder)) return { ok: false, error: 'Project folder not found.' };
+  const resolvedFolder = path.resolve(folder);
+  if (!projectsForExitSync.some((project) => path.resolve(project.folder) === resolvedFolder)) return { ok: false, error: 'Only a project already saved in Nexus can be linked to an account.' };
+  const remote = await runGitArgs(folder, ['remote', 'get-url', 'origin']);
+  if (!remote.ok) return { ok: false, error: 'Linking a project requires a GitHub origin so another computer can restore its source.' };
+  const coordinates = gitWorkflow.parseGitHubRemote(remote.output);
+  if (!coordinates) return { ok: false, error: 'Only GitHub project sources can currently be restored across computers.' };
+  return { ok: true, provider: 'github', repositoryUrl: `https://github.com/${coordinates.owner}/${coordinates.repo}.git` };
+});
 ipcMain.handle('code-checker:catalog', () => ({ ok:true, adapters:checkerCatalog() }));
 
 ipcMain.handle('portable-config:inspect', (_event, { folder }) => portableProjectConfig.inspect(folder));
@@ -3795,6 +3806,28 @@ function sanitizeAccountPreferences(value) {
   return result;
 }
 
+function sanitizeAccountProjects(value) {
+  if (!Array.isArray(value)) return [];
+  const clean = (item, max) => String(item || '').trim().slice(0, max);
+  return value.slice(0, 250).map((project) => {
+    const repositoryUrl = clean(project.repositoryUrl, 500);
+    if (project.accountLinked !== true || !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\.git)?$/i.test(repositoryUrl)) return null;
+    return {
+      accountProjectId: clean(project.accountProjectId, 100).replace(/[^A-Za-z0-9._-]/g, ''),
+      accountLinked: true,
+      name: clean(project.name, 150),
+      repositoryUrl,
+      sourceProvider: 'github',
+      command: clean(project.command, 300),
+      port: /^\d{1,5}$/.test(String(project.port || '')) ? String(project.port) : '',
+      deployCommand: clean(project.deployCommand, 300),
+      templateId: ['website','app','api'].includes(project.templateId) ? project.templateId : null,
+      sandboxed: project.sandboxed === true,
+      linkedAt: Number.isFinite(Date.parse(project.linkedAt)) ? new Date(project.linkedAt).toISOString() : null,
+    };
+  }).filter((project) => project?.accountProjectId && project.name);
+}
+
 function collectAccountVaultSecrets() {
   const cfg = loadConfig();
   return Object.fromEntries(ACCOUNT_VAULT_SECRET_KEYS.map((key) => [key, encryptedConfigValue(cfg, key)]).filter(([, value]) => value));
@@ -3804,7 +3837,7 @@ function buildAccountVaultPayload(value = {}) {
   const plugins = Array.isArray(value.plugins) ? value.plugins.slice(0, 250).map((item) => ({ id: String(item.id || '').slice(0, 150), version: item.version ? String(item.version).slice(0, 50) : null, enabled: item.status === 'ACTIVE', signed: item.signed === true, accountLinked:item.accountLinked === true, marketplaceId:item.accountLinked && /^[a-f0-9]{64}$/.test(String(item.marketplaceId || '')) ? item.marketplaceId : null, digest:item.accountLinked && /^[a-f0-9]{64}$/.test(String(item.digest || '')) ? item.digest : null, packageDigest:item.accountLinked && /^[a-f0-9]{64}$/.test(String(item.packageDigest || '')) ? item.packageDigest : null })).filter((item) => item.id) : [];
   const cfg = loadConfig();
   const linkedServices = { github:Boolean(getGithubToken()), google:Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile ? { displayName:String(cfg.wordpressProfile.displayName || '').slice(0, 150), username:String(cfg.wordpressProfile.username || '').slice(0, 150) } : null, loginMethods:(cfg.nexusLinkedProviders || []).filter((id) => ['password','github.com','google.com'].includes(id)) };
-  return { schemaVersion: 1, updatedAt: new Date().toISOString(), profile:sanitizeUserProfile(cfg.nexusUserProfile || {}), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins, linkedServices };
+  return { schemaVersion: 1, updatedAt: new Date().toISOString(), profile:sanitizeUserProfile(cfg.nexusUserProfile || {}), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins, projects:sanitizeAccountProjects(value.projects), linkedServices };
 }
 
 async function applyAccountVaultPayload(payload) {
@@ -3814,7 +3847,7 @@ async function applyAccountVaultPayload(payload) {
   cfg.nexusUserProfile = sanitizeUserProfile(payload.profile || {});
   cfg.accountVaultLastRestoredAt = new Date().toISOString();
   await saveConfig(cfg);
-  return { profile:cfg.nexusUserProfile, preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], linkedServices:payload.linkedServices && typeof payload.linkedServices === 'object' ? payload.linkedServices : {}, restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
+  return { profile:cfg.nexusUserProfile, preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], projects:sanitizeAccountProjects(payload.projects), linkedServices:payload.linkedServices && typeof payload.linkedServices === 'object' ? payload.linkedServices : {}, restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
 }
 
 async function saveEncryptedAccountVault(encrypted, providers) {

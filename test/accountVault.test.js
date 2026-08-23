@@ -99,3 +99,24 @@ test('account vault automatically syncs every 15 minutes until the Nexus user si
   assert.doesNotMatch(renderer, /accountVaultSessionPassphrase|localStorage\.setItem\([^\n]*Passphrase/);
   assert.match(html, /closing and reopening the app[\s\S]*until you sign out/);
 });
+
+test('projects are optionally account-linked by safe metadata and restorable source references', () => {
+  const fs = require('fs');
+  const main = fs.readFileSync(require.resolve('../main'), 'utf8');
+  const preload = fs.readFileSync(require.resolve('../preload'), 'utf8');
+  const renderer = fs.readFileSync(require.resolve('../renderer'), 'utf8');
+  const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(main, /function sanitizeAccountProjects/);
+  assert.match(main, /projects:sanitizeAccountProjects\(value\.projects\)/);
+  assert.match(main, /projects:sanitizeAccountProjects\(payload\.projects\)/);
+  assert.match(main, /project-account-reference/);
+  assert.match(main, /projectsForExitSync\.some/);
+  assert.match(preload, /projectAccountReference/);
+  assert.match(renderer, /function linkProjectToAccount/);
+  assert.match(renderer, /function unlinkProjectFromAccount/);
+  assert.match(renderer, /function restoreAccountProject/);
+  assert.match(renderer, /projects: accountVaultProjects\(\)/);
+  assert.match(html, /Projects linked to your Nexus account/);
+  const sanitizer = main.match(/function sanitizeAccountProjects[\s\S]*?\n}/)?.[0] || '';
+  assert.doesNotMatch(sanitizer, /folder|projectPath|secret|workspaceTrust/);
+});
