@@ -65,6 +65,7 @@ const aiPerformanceTuner = require('./aiPerformanceTuner');
 const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
+const { checkCode, checkerCatalog } = require('./codeChecker');
 const gitWorkflow = require('./gitWorkflow');
 const portableProjectConfig = require('./portableProjectConfig');
 
@@ -973,6 +974,24 @@ async function callSelectedCodingModel(prompt, meta = {}, maxTokens = 4000) {
   return result;
 }
 
+async function runIntegratedCodeCheck(folder, filePath, content) {
+  const trust = getWorkspaceTrust(folder);
+  return checkCode({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('commands') });
+}
+
+async function checkerPromptContext(folder, filePath, content) {
+  const result = await runIntegratedCodeCheck(folder, filePath, content);
+  const diagnostics = result.diagnostics || [];
+  return [
+    'NEXUS CODE CHECKER RESULT:',
+    `Language: ${result.language}; checker: ${result.checker || 'unregistered'}; full checker available: ${result.available}.`,
+    result.restricted ? 'External compiler or linter checks are restricted until Workspace Trust permits commands.' : '',
+    result.install && !result.available ? `Checker setup: ${result.install}` : '',
+    diagnostics.length ? diagnostics.map((item) => `- line ${item.line + 1}, column ${item.column + 1}, ${item.source || result.checker} ${item.code}: ${item.message}`).join('\n') : 'No diagnostics were reported by the available checker.',
+    'Use these diagnostics as evidence. Do not claim the code is fully valid when a language checker is unavailable.',
+  ].filter(Boolean).join('\n');
+}
+
 ipcMain.handle('coding-models:ask', async (_event, { prompt, folder }) => callSelectedCodingModel(prompt, { folder, tag:'ask-coding-model' }, 4000));
 
 ipcMain.handle('provider-discovery:scan', async () => ({ ok:true, localServices:await require('./providerDiscovery').detectLocalServices(), environmentKeys:require('./providerDiscovery').detectedEnvironmentKeys() }));
@@ -1489,6 +1508,7 @@ ipcMain.handle('ai-propose-fix', async (_event, { filePath, errorText, folder })
     oldContent = ''; // file may not exist yet — treat as "create new file"
   }
 
+  const checkerContext = await checkerPromptContext(folder, filePath, oldContent);
   const prompt = constitutionPreamble(folder) + [
     'You are a careful code-fixing assistant. You will be shown a file and an error message.',
     'Respond in EXACTLY this format, nothing else:',
@@ -1503,6 +1523,7 @@ ipcMain.handle('ai-propose-fix', async (_event, { filePath, errorText, folder })
     '',
     'ERROR / PROBLEM DESCRIPTION:',
     errorText || '(no error text provided — look for obvious bugs)',
+    '', checkerContext,
   ].join('\n');
 
   const result = await callNim(prompt, { folder, tag: 'bug-fix-assist' });
@@ -1518,8 +1539,9 @@ ipcMain.handle('ai-propose-fix', async (_event, { filePath, errorText, folder })
   // Strip a leading newline and any stray markdown code fences the model might add.
   newContent = newContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
 
+  const checker = await runIntegratedCodeCheck(folder, filePath, newContent);
   trainingCandidates.set(path.resolve(filePath), { folder:path.resolve(folder), request:errorText || 'Correct the identified code problem.', context:`FILE: ${path.relative(folder, filePath)}\n\nBEFORE:\n${oldContent}`, response:`${explanation}\n\nVERIFIED FILE:\n${newContent}`, expectedContent:newContent, applied:false });
-  return { ok: true, oldContent, newContent, explanation, filePath };
+  return { ok: true, oldContent, newContent, explanation, filePath, checker };
 });
 
 // General-purpose prompt-driven coding, for the Code Editor's built-in
@@ -1536,6 +1558,7 @@ ipcMain.handle('ai-edit-file-with-prompt', async (_event, { filePath, instructio
     editOldContent = ''; // file doesn't exist yet — treat as "create this new file"
   }
 
+  const checkerContext = await checkerPromptContext(folder, filePath, editOldContent);
   const editPrompt = constitutionPreamble(folder) + [
     'You are a careful coding assistant working inside a real code editor. You will be shown a',
     'file (which may be empty, meaning it does not exist yet and should be created) and an',
@@ -1552,6 +1575,7 @@ ipcMain.handle('ai-edit-file-with-prompt', async (_event, { filePath, instructio
     '',
     'INSTRUCTION:',
     instruction,
+    '', checkerContext,
   ].join('\n');
 
   const editResult = await callNim(editPrompt, { folder, tag: 'bug-fix-assist-edit' });
@@ -1566,8 +1590,9 @@ ipcMain.handle('ai-edit-file-with-prompt', async (_event, { filePath, instructio
   let editNewContent = editResult.text.slice(editIdx + editMarker.length);
   editNewContent = editNewContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
 
+  const checker = await runIntegratedCodeCheck(folder, filePath, editNewContent);
   trainingCandidates.set(path.resolve(filePath), { folder:path.resolve(folder), request:instruction, context:`FILE: ${path.relative(folder, filePath)}\n\nBEFORE:\n${editOldContent}`, response:`${editExplanation}\n\nVERIFIED FILE:\n${editNewContent}`, expectedContent:editNewContent, applied:false });
-  return { ok: true, oldContent: editOldContent, newContent: editNewContent, explanation: editExplanation, filePath };
+  return { ok: true, oldContent: editOldContent, newContent: editNewContent, explanation: editExplanation, filePath, checker };
 });
 
 // =======================================================================
@@ -2099,10 +2124,13 @@ ipcMain.handle('github-project-pr-merge', async (_event, { folder, number, metho
   catch (error) { return { ok: false, error: error.message }; }
 });
 
-ipcMain.handle('language-intelligence', (_event, payload) => {
-  try { return queryLanguageIntelligence(payload || {}); }
-  catch (error) { return { ok: false, error: error.message }; }
+ipcMain.handle('language-intelligence', async (_event, payload) => {
+  try {
+    if (payload?.action === 'diagnostics') return runIntegratedCodeCheck(payload.folder, payload.filePath, payload.content);
+    return queryLanguageIntelligence(payload || {});
+  } catch (error) { return { ok: false, error: error.message }; }
 });
+ipcMain.handle('code-checker:catalog', () => ({ ok:true, adapters:checkerCatalog() }));
 
 ipcMain.handle('portable-config:inspect', (_event, { folder }) => portableProjectConfig.inspect(folder));
 ipcMain.handle('portable-config:save', (_event, { folder, config, local }) => {
@@ -2408,6 +2436,7 @@ async function proposeFeatureFileChange(folder, filePath, description, planConte
     oldContent = '';
   }
 
+  const checkerContext = await checkerPromptContext(folder, filePath, oldContent);
   const prompt = constitutionPreamble(folder) + [
     'You are implementing one part of a multi-file feature. You will be shown the overall feature request,',
     'the full plan across all files, and the current content of ONE specific file (empty if it is new).',
@@ -2422,6 +2451,7 @@ async function proposeFeatureFileChange(folder, filePath, description, planConte
     `THIS FILE'S PATH: ${filePath}`,
     'THIS FILE\'S CURRENT CONTENT (empty means create it new):',
     oldContent,
+    '', checkerContext,
   ].join('\n');
 
   const result = await callNim(prompt, { folder, tag: 'feature-file-proposal' });
@@ -2434,7 +2464,8 @@ async function proposeFeatureFileChange(folder, filePath, description, planConte
   let newContent = result.text.slice(idx + marker.length);
   newContent = newContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
 
-  return { ok: true, oldContent, newContent, explanation, filePath, fileExistedBefore };
+  const checker = await runIntegratedCodeCheck(folder, filePath, newContent);
+  return { ok: true, oldContent, newContent, explanation, filePath, fileExistedBefore, checker };
 }
 
 ipcMain.handle('ai-propose-feature-file', async (_event, { folder, filePath, description, planContext }) => {
@@ -2473,6 +2504,11 @@ ipcMain.handle('run-feature-plan-autonomous', async (_event, { folder, plan, des
     if (!proposal.ok) {
       errors.push({ file: item.file, error: proposal.error });
       continue; // one file failing to generate doesn't stop the rest - each is independent
+    }
+    const checkerErrors = (proposal.checker?.diagnostics || []).filter((item) => item.severity === 'error');
+    if (checkerErrors.length) {
+      errors.push({ file:item.file, error:`Nexus code checker rejected the generated file: ${checkerErrors.map((item) => item.message).join(' | ')}` });
+      continue;
     }
 
     const writeResult = applyFileChangeInternal(targetFile, proposal.newContent, 'AI Feature Builder (autonomous)');

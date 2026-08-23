@@ -2029,7 +2029,8 @@ async function submitEditorPrompt() {
   renderCeAttachments();
 
   pendingEditorPromptResult = { ...result, relPath };
-  document.getElementById('ce-diff-explanation').innerText = result.explanation || '';
+  const checkerProblems = result.checker?.diagnostics || [];
+  document.getElementById('ce-diff-explanation').innerText = `${result.explanation || ''}${checkerProblems.length ? `\n\nCode checker (${result.checker.language}): ${checkerProblems.map((item) => `line ${item.line + 1}: ${item.message}`).join(' | ')}` : `\n\nCode checker: no problems reported${result.checker?.available === false ? ' by the limited available checker' : ''}.`}`;
   document.getElementById('ce-diff-before').innerText = result.oldContent || '(empty - this file does not exist yet)';
   document.getElementById('ce-diff-after').innerText = result.newContent;
   document.getElementById('code-editor-diff-overlay').style.display = 'flex';
@@ -2511,6 +2512,8 @@ async function analyzeBug() {
   if (!result.ok) { alert('Analysis failed: ' + result.error); return; }
 
   if (autonomousMode) {
+    const checkerErrors = (result.checker?.diagnostics || []).filter((item) => item.severity === 'error');
+    if (checkerErrors.length) { alert(`Nexus blocked the autonomous fix because the code checker found ${checkerErrors.length} error(s):\n${checkerErrors.map((item) => item.message).join('\n')}`); return; }
     const applied = await window.nexus.applyFileChange(result.filePath, result.newContent, 'AI Bug Fix (autonomous)');
     if (applied.ok) {
       showToast('success', `Autonomously applied a fix to ${relFile}`, `Backup saved at ${applied.backupPath}`);
@@ -2524,7 +2527,7 @@ async function analyzeBug() {
   pendingProposal = result;
   document.getElementById('proposal-card').style.display = 'flex';
   document.getElementById('proposal-file').innerText = relFile;
-  document.getElementById('proposal-explanation').innerText = result.explanation;
+  document.getElementById('proposal-explanation').innerText = `${result.explanation}${result.checker?.diagnostics?.length ? `\n\nCode checker: ${result.checker.diagnostics.map((item) => `line ${item.line + 1}: ${item.message}`).join(' | ')}` : ''}`;
   document.getElementById('proposal-before').innerText = result.oldContent;
   document.getElementById('proposal-after').innerText = result.newContent;
 }
@@ -3637,7 +3640,7 @@ function currentLanguagePayload(action) {
 
 async function editorLanguageAction(action, options = {}) {
   const payload = currentLanguagePayload(action);
-  if (!payload) { if (!options.quiet) showToast('info', 'Language intelligence', 'Open a JavaScript or TypeScript file first.'); return; }
+  if (!payload) { if (!options.quiet) showToast('info', 'Language intelligence', 'Open a code file first.'); return; }
   if (action === 'rename') {
     const newName = prompt('Rename this symbol to:');
     if (!newName) return;
@@ -3682,7 +3685,10 @@ async function editorLanguageAction(action, options = {}) {
   }
   if (action === 'diagnostics') {
     const diagnostics = result.diagnostics || [];
-    renderLintResults(diagnostics.map((item) => ({ ...item, line: item.line + 1, ruleId: `TS${item.code}` })));
+    renderLintResults(diagnostics.map((item) => ({ ...item, line: item.line + 1, ruleId: `${item.source || result.checker || 'checker'}:${item.code}` })));
+    const summary = document.getElementById('ce-lint-summary');
+    if (summary) summary.innerText = `${result.language || 'Code'} · ${result.checker || 'no adapter'} · ${diagnostics.length} problem(s)${result.available === false ? ' · full checker unavailable' : ''}`;
+    if (!options.quiet && result.available === false) showToast('info', 'Limited code checking', result.restricted ? 'Trust this workspace to allow its installed compiler or linter.' : (result.install || 'No full checker is installed for this language.'));
     return;
   }
   if (action === 'references') {

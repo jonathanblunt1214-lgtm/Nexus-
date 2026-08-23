@@ -114,6 +114,7 @@ contextBridge.exposeInMainWorld('nexus', {
   getAppDir: () => ipcRenderer.invoke('get-app-dir'),
   readFile: (filePath) => ipcRenderer.invoke('read-file', { filePath }),
   languageIntelligence: (payload) => ipcRenderer.invoke('language-intelligence', payload),
+  codeCheckerCatalog: () => ipcRenderer.invoke('code-checker:catalog'),
   aiProposeFix: (filePath, errorText, folder) => ipcRenderer.invoke('ai-propose-fix', { filePath, errorText, folder }),
   explainDiagnostic: (folder, filePath, currentContent, diagnostic) => ipcRenderer.invoke('diagnostics:explain-and-learn', { folder, filePath, currentContent, diagnostic }),
   applyFileChange: (filePath, newContent, source) => ipcRenderer.invoke('apply-file-change', { filePath, newContent, source }),

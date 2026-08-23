@@ -232,4 +232,4 @@ function getLanguageBreakdown(projectPath) {
   };
 }
 
-module.exports = { getLanguageBreakdown };
+module.exports = { getLanguageBreakdown, LANGUAGE_MAP };

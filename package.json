@@ -19,6 +19,7 @@
   "dependencies": {
     "electron-updater": "^6.3.9",
     "libsodium-wrappers": "^0.7.15",
+    "js-yaml": "^4.3.1",
     "tree-sitter-javascript": "0.25.0",
     "tree-sitter-typescript": "0.23.2",
     "typescript": "~5.8.2",
@@ -114,6 +115,7 @@
       "webDevelopmentKnowledge.js",
       "trainingDataset.js",
       "fineTuneTrainer.js",
+      "codeChecker.js",
       "scripts/train_lora.py",
       "learning_sources/AGENTS.md.txt",
       "learning_sources/scriptsprocess_logs.py.txt",
