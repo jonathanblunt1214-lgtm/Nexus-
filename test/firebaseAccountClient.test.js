@@ -27,6 +27,27 @@ test('refresh tokens are exchanged using the documented secure token endpoint', 
   finally { global.fetch = originalFetch; }
 });
 
+test('GitHub and Google credentials can sign in or link to one Firebase-backed Nexus account', async () => {
+  const originalFetch = global.fetch; const bodies = [];
+  global.fetch = async (_url, options) => { bodies.push(JSON.parse(options.body)); return response({ localId:'uid-1', idToken:'firebase-id', refreshToken:'firebase-refresh', expiresIn:'3600' }); };
+  try {
+    await client.signInWithProvider('A'.repeat(24), { providerId:'github.com', credential:'github-token', credentialType:'access_token' });
+    await client.signInWithProvider('A'.repeat(24), { providerId:'google.com', credential:'google-id', credentialType:'id_token', idToken:'existing-firebase-id' });
+  } finally { global.fetch = originalFetch; }
+  assert.match(bodies[0].postBody, /access_token=github-token&providerId=github\.com/);
+  assert.match(bodies[1].postBody, /id_token=google-id&providerId=google\.com/);
+  assert.equal(bodies[1].idToken, 'existing-firebase-id');
+});
+
+test('unified account wiring never places provider tokens in renderer state or the portable vault inventory', () => {
+  const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  const renderer = fs.readFileSync(path.join(__dirname, '..', 'renderer.js'), 'utf8');
+  assert.match(main, /establishNexusProviderAccount\('github\.com'/);
+  assert.match(main, /establishNexusProviderAccount\('google\.com'/);
+  assert.match(main, /linkedServices/);
+  assert.doesNotMatch(renderer, /githubToken|googleAccessToken|firebaseRefreshToken/);
+});
+
 test('Firestore vault path is UID-scoped and contains only encrypted vault data', async () => {
   const originalFetch = global.fetch;
   let captured;

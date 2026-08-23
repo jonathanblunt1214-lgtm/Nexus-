@@ -36,6 +36,15 @@ async function signIn(apiKey, email, password) {
   return firebaseJson(`${AUTH_BASE}/accounts:signInWithPassword?key=${encodeURIComponent(apiKey)}`, { email, password, returnSecureToken: true });
 }
 
+async function signInWithProvider(apiKey, { providerId, credential, credentialType = 'access_token', idToken = null }) {
+  if (!['google.com', 'github.com'].includes(providerId)) throw new Error('That Nexus account provider is not allowed.');
+  if (!['access_token', 'id_token'].includes(credentialType) || !credential) throw new Error('The account provider did not return a usable credential.');
+  const postBody = new URLSearchParams({ [credentialType]:credential, providerId }).toString();
+  return firebaseJson(`${AUTH_BASE}/accounts:signInWithIdp?key=${encodeURIComponent(apiKey)}`, {
+    requestUri:'http://localhost', postBody, ...(idToken ? { idToken } : {}), returnIdpCredential:true, returnSecureToken:true,
+  });
+}
+
 async function sendVerification(apiKey, idToken) {
   return firebaseJson(`${AUTH_BASE}/accounts:sendOobCode?key=${encodeURIComponent(apiKey)}`, { requestType: 'VERIFY_EMAIL', idToken });
 }
@@ -79,4 +88,4 @@ async function loadAccountVault({ apiKey, projectId, uid, idToken }) {
   return content ? { content, modifiedTime: data.fields?.updatedAt?.timestampValue || data.updateTime, source: 'email' } : null;
 }
 
-module.exports = { requireConfiguration, signUp, signIn, sendVerification, sendPasswordReset, lookupAccount, refreshSession, saveAccountVault, loadAccountVault };
+module.exports = { requireConfiguration, signUp, signIn, signInWithProvider, sendVerification, sendPasswordReset, lookupAccount, refreshSession, saveAccountVault, loadAccountVault };

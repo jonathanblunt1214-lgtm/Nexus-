@@ -3581,6 +3581,18 @@ function clearFirebaseSession(cfg) {
   for (const key of ['firebaseTokenExpiresAt', 'firebaseUid', 'firebaseEmail', 'firebaseEmailVerified']) delete cfg[key];
 }
 
+async function establishNexusProviderAccount(providerId, credential, credentialType) {
+  const configuration = firebaseAccountConfiguration();
+  if (!configuration.apiKey || !configuration.projectId) return { unified:false, reason:'Configure the Nexus Firebase account project to use provider sign-in.' };
+  require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
+  const existing = await getFirebaseSession().catch(() => null);
+  const tokens = await require('./firebaseAccountClient').signInWithProvider(configuration.apiKey, { providerId, credential, credentialType, idToken:existing?.idToken || null });
+  const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken);
+  const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile);
+  cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), providerId])]; await saveConfig(cfg);
+  return { unified:true, linked:Boolean(existing), uid:profile.uid, email:profile.email || null, providers:cfg.nexusLinkedProviders };
+}
+
 async function getFirebaseSession({ requireVerified = false, refreshProfile = false } = {}) {
   const cfg = loadConfig();
   const configuration = firebaseAccountConfiguration();
@@ -3615,7 +3627,7 @@ ipcMain.handle('email-account:sign-up', async (_event, value = {}) => {
     if (password.length < 8) throw new Error('Use a password with at least 8 characters.');
     const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
     const tokens = await require('./firebaseAccountClient').signUp(configuration.apiKey, email, password);
-    const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, { uid: tokens.localId, email, emailVerified: false }); await saveConfig(cfg);
+    const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, { uid: tokens.localId, email, emailVerified: false }); cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), 'password'])]; await saveConfig(cfg);
     await require('./firebaseAccountClient').sendVerification(configuration.apiKey, tokens.idToken);
     return { ok: true, email, emailVerified: false };
   } catch (error) { return { ok: false, error: error.message }; }
@@ -3626,7 +3638,7 @@ ipcMain.handle('email-account:sign-in', async (_event, value = {}) => {
     const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
     const tokens = await require('./firebaseAccountClient').signIn(configuration.apiKey, email, password);
     const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken);
-    const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile); await saveConfig(cfg);
+    const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile); cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), 'password'])]; await saveConfig(cfg);
     return { ok: true, email: profile.email, emailVerified: profile.emailVerified };
   } catch (error) { return { ok: false, error: error.message }; }
 });
@@ -3689,7 +3701,8 @@ ipcMain.handle('oauth:github-complete', async () => {
     const token = await require('./oauthIntegrations').pollGitHubDeviceFlow(oauthConfiguration().githubClientId, pendingGitHubDevice);
     pendingGitHubDevice = null;
     const cfg = loadConfig(); setEncryptedConfigValue(cfg, 'githubToken', token.access_token); await saveConfig(cfg);
-    return { ok: true };
+    const account = await establishNexusProviderAccount('github.com', token.access_token, 'access_token').catch((error) => ({ unified:false, error:error.message }));
+    return { ok: true, account };
   } catch (error) { pendingGitHubDevice = null; return { ok: false, error: error.message }; }
 });
 
@@ -3701,7 +3714,9 @@ ipcMain.handle('oauth:google-connect', async () => {
     setEncryptedConfigValue(cfg, 'googleAccessToken', tokens.access_token);
     if (tokens.refresh_token) setEncryptedConfigValue(cfg, 'googleRefreshToken', tokens.refresh_token);
     cfg.googleAccessTokenExpiresAt = Date.now() + Number(tokens.expires_in || 3600) * 1000;
-    await saveConfig(cfg); return { ok: true };
+    await saveConfig(cfg);
+    const account = tokens.id_token ? await establishNexusProviderAccount('google.com', tokens.id_token, 'id_token').catch((error) => ({ unified:false, error:error.message })) : { unified:false, reason:'Google did not return an identity token.' };
+    return { ok: true, account };
   } catch (error) { return { ok: false, error: error.message }; }
 });
 ipcMain.handle('oauth:google-disconnect', async () => {
@@ -3737,7 +3752,7 @@ async function getGoogleAccessToken() {
   return accessToken;
 }
 
-ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile || null }; });
+ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile || null, nexusAccount:Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), nexusEmail:cfg.firebaseEmail || null, linkedProviders:cfg.nexusLinkedProviders || [] }; });
 
 const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiKey', 'glmApiKey', 'deepseekApiKey'];
 const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([
@@ -3760,7 +3775,9 @@ function collectAccountVaultSecrets() {
 
 function buildAccountVaultPayload(value = {}) {
   const plugins = Array.isArray(value.plugins) ? value.plugins.slice(0, 250).map((item) => ({ id: String(item.id || '').slice(0, 150), version: item.version ? String(item.version).slice(0, 50) : null, enabled: item.status === 'ACTIVE', signed: item.signed === true })).filter((item) => item.id) : [];
-  return { schemaVersion: 1, updatedAt: new Date().toISOString(), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins };
+  const cfg = loadConfig();
+  const linkedServices = { github:Boolean(getGithubToken()), google:Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile ? { displayName:String(cfg.wordpressProfile.displayName || '').slice(0, 150), username:String(cfg.wordpressProfile.username || '').slice(0, 150) } : null, loginMethods:(cfg.nexusLinkedProviders || []).filter((id) => ['password','github.com','google.com'].includes(id)) };
+  return { schemaVersion: 1, updatedAt: new Date().toISOString(), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins, linkedServices };
 }
 
 async function applyAccountVaultPayload(payload) {
@@ -3769,7 +3786,7 @@ async function applyAccountVaultPayload(payload) {
   for (const key of ACCOUNT_VAULT_SECRET_KEYS) if (typeof payload.apiKeys[key] === 'string' && payload.apiKeys[key]) setEncryptedConfigValue(cfg, key, payload.apiKeys[key]);
   cfg.accountVaultLastRestoredAt = new Date().toISOString();
   await saveConfig(cfg);
-  return { preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
+  return { preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], linkedServices:payload.linkedServices && typeof payload.linkedServices === 'object' ? payload.linkedServices : {}, restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
 }
 
 async function saveEncryptedAccountVault(encrypted, providers) {

@@ -4150,7 +4150,8 @@ async function saveOAuthConfiguration() {
 async function refreshOAuthServices() {
   const result = await window.nexus.oauthStatus();
   if (!result.ok) return;
-  document.getElementById('oauth-service-status').innerText = `GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `connected${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not connected'}`;
+  const providers = (result.linkedProviders || []).map((id) => id === 'password' ? 'Email' : id === 'github.com' ? 'GitHub' : id === 'google.com' ? 'Google' : id).join(', ');
+  document.getElementById('oauth-service-status').innerText = `Nexus account: ${result.nexusAccount ? `${result.nexusEmail || 'signed in'}${providers ? ` · login methods: ${providers}` : ''}` : 'not signed in'} · GitHub service: ${result.github ? 'connected' : 'not connected'} · Google service: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `connected${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not connected'}`;
 }
 
 const ACCOUNT_VAULT_PREFERENCE_KEYS = [
@@ -4334,7 +4335,8 @@ async function connectGitHubOAuth() {
   if (!start.ok) { showToast('error', 'GitHub sign-in could not start', start.error); return; }
   status.innerText = `GitHub opened in your browser. Enter code ${start.userCode}. Waiting for authorization…`;
   const result = await window.nexus.githubOAuthComplete();
-  showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub connected' : 'GitHub sign-in failed', result.error || 'Private repositories and GitHub tools are ready.');
+  const githubMessage = result.account?.unified ? `GitHub is linked to your Nexus account${result.account.email ? ` (${result.account.email})` : ''}.` : result.account?.error || result.account?.reason || 'Private repositories and GitHub tools are ready.';
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub connected' : 'GitHub sign-in failed', result.error || githubMessage);
   refreshOAuthServices(); refreshGitHubStatus();
   refreshAccountVaultStatus();
 }
@@ -4342,7 +4344,8 @@ async function connectGitHubOAuth() {
 async function connectGoogleOAuth() {
   document.getElementById('oauth-service-status').innerText = 'Complete Google sign-in and Drive permission in your browser…';
   const result = await window.nexus.googleOAuthConnect();
-  showToast(result.ok ? 'success' : 'error', result.ok ? 'Google connected' : 'Google sign-in failed', result.error || 'Google Drive storage is ready.');
+  const googleMessage = result.account?.unified ? `Google is linked to your Nexus account${result.account.email ? ` (${result.account.email})` : ''}.` : result.account?.error || result.account?.reason || 'Google Drive storage is ready.';
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Google connected' : 'Google sign-in failed', result.error || googleMessage);
   refreshOAuthServices();
   refreshAccountVaultStatus();
 }
