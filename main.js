@@ -3765,7 +3765,20 @@ const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiK
 const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([
   'nexus_workspace_col_fraction', 'nexus_workspace_row_fraction',
   'nexus_github_auto_sync_enabled', 'nexus_github_auto_sync_seconds',
+  'nexus_ui_density', 'nexus_reduced_motion', 'nexus_editor_font_size',
+  'nexus_editor_tab_size', 'nexus_editor_word_wrap', 'nexus_format_on_save',
 ]);
+
+function sanitizeUserProfile(value = {}) {
+  const clean = (item, max) => String(item || '').trim().slice(0, max);
+  return { displayName:clean(value.displayName, 80), handle:clean(value.handle, 40).replace(/[^A-Za-z0-9._-]/g, ''), role:clean(value.role, 80), bio:clean(value.bio, 300) };
+}
+
+ipcMain.handle('account-profile:get', () => ({ ok:true, profile:sanitizeUserProfile(loadConfig().nexusUserProfile || {}) }));
+ipcMain.handle('account-profile:save', async (_event, value = {}) => {
+  if (!encryptedConfigValue(loadConfig(), 'firebaseRefreshToken')) return { ok:false, error:'Sign in to a Nexus account before saving a profile.' };
+  const cfg = loadConfig(); cfg.nexusUserProfile = sanitizeUserProfile(value); await saveConfig(cfg); return { ok:true, profile:cfg.nexusUserProfile };
+});
 
 function sanitizeAccountPreferences(value) {
   const result = {};
@@ -3784,16 +3797,17 @@ function buildAccountVaultPayload(value = {}) {
   const plugins = Array.isArray(value.plugins) ? value.plugins.slice(0, 250).map((item) => ({ id: String(item.id || '').slice(0, 150), version: item.version ? String(item.version).slice(0, 50) : null, enabled: item.status === 'ACTIVE', signed: item.signed === true })).filter((item) => item.id) : [];
   const cfg = loadConfig();
   const linkedServices = { github:Boolean(getGithubToken()), google:Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile ? { displayName:String(cfg.wordpressProfile.displayName || '').slice(0, 150), username:String(cfg.wordpressProfile.username || '').slice(0, 150) } : null, loginMethods:(cfg.nexusLinkedProviders || []).filter((id) => ['password','github.com','google.com'].includes(id)) };
-  return { schemaVersion: 1, updatedAt: new Date().toISOString(), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins, linkedServices };
+  return { schemaVersion: 1, updatedAt: new Date().toISOString(), profile:sanitizeUserProfile(cfg.nexusUserProfile || {}), preferences: sanitizeAccountPreferences(value.preferences), apiKeys: collectAccountVaultSecrets(), plugins, linkedServices };
 }
 
 async function applyAccountVaultPayload(payload) {
   if (payload?.schemaVersion !== 1 || typeof payload.apiKeys !== 'object') throw new Error('The unlocked vault data is not supported.');
   const cfg = loadConfig();
   for (const key of ACCOUNT_VAULT_SECRET_KEYS) if (typeof payload.apiKeys[key] === 'string' && payload.apiKeys[key]) setEncryptedConfigValue(cfg, key, payload.apiKeys[key]);
+  cfg.nexusUserProfile = sanitizeUserProfile(payload.profile || {});
   cfg.accountVaultLastRestoredAt = new Date().toISOString();
   await saveConfig(cfg);
-  return { preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], linkedServices:payload.linkedServices && typeof payload.linkedServices === 'object' ? payload.linkedServices : {}, restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
+  return { profile:cfg.nexusUserProfile, preferences: sanitizeAccountPreferences(payload.preferences), plugins: Array.isArray(payload.plugins) ? payload.plugins : [], linkedServices:payload.linkedServices && typeof payload.linkedServices === 'object' ? payload.linkedServices : {}, restoredApiKeyCount: ACCOUNT_VAULT_SECRET_KEYS.filter((key) => payload.apiKeys[key]).length };
 }
 
 async function saveEncryptedAccountVault(encrypted, providers) {

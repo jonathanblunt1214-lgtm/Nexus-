@@ -292,3 +292,7 @@ webview { width: 100%; flex: 3; background: #fff; }
   .form-row > * { width: 100% !important; max-width: none !important; }
   .workspace-panel-title { min-height: 38px; }
 }
+body.nexus-compact .card { padding-top:10px; padding-bottom:10px; }
+body.nexus-compact .form-row { gap:6px; }
+body.nexus-reduced-motion *, body.nexus-reduced-motion *::before, body.nexus-reduced-motion *::after { animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+#code-editor-cm-container .CodeMirror { font-size:var(--nexus-editor-font-size, 13px); }

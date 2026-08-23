@@ -1530,6 +1530,7 @@ async function toggleCodeEditor() {
       'Shift-F12': () => { editorLanguageAction('references'); return false; },
       'F2': () => { editorLanguageAction('rename'); return false; },
     });
+    applyNexusPreferences();
   }
 
   await refreshCodeEditorTree();
@@ -4028,6 +4029,7 @@ setInterval(async () => {
   refreshEmailAccountStatus();
   refreshPluginMarketplace();
   refreshLanguageServices();
+  loadNexusProfile();
   refreshOpenAiStatus();
   renderGitHubAutoSyncSettings();
   scheduleGitHubAutoSync();
@@ -4157,7 +4159,40 @@ async function refreshOAuthServices() {
 const ACCOUNT_VAULT_PREFERENCE_KEYS = [
   'nexus_workspace_col_fraction', 'nexus_workspace_row_fraction',
   'nexus_github_auto_sync_enabled', 'nexus_github_auto_sync_seconds',
+  'nexus_ui_density', 'nexus_reduced_motion', 'nexus_editor_font_size',
+  'nexus_editor_tab_size', 'nexus_editor_word_wrap', 'nexus_format_on_save',
 ];
+
+function nexusPreferenceValue(key, fallback) { return localStorage.getItem(key) ?? fallback; }
+function applyNexusPreferences() {
+  const density = nexusPreferenceValue('nexus_ui_density', 'comfortable');
+  const reduced = nexusPreferenceValue('nexus_reduced_motion', 'false') === 'true';
+  const fontSize = Math.min(24, Math.max(11, Number(nexusPreferenceValue('nexus_editor_font_size', '13')) || 13));
+  const tabSize = Number(nexusPreferenceValue('nexus_editor_tab_size', '2')) === 4 ? 4 : 2;
+  const wrap = nexusPreferenceValue('nexus_editor_word_wrap', 'false') === 'true';
+  document.body.classList.toggle('nexus-compact', density === 'compact'); document.body.classList.toggle('nexus-reduced-motion', reduced);
+  document.documentElement.style.setProperty('--nexus-editor-font-size', `${fontSize}px`);
+  if (codeEditorCM) { codeEditorCM.setOption('tabSize', tabSize); codeEditorCM.setOption('indentUnit', tabSize); codeEditorCM.setOption('lineWrapping', wrap); codeEditorCM.getWrapperElement().style.fontSize = `${fontSize}px`; codeEditorCM.refresh(); }
+  const values = { 'nexus-preference-density':density, 'nexus-preference-font-size':String(fontSize), 'nexus-preference-tab-size':String(tabSize) };
+  for (const [id, value] of Object.entries(values)) { const element = document.getElementById(id); if (element) element.value = value; }
+  for (const [id, key] of [['nexus-preference-word-wrap','nexus_editor_word_wrap'],['nexus-preference-format-save','nexus_format_on_save'],['nexus-preference-reduced-motion','nexus_reduced_motion']]) { const element = document.getElementById(id); if (element) element.checked = nexusPreferenceValue(key, 'false') === 'true'; }
+  const editorFormat = document.getElementById('ce-format-on-save'); if (editorFormat) editorFormat.checked = nexusPreferenceValue('nexus_format_on_save', 'false') === 'true';
+}
+function saveNexusPreferences() {
+  const pairs = { nexus_ui_density:document.getElementById('nexus-preference-density').value, nexus_editor_font_size:document.getElementById('nexus-preference-font-size').value, nexus_editor_tab_size:document.getElementById('nexus-preference-tab-size').value, nexus_editor_word_wrap:String(document.getElementById('nexus-preference-word-wrap').checked), nexus_format_on_save:String(document.getElementById('nexus-preference-format-save').checked), nexus_reduced_motion:String(document.getElementById('nexus-preference-reduced-motion').checked) };
+  for (const [key, value] of Object.entries(pairs)) localStorage.setItem(key, value); applyNexusPreferences();
+  document.getElementById('nexus-profile-status').innerText = 'Preferences saved on this computer. Use Sync now to add them to the encrypted account vault.';
+}
+async function loadNexusProfile() {
+  const result = await window.nexus.userProfileGet(); if (!result.ok) return; const profile = result.profile || {};
+  for (const [id, key] of [['nexus-profile-display-name','displayName'],['nexus-profile-handle','handle'],['nexus-profile-role','role'],['nexus-profile-bio','bio']]) { const element = document.getElementById(id); if (element) element.value = profile[key] || ''; }
+  applyNexusPreferences();
+}
+async function saveNexusProfile() {
+  const profile = { displayName:document.getElementById('nexus-profile-display-name').value, handle:document.getElementById('nexus-profile-handle').value, role:document.getElementById('nexus-profile-role').value, bio:document.getElementById('nexus-profile-bio').value };
+  const result = await window.nexus.userProfileSave(profile); document.getElementById('nexus-profile-status').innerText = result.ok ? 'Profile saved. Use Sync now to add it to the encrypted account vault.' : result.error;
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'Profile saved' : 'Profile not saved', result.error || 'Your Nexus profile is ready to sync.');
+}
 
 function accountVaultPreferences() {
   return Object.fromEntries(ACCOUNT_VAULT_PREFERENCE_KEYS.map((key) => [key, localStorage.getItem(key)]).filter(([, value]) => value !== null));
@@ -4287,6 +4322,7 @@ async function restoreAccountVault() {
   const result = await window.nexus.accountVaultRestore(value);
   if (result.ok) {
     for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
+    applyNexusPreferences(); await loadNexusProfile();
     const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
     renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
     showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
@@ -4297,6 +4333,7 @@ async function restoreAccountVault() {
 
 function applyRestoredVaultResult(result) {
   for (const [key, item] of Object.entries(result.preferences || {})) localStorage.setItem(key, item);
+  applyNexusPreferences(); loadNexusProfile();
   const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
   renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
   refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();

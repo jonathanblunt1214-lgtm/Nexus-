@@ -53,3 +53,18 @@ test('Settings never mislabels encrypted cloud copies as air-gapped storage', ()
   assert.match(html, /Local Air-Gapped Vault/);
   assert.match(html, /Disconnect and securely store the drive/);
 });
+
+test('Nexus profiles and creative-app preferences are saved and included in the encrypted vault', () => {
+  const fs = require('fs'); const main = fs.readFileSync(require.resolve('../main'), 'utf8'); const preload = fs.readFileSync(require.resolve('../preload'), 'utf8'); const renderer = fs.readFileSync(require.resolve('../renderer'), 'utf8'); const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(main, /function sanitizeUserProfile/);
+  assert.match(main, /profile:sanitizeUserProfile\(cfg\.nexusUserProfile/);
+  assert.match(main, /account-profile:save/);
+  assert.match(preload, /userProfileSave/);
+  for (const preference of ['nexus_ui_density','nexus_reduced_motion','nexus_editor_font_size','nexus_editor_tab_size','nexus_editor_word_wrap','nexus_format_on_save']) assert.ok(main.includes(preference) && renderer.includes(preference));
+  assert.match(renderer, /codeEditorCM\.setOption\('lineWrapping'/);
+  assert.match(html, /Nexus Profile/);
+  const builder = main.match(/function buildAccountVaultPayload[\s\S]*?\n}/)?.[0] || '';
+  assert.doesNotMatch(builder, /nexus_projects|projectPath/);
+  const serializedReturn = builder.split('\n').find((line) => line.includes('return { schemaVersion')) || '';
+  assert.doesNotMatch(serializedReturn, /githubToken|googleAccessToken|googleRefreshToken|wordpressAccessToken/);
+});
