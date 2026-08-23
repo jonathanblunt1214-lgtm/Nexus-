@@ -3613,6 +3613,13 @@ async function getFirebaseSession({ requireVerified = false, refreshProfile = fa
   return { idToken, uid: cfg.firebaseUid, email: cfg.firebaseEmail, emailVerified: cfg.firebaseEmailVerified === true, configuration };
 }
 
+async function requireLinkedNexusProvider(providerId, label) {
+  const session = await getFirebaseSession().catch(() => null);
+  if (!session) throw new Error(`Sign in to your Nexus account with ${label} before using ${label} cloud storage.`);
+  if (!(loadConfig().nexusLinkedProviders || []).includes(providerId)) throw new Error(`Link ${label} to this Nexus account before using its cloud storage.`);
+  return session;
+}
+
 ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey, storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET ? '' : value.storageBucket }; });
 ipcMain.handle('email-account:configure', async (_event, value = {}) => {
   const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim(); const storageBucket = String(value.storageBucket || '').trim();
@@ -3794,11 +3801,11 @@ async function saveEncryptedAccountVault(encrypted, providers) {
   if (providers.github) {
     const token = getGithubToken();
     if (!token) results.github = { ok: false, error: 'Connect GitHub first.' };
-    else try { await require('./githubClient').saveAccountVaultGist(token, encrypted); results.github = { ok: true }; } catch (error) { results.github = { ok: false, error: error.message }; }
+    else try { await requireLinkedNexusProvider('github.com', 'GitHub'); await require('./githubClient').saveAccountVaultGist(token, encrypted); results.github = { ok: true }; } catch (error) { results.github = { ok: false, error: error.message }; }
   }
   if (providers.google) {
     try {
-      const token = await getGoogleAccessToken();
+      await requireLinkedNexusProvider('google.com', 'Google'); const token = await getGoogleAccessToken();
       if (!token) results.google = { ok: false, error: 'Connect Google first.' };
       else { await require('./googleDriveClient').saveAccountVaultFile(token, encrypted); results.google = { ok: true }; }
     } catch (error) { results.google = { ok: false, error: error.message }; }
@@ -3835,8 +3842,8 @@ ipcMain.handle('account-vault:restore', async (_event, value = {}) => {
   try {
     const candidates = [];
     const token = getGithubToken();
-    if (token) { try { const vault = await require('./githubClient').loadAccountVaultGist(token); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `GitHub: ${error.message}` }); } }
-    const googleToken = await getGoogleAccessToken().catch(() => null);
+    if (token) { try { await requireLinkedNexusProvider('github.com', 'GitHub'); const vault = await require('./githubClient').loadAccountVaultGist(token); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `GitHub: ${error.message}` }); } }
+    const googleToken = await requireLinkedNexusProvider('google.com', 'Google').then(() => getGoogleAccessToken()).catch((error) => { candidates.push({ error:`Google: ${error.message}` }); return null; });
     if (googleToken) { try { const vault = await require('./googleDriveClient').loadAccountVaultFile(googleToken); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `Google: ${error.message}` }); } }
     try { const session = await getFirebaseSession({ requireVerified: true }); if (session) { const vault = await require('./firebaseAccountClient').loadAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken }); if (vault) candidates.push(vault); } } catch (error) { candidates.push({ error: `Email account: ${error.message}` }); }
     const available = candidates.filter((item) => item.content).sort((a, b) => Date.parse(b.modifiedTime || 0) - Date.parse(a.modifiedTime || 0));
@@ -3868,9 +3875,9 @@ ipcMain.handle('account-vault:airgap-restore', async (_event, value = {}) => {
     return { ok: true, source: 'air-gapped file', updatedAt: payload.updatedAt || null, ...(await applyAccountVaultPayload(payload)) };
   } catch (error) { return { ok: false, error: error.message }; }
 });
-ipcMain.handle('drive:list', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; return { ok: true, files: await require('./googleDriveClient').listFiles(token) }; } catch (error) { return { ok: false, error: error.message }; } });
-ipcMain.handle('drive:upload', async () => { try { const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showOpenDialog(mainWindow, { title: 'Upload a file to Google Drive', properties: ['openFile'] }); if (selected.canceled) return { ok: false, canceled: true }; const filePath = selected.filePaths[0]; const file = await require('./googleDriveClient').uploadFile(token, path.basename(filePath), 'application/octet-stream', fs.readFileSync(filePath)); return { ok: true, file }; } catch (error) { return { ok: false, error: error.message }; } });
-ipcMain.handle('drive:download', async (_event, { id, name }) => { try { if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) return { ok: false, error: 'Invalid Drive file ID.' }; const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showSaveDialog(mainWindow, { title: 'Save Google Drive file', defaultPath: path.basename(String(name || 'drive-file')) }); if (selected.canceled) return { ok: false, canceled: true }; fs.writeFileSync(selected.filePath, await require('./googleDriveClient').downloadFile(token, id)); return { ok: true, path: selected.filePath }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('drive:list', async () => { try { await requireLinkedNexusProvider('google.com', 'Google'); const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; return { ok: true, files: await require('./googleDriveClient').listFiles(token) }; } catch (error) { return { ok: false, authRequired:true, error:error.message }; } });
+ipcMain.handle('drive:upload', async () => { try { await requireLinkedNexusProvider('google.com', 'Google'); const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showOpenDialog(mainWindow, { title: 'Upload a file to Google Drive', properties: ['openFile'] }); if (selected.canceled) return { ok: false, canceled: true }; const filePath = selected.filePaths[0]; const file = await require('./googleDriveClient').uploadFile(token, path.basename(filePath), 'application/octet-stream', fs.readFileSync(filePath)); return { ok: true, file }; } catch (error) { return { ok: false, authRequired:true, error:error.message }; } });
+ipcMain.handle('drive:download', async (_event, { id, name }) => { try { if (!/^[a-zA-Z0-9_-]+$/.test(String(id))) return { ok: false, error: 'Invalid Drive file ID.' }; await requireLinkedNexusProvider('google.com', 'Google'); const token = await getGoogleAccessToken(); if (!token) return { ok: false, authRequired: true, error: 'Connect Google first.' }; const selected = await dialog.showSaveDialog(mainWindow, { title: 'Save Google Drive file', defaultPath: path.basename(String(name || 'drive-file')) }); if (selected.canceled) return { ok: false, canceled: true }; fs.writeFileSync(selected.filePath, await require('./googleDriveClient').downloadFile(token, id)); return { ok: true, path: selected.filePath }; } catch (error) { return { ok: false, authRequired:true, error:error.message }; } });
 
 ipcMain.handle('github-get-file', async (_event, { owner, repo, path, ref }) => {
   const token = getGithubToken();

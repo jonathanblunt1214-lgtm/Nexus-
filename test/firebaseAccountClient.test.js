@@ -48,6 +48,14 @@ test('unified account wiring never places provider tokens in renderer state or t
   assert.doesNotMatch(renderer, /githubToken|googleAccessToken|firebaseRefreshToken/);
 });
 
+test('cloud storage is gated by an active Nexus account linked to that provider', () => {
+  const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  assert.match(main, /function requireLinkedNexusProvider/);
+  for (const operation of ['saveAccountVaultGist', 'loadAccountVaultGist']) assert.match(main, new RegExp(`requireLinkedNexusProvider\\('github\\.com', 'GitHub'\\)[^;]*;[^\\n]*${operation}`));
+  assert.ok((main.match(/requireLinkedNexusProvider\('google\.com', 'Google'\)/g) || []).length >= 5);
+  for (const channel of ['drive:list', 'drive:upload', 'drive:download']) assert.match(main, new RegExp(`${channel.replace(':', '\\:')}[^\\n]*requireLinkedNexusProvider\\('google\\.com', 'Google'\\)`));
+});
+
 test('Firestore vault path is UID-scoped and contains only encrypted vault data', async () => {
   const originalFetch = global.fetch;
   let captured;
