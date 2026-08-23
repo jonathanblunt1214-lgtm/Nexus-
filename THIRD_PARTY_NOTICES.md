@@ -7,6 +7,8 @@ Nexus integrates the following local language services. Their full license files
 - Microsoft Roslyn — MIT License — https://github.com/dotnet/roslyn
 - LLVM clangd — Apache-2.0 WITH LLVM-exception — https://github.com/llvm/llvm-project
 - PowerShell Editor Services — MIT License — https://github.com/PowerShell/PowerShellEditorServices
+- Dart SDK Analysis Server — BSD-3-Clause License — https://github.com/dart-lang/sdk
+- Swift SourceKit-LSP — Apache License 2.0 — https://github.com/swiftlang/sourcekit-lsp
 - Microsoft VS Code JSON, HTML, and CSS Language Services — MIT License — https://github.com/microsoft
 
 Nexus does not claim ownership of these projects or their trademarks. User-installed language services remain separately installed software and are invoked locally through the Language Server Protocol.

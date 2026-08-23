@@ -6,6 +6,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const { detectOfficialPlatforms } = require('./officialDevelopmentPlatforms');
 
 /**
  * Detects project type and returns configuration
@@ -253,6 +254,7 @@ function createFullStackConfig(projectPath) {
   const tsStatus = getTypeScriptStatus(projectPath);
   const fullStackCommands = getFullStackCommands(projectPath, projectType.scripts);
   const mobileAndFirebaseCommands = getMobileAndFirebaseCommands(projectPath, projectType.scripts, projectType.hasCapacitor, projectType.hasFirebase);
+  const officialPlatforms = detectOfficialPlatforms(projectPath);
 
   return {
     projectPath,
@@ -261,7 +263,8 @@ function createFullStackConfig(projectPath) {
     tsStatus,
     fullStackCommands,
     mobileAndFirebaseCommands,
-    readyForDevelopment: projectType.isTypeScript && projectType.isReact && projectType.isVite,
+    officialPlatforms,
+    readyForDevelopment: (projectType.isTypeScript && projectType.isReact && projectType.isVite) || officialPlatforms.length > 0,
     requiresSetup: envVars.length > 0 || !fs.existsSync(path.join(projectPath, '.env')),
     setupSteps: generateSetupSteps(projectPath, projectType, envVars)
   };

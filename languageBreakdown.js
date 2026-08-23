@@ -62,6 +62,8 @@ const LANGUAGE_MAP = {
   '.kt': { name: 'Kotlin', color: '#A97BFF' },
   '.kts': { name: 'Kotlin', color: '#A97BFF' },
   '.swift': { name: 'Swift', color: '#F05138' },
+  '.m': { name: 'Objective-C', color: '#438eff' },
+  '.mm': { name: 'Objective-C++', color: '#6866fb' },
   '.c': { name: 'C', color: '#555555' },
   '.h': { name: 'C', color: '#555555' },
   '.cpp': { name: 'C++', color: '#f34b7d' },

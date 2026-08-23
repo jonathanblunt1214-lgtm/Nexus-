@@ -151,10 +151,13 @@ officialServerAdapter({ id:'java', language:'Java', extensions:['.java'], instal
 externalAdapter({ id:'jvm-other', language:'Kotlin / Scala', extensions:['.kt','.kts','.scala'], command:'java', args:['-version'], install:'Install the project language toolchain; structural checks remain available.' });
 officialServerAdapter({ id:'c', language:'C', extensions:['.c','.h'], install:'Install LLVM clangd or configure its executable in Nexus Settings.' });
 officialServerAdapter({ id:'cpp', language:'C++', extensions:['.cpp','.cc','.hpp'], install:'Install LLVM clangd or configure its executable in Nexus Settings.' });
+officialServerAdapter({ id:'objective-c', language:'Objective-C / Objective-C++', extensions:['.m','.mm'], install:'Install LLVM clangd or use the Apple toolchain on macOS, then configure clangd in Nexus Settings.' });
 officialServerAdapter({ id:'csharp', language:'C#', extensions:['.cs'], install:'Install Roslyn Language Server and configure its executable in Nexus Settings.' });
 externalAdapter({ id:'php', language:'PHP', extensions:['.php'], command:'php', args:['-l'], install:'Install PHP and ensure php is on PATH.' });
 externalAdapter({ id:'shell', language:'Shell', extensions:['.sh','.bash'], command:'bash', args:['-n'], install:'Install Bash or use WSL.' });
 officialServerAdapter({ id:'powershell', language:'PowerShell', extensions:['.ps1'], install:'Install PowerShell Editor Services and configure Start-EditorServices.ps1 in Nexus Settings.' });
+officialServerAdapter({ id:'dart', language:'Dart / Flutter', extensions:['.dart'], install:'Install the official Flutter or Dart SDK and configure the dart executable in Nexus Settings.' });
+officialServerAdapter({ id:'swift', language:'Swift / SwiftUI', extensions:['.swift'], install:'Install the official Swift toolchain (included with Xcode on macOS) and configure sourcekit-lsp in Nexus Settings.' });
 externalAdapter({ id:'batch', language:'Windows Batch', extensions:['.bat'], command:'cmd', args:['/d','/q','/c','exit /b 0'], install:'Windows Batch has no first-party language server; Nexus uses non-executing structural checks.' });
 externalAdapter({ id:'swift', language:'Swift', extensions:['.swift'], command:'swiftc', args:['-parse','-'], install:'Install the Swift toolchain.' });
 externalAdapter({ id:'dart', language:'Dart', extensions:['.dart'], command:'dart', args:['--version'], install:'Install the Dart SDK; project analysis provides full diagnostics.' });

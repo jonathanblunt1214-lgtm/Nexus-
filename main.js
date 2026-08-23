@@ -992,19 +992,19 @@ ipcMain.handle('language-services:status', async () => {
   return { ok:true, providers:await officialLanguageServers.languageServerStatus(), paths:cfg.languageServicePaths || {} };
 });
 ipcMain.handle('language-services:choose', async (_event, { provider }) => {
-  const allowed = { jdtls:'Eclipse JDT LS executable', roslyn:'Roslyn executable or DLL', clangd:'clangd executable', powershellEditorServices:'Start-EditorServices.ps1' };
+  const allowed = { jdtls:'Eclipse JDT LS executable', roslyn:'Roslyn executable or DLL', clangd:'clangd executable', powershellEditorServices:'Start-EditorServices.ps1', dart:'Dart SDK executable', sourcekitLsp:'SourceKit-LSP executable' };
   if (!allowed[provider]) return { ok:false, error:'Unknown language-service provider.' };
   const picked = await dialog.showOpenDialog(mainWindow, { title:`Select ${allowed[provider]}`, properties:['openFile'] });
   if (picked.canceled || !picked.filePaths[0]) return { ok:false, canceled:true };
   const selected = path.resolve(picked.filePaths[0]); const cfg = loadConfig(); cfg.languageServicePaths = { ...(cfg.languageServicePaths || {}) };
   const base = path.basename(selected).toLowerCase();
-  const valid = provider === 'jdtls' ? base.includes('jdtls') : provider === 'roslyn' ? /roslyn|microsoft\.codeanalysis\.languageserver/.test(base) : provider === 'clangd' ? /^clangd(?:\.exe)?$/.test(base) : /^start-editorservices\.ps1$/.test(base);
+  const valid = provider === 'jdtls' ? base.includes('jdtls') : provider === 'roslyn' ? /roslyn|microsoft\.codeanalysis\.languageserver/.test(base) : provider === 'clangd' ? /^clangd(?:\.exe)?$/.test(base) : provider === 'powershellEditorServices' ? /^start-editorservices\.ps1$/.test(base) : provider === 'dart' ? /^(?:dart|dart\.exe)$/.test(base) : /^(?:sourcekit-lsp|sourcekit-lsp\.exe)$/.test(base);
   if (!valid) return { ok:false, error:`That file does not look like the selected ${allowed[provider]}.` };
   cfg.languageServicePaths[provider] = selected; await saveConfig(cfg);
   officialLanguageServers.configureOfficialLanguageServices(cfg.languageServicePaths); return { ok:true, provider, path:selected };
 });
 ipcMain.handle('language-services:clear', async (_event, { provider }) => {
-  if (!['jdtls','roslyn','clangd','powershellEditorServices'].includes(provider)) return { ok:false, error:'Unknown language-service provider.' };
+  if (!['jdtls','roslyn','clangd','powershellEditorServices','dart','sourcekitLsp'].includes(provider)) return { ok:false, error:'Unknown language-service provider.' };
   const cfg = loadConfig(); cfg.languageServicePaths = { ...(cfg.languageServicePaths || {}) }; delete cfg.languageServicePaths[provider]; await saveConfig(cfg); return { ok:true };
 });
 

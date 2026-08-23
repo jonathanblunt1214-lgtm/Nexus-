@@ -6,7 +6,7 @@ const path = require('path');
 const { PROVIDERS, runLanguageServer, applyTextEdits } = require('../officialLanguageServers');
 
 test('licensed first-party language server registry covers the requested providers', () => {
-  assert.deepEqual(Object.values(PROVIDERS).map((item) => item.id), ['pyright','jdtls','roslyn','clangd','powershell-editor-services']);
+  assert.deepEqual(Object.values(PROVIDERS).map((item) => item.id), ['pyright','jdtls','roslyn','clangd','powershell-editor-services','dart-language-server','sourcekit-lsp']);
   assert.equal(PROVIDERS.python.bundled, true);
   for (const provider of Object.values(PROVIDERS)) assert.ok(provider.license && provider.name && provider.extensions.length);
   const notices = fs.readFileSync(path.join(__dirname, '..', 'THIRD_PARTY_NOTICES.md'), 'utf8');

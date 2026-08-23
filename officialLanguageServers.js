@@ -8,14 +8,16 @@ const PROVIDERS = Object.freeze({
   python:{ id:'pyright', name:'Microsoft Pyright', license:'MIT', bundled:true, languageId:'python', extensions:['.py'] },
   java:{ id:'jdtls', name:'Eclipse JDT LS', license:'EPL-2.0', bundled:false, languageId:'java', extensions:['.java'] },
   csharp:{ id:'roslyn', name:'Microsoft Roslyn Language Server', license:'MIT', bundled:false, languageId:'csharp', extensions:['.cs'] },
-  clang:{ id:'clangd', name:'LLVM clangd', license:'Apache-2.0 WITH LLVM-exception', bundled:false, languageId:'cpp', extensions:['.c','.h','.cpp','.cc','.hpp'] },
+  clang:{ id:'clangd', name:'LLVM clangd', license:'Apache-2.0 WITH LLVM-exception', bundled:false, languageId:'cpp', extensions:['.c','.h','.cpp','.cc','.hpp','.m','.mm'] },
   powershell:{ id:'powershell-editor-services', name:'PowerShell Editor Services', license:'MIT', bundled:false, languageId:'powershell', extensions:['.ps1'] },
+  dart:{ id:'dart-language-server', name:'Dart Analysis Server', license:'BSD-3-Clause', bundled:false, languageId:'dart', extensions:['.dart'] },
+  swift:{ id:'sourcekit-lsp', name:'Swift SourceKit-LSP', license:'Apache-2.0', bundled:false, languageId:'swift', extensions:['.swift'] },
 });
 
 let configuredPaths = {};
 function configureOfficialLanguageServices(paths = {}) { configuredPaths = { ...paths }; }
 function fileUri(filePath) { return `file:///${path.resolve(filePath).replace(/\\/g, '/')}`; }
-function providerFor(filePath) { const ext = path.extname(filePath || '').toLowerCase(); const provider = Object.values(PROVIDERS).find((item) => item.extensions.includes(ext)) || null; return provider && provider.id === 'clangd' ? { ...provider, languageId:ext === '.c' || ext === '.h' ? 'c' : 'cpp' } : provider; }
+function providerFor(filePath) { const ext = path.extname(filePath || '').toLowerCase(); const provider = Object.values(PROVIDERS).find((item) => item.extensions.includes(ext)) || null; if (provider?.id !== 'clangd') return provider; const languageId = ext === '.m' ? 'objective-c' : ext === '.mm' ? 'objective-cpp' : ext === '.c' || ext === '.h' ? 'c' : 'cpp'; return { ...provider, languageId }; }
 function serviceData(folder, name) { const id = crypto.createHash('sha256').update(path.resolve(folder)).digest('hex').slice(0, 16); const target = path.join(os.tmpdir(), 'nexus-language-services', id, name); fs.mkdirSync(target, { recursive:true }); return target; }
 
 function launchFor(provider, folder) {
@@ -36,6 +38,8 @@ function launchFor(provider, folder) {
     if (!script) return null;
     return { command:configuredPaths.pwsh || 'pwsh', args:['-NoLogo','-NoProfile','-File',script,'-Stdio','-HostName','Nexus','-HostProfileId','nexus','-HostVersion','1.1.0'] };
   }
+  if (provider.id === 'dart-language-server') return { command:configuredPaths.dart || 'dart', args:['language-server','--protocol=lsp'] };
+  if (provider.id === 'sourcekit-lsp') return { command:configuredPaths.sourcekitLsp || 'sourcekit-lsp', args:[] };
   return null;
 }
 
@@ -88,7 +92,8 @@ async function runLanguageServer({ folder, filePath, content, fix = false }) {
 }
 
 async function languageServerStatus() {
-  return Object.values(PROVIDERS).map((provider) => ({ ...provider, configured:provider.bundled || Boolean(configuredPaths[provider.id === 'powershell-editor-services' ? 'powershellEditorServices' : provider.id]) }));
+  const keys = { 'powershell-editor-services':'powershellEditorServices', 'dart-language-server':'dart', 'sourcekit-lsp':'sourcekitLsp' };
+  return Object.values(PROVIDERS).map((provider) => ({ ...provider, configured:provider.bundled || Boolean(configuredPaths[keys[provider.id] || provider.id]) }));
 }
 
 module.exports = { PROVIDERS, configureOfficialLanguageServices, providerFor, runLanguageServer, languageServerStatus, applyTextEdits };
