@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { LANGUAGE_MAP } = require('../languageBreakdown');
-const { checkCode, registerChecker, checkerCatalog } = require('../codeChecker');
+const { checkCode, proposeCheckerFix, registerChecker, checkerCatalog } = require('../codeChecker');
 
 function workspace(t) {
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-checker-'));
@@ -53,6 +53,19 @@ test('future languages can register a checker without changing editor IPC', asyn
   assert.ok(checkerCatalog().some((adapter) => adapter.id === 'future-test'));
 });
 
+test('checker fix database authors and independently verifies corrections without the coding AI', async (t) => {
+  const folder = workspace(t);
+  const filePath = path.join(folder, 'sample.ts');
+  const content = 'const value = 1;\nvalue = 2;\n';
+  fs.writeFileSync(filePath, content);
+  const result = await proposeCheckerFix({ folder, filePath, content });
+  assert.equal(result.available, true);
+  assert.equal(result.source, 'TypeScript language service code-fix database');
+  assert.equal(result.correctedContent, 'let value = 1;\nvalue = 2;\n');
+  assert.ok(result.before.diagnostics.length);
+  assert.deepEqual(result.after.diagnostics, []);
+});
+
 test('coding AI receives checker evidence and autonomous edits reject checker errors', () => {
   const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
   const renderer = fs.readFileSync(path.join(__dirname, '..', 'renderer.js'), 'utf8');
@@ -60,4 +73,5 @@ test('coding AI receives checker evidence and autonomous edits reject checker er
   assert.match(main, /checkerPromptContext\(folder, filePath/);
   assert.match(main, /Nexus code checker rejected the generated file/);
   assert.match(renderer, /blocked the autonomous fix because the code checker found/);
+  assert.match(main, /Do not generate, modify, replace, or approve any code/);
 });

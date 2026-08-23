@@ -77,7 +77,7 @@ function externalAdapter({ id, language, extensions, command, args, install }) {
   } });
 }
 
-registerChecker({ id:'typescript', language:'JavaScript / TypeScript', extensions:['.js','.jsx','.mjs','.cjs','.ts','.tsx','.mts','.cts'], async check(input) { return queryLanguageIntelligence({ ...input, action:'diagnostics' }); } });
+registerChecker({ id:'typescript', language:'JavaScript / TypeScript', extensions:['.js','.jsx','.mjs','.cjs','.ts','.tsx','.mts','.cts'], async check(input) { return queryLanguageIntelligence({ ...input, action:'diagnostics' }); }, async fix(input) { return queryLanguageIntelligence({ ...input, action:'fix' }); } });
 registerChecker({ id:'json', language:'JSON', extensions:['.json','.jsonc'], async check({ content, filePath }) { try { JSON.parse(path.extname(filePath).toLowerCase() === '.jsonc' ? content.replace(/\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm, '$1') : content); return { diagnostics:[] }; } catch (error) { const position = Number(error.message.match(/position (\d+)/)?.[1] || 0); const before = content.slice(0, position); return { diagnostics:[diagnostic(error.message, { line:before.split('\n').length - 1, column:position - (before.lastIndexOf('\n') + 1), source:'JSON' })] }; } } });
 registerChecker({ id:'yaml', language:'YAML', extensions:['.yml','.yaml'], async check({ content }) { try { yaml.load(content); return { diagnostics:[] }; } catch (error) { return { diagnostics:[diagnostic(error.reason || error.message, { line:error.mark?.line, column:error.mark?.column, source:'YAML' })] }; } } });
 registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:['.html','.htm','.xml','.vue','.svelte'], async check({ content, filePath }) { return { diagnostics:markupDiagnostics(content, path.extname(filePath).slice(1).toUpperCase(), /\.html?$/.test(filePath)) }; } });
@@ -111,5 +111,16 @@ async function checkCode({ folder, filePath, content, allowExternal = false }) {
   } catch (error) { return { ok:false, recognized:true, language:adapter.language, checker:adapter.id, diagnostics:[diagnostic(error.message, { source:adapter.language })], error:error.message }; }
 }
 
-function checkerCatalog() { return [...registry.values()].map(({ check, ...adapter }) => adapter); }
-module.exports = { registerChecker, checkCode, checkerCatalog, structuralDiagnostics, markupDiagnostics };
+function checkerCatalog() { return [...registry.values()].map(({ check, fix, ...adapter }) => adapter); }
+async function proposeCheckerFix({ folder, filePath, content, allowExternal = false }) {
+  const extension = path.extname(filePath || '').toLowerCase(); const adapter = registry.get(extensionIndex.get(extension));
+  const before = await checkCode({ folder, filePath, content, allowExternal });
+  if (!adapter?.fix || !before.available || !before.diagnostics.some((item) => item.severity === 'error')) return { ok:true, available:false, before, reason:'The checker has no deterministic correction for this diagnostic.' };
+  const proposal = await adapter.fix({ folder, filePath, content:String(content ?? ''), allowExternal });
+  const correctedContent = String(proposal?.correctedContent ?? content);
+  if (!proposal?.ok || !proposal.fixesApplied || correctedContent === content) return { ok:true, available:false, before, reason:'The checker did not provide a safe deterministic correction.' };
+  const after = await checkCode({ folder, filePath, content:correctedContent, allowExternal });
+  if (!after.available || after.diagnostics.some((item) => item.severity === 'error')) return { ok:true, available:false, before, after, reason:'The checker correction did not pass independent rechecking.' };
+  return { ok:true, available:true, correctedContent, fixesApplied:proposal.fixesApplied, source:proposal.source || adapter.id, before, after };
+}
+module.exports = { registerChecker, checkCode, proposeCheckerFix, checkerCatalog, structuralDiagnostics, markupDiagnostics };

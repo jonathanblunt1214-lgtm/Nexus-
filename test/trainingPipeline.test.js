@@ -86,4 +86,6 @@ test('checker learning stores only approved passing corrections and excludes fau
   assert.match(main, /trainingCandidates\.delete\(path\.resolve\(filePath\)\)/);
   assert.match(main, /Nexus \$\{candidate\.checker\} checker/);
   assert.doesNotMatch(main.match(/function stageVerifiedCheckerCorrection[\s\S]*?\n}\n/)?.[0] || '', /BEFORE:/);
+  const aiFixHandler = main.match(/ipcMain\.handle\('ai-propose-fix'[\s\S]*?\n}\);/)?.[0] || '';
+  assert.doesNotMatch(aiFixHandler, /stageVerifiedCheckerCorrection|trainingCandidates\.set/);
 });

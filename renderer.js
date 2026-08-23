@@ -2220,7 +2220,7 @@ async function explainDiagnostic(index) {
   const result = await window.nexus.explainDiagnostic(codeEditorFolder, entry.absPath, codeEditorCM.getValue(), diagnostic);
   if (!result.ok) { closeDiagnosticLesson(); showToast('error', 'Explain & Learn failed', result.error); return; }
   pendingDiagnosticLesson = result;
-  document.getElementById('ce-learn-diagnostic').innerText = `Line ${result.diagnostic.line} · ${result.diagnostic.ruleId || result.diagnostic.severity} · ${result.diagnostic.message}`;
+  document.getElementById('ce-learn-diagnostic').innerText = `Line ${result.diagnostic.line} · ${result.diagnostic.ruleId || result.diagnostic.severity} · Checker correction: ${result.checkerFixSource} · ${result.diagnostic.message}`;
   for (const id of ['what','why','practice','avoid','example']) document.getElementById(`ce-learn-${id}`).innerText = result.lesson[id] || 'No additional guidance returned.';
   document.getElementById('ce-learn-before').innerText = result.oldContent;
   document.getElementById('ce-learn-after').innerText = result.newContent;

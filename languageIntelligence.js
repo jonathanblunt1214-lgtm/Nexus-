@@ -98,6 +98,17 @@ function queryLanguageIntelligence({ folder, filePath, content, line, column, ac
       return { line: start.line, column: start.character, length: item.length || 1, severity: item.category === ts.DiagnosticCategory.Error ? 'error' : 'warning', message: ts.flattenDiagnosticMessageText(item.messageText, '\n'), code: item.code };
     }) };
   }
+  if (action === 'fix') {
+    const diagnostics = [...service.getSyntacticDiagnostics(file), ...service.getSemanticDiagnostics(file)];
+    const edits = diagnostics.flatMap((item) => service.getCodeFixesAtPosition(file, item.start || 0, (item.start || 0) + (item.length || 0), [item.code], {}, {}) || [])
+      .flatMap((fix) => fix.changes || []).filter((change) => path.resolve(change.fileName) === file)
+      .flatMap((change) => change.textChanges.map((edit) => ({ start:edit.span.start, length:edit.span.length, newText:edit.newText })));
+    const unique = [...new Map(edits.map((edit) => [`${edit.start}:${edit.length}:${edit.newText}`, edit])).values()]
+      .sort((a, b) => b.start - a.start);
+    let correctedContent = content;
+    for (const edit of unique) correctedContent = correctedContent.slice(0, edit.start) + edit.newText + correctedContent.slice(edit.start + edit.length);
+    return { ok:true, correctedContent, fixesApplied:unique.length, source:'TypeScript language service code-fix database' };
+  }
   if (action === 'symbols') {
     const tree = service.getNavigationTree(file);
     const flatten = (node, depth = 0) => [
