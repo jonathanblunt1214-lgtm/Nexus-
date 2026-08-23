@@ -29,7 +29,7 @@ test('built-in JSON, YAML, markup, and structural checks return normalized diagn
     ['bad.json', '{"missing":}', 'JSON'],
     ['bad.yml', 'items:\n  - ok\n broken', 'YAML'],
     ['bad.html', '<main><section></main>', 'HTML'],
-    ['bad.css', '.card { color: red;', 'Stylesheet'],
+    ['bad.css', '.card { color: red;', 'CSS'],
   ];
   for (const [name, content, source] of samples) {
     const result = await checkCode({ folder, filePath:path.join(folder, name), content, allowExternal:false });
@@ -68,18 +68,16 @@ test('checker fix database authors and independently verifies corrections withou
   assert.deepEqual(result.after.diagnostics, []);
 });
 
-test('built-in checker fix databases correct JSON, markup, and structural languages', async (t) => {
+test('official web language services never claim an unavailable syntax fix', async (t) => {
   const folder = workspace(t);
   const samples = [
-    ['sample.json', '{"ready": true,}', '{"ready": true}'],
-    ['sample.html', '<main><section></main>', '<main><section></section></main>'],
-    ['sample.css', '.card { color: red;', '.card { color: red;}'],
+    ['sample.json', '{"ready": true,}'],
+    ['sample.html', '<main><section></main>'],
+    ['sample.css', '.card { color: red;'],
   ];
-  for (const [name, content, expected] of samples) {
+  for (const [name, content] of samples) {
     const result = await proposeCheckerFix({ folder, filePath:path.join(folder, name), content });
-    assert.equal(result.available, true, `${name} should have a verified checker-authored fix`);
-    assert.equal(result.correctedContent, expected);
-    assert.deepEqual(result.after.diagnostics, []);
+    assert.equal(result.available, false, `${name} must not substitute a Nexus or AI fix when the official service supplies none`);
   }
 });
 

@@ -2,6 +2,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const yaml = require('js-yaml');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
+const webServices = require('./webLanguageServices');
 
 const registry = new Map();
 const extensionIndex = new Map();
@@ -128,10 +129,10 @@ function externalAdapter({ id, language, extensions, command, args, install }) {
 }
 
 registerChecker({ id:'typescript', language:'JavaScript / TypeScript', extensions:['.js','.jsx','.mjs','.cjs','.ts','.tsx','.mts','.cts'], async check(input) { return queryLanguageIntelligence({ ...input, action:'diagnostics' }); }, async fix(input) { const result = queryLanguageIntelligence({ ...input, action:'fix' }); return result.fixesApplied ? result : genericStructuralFix({ ...input, language:'JavaScript / TypeScript' }); } });
-registerChecker({ id:'json', language:'JSON', extensions:['.json','.jsonc'], fix:jsonFix, async check({ content, filePath }) { try { JSON.parse(path.extname(filePath).toLowerCase() === '.jsonc' ? content.replace(/\/\*[\s\S]*?\*\/|(^|[^:])\/\/.*$/gm, '$1') : content); return { diagnostics:[] }; } catch (error) { const position = Number(error.message.match(/position (\d+)/)?.[1] || 0); const before = content.slice(0, position); return { diagnostics:[diagnostic(error.message, { line:before.split('\n').length - 1, column:position - (before.lastIndexOf('\n') + 1), source:'JSON' })] }; } } });
+registerChecker({ id:'json', language:'JSON', extensions:['.json','.jsonc'], fix:webServices.jsonFix, check:webServices.jsonCheck });
 registerChecker({ id:'yaml', language:'YAML', extensions:['.yml','.yaml'], fix:yamlFix, async check({ content }) { try { yaml.load(content); return { diagnostics:[] }; } catch (error) { return { diagnostics:[diagnostic(error.reason || error.message, { line:error.mark?.line, column:error.mark?.column, source:'YAML' })] }; } } });
-registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:['.html','.htm','.xml','.vue','.svelte'], fix:markupFix, async check({ content, filePath }) { return { diagnostics:markupDiagnostics(content, path.extname(filePath).slice(1).toUpperCase(), /\.html?$/.test(filePath)) }; } });
-registerChecker({ id:'styles', language:'CSS / Sass / Less', extensions:['.css','.scss','.sass','.less'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Stylesheet') }; } });
+registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:['.html','.htm','.xml','.vue','.svelte'], fix:async (input) => /\.html?$/i.test(input.filePath) ? webServices.htmlFix(input) : markupFix(input), async check({ content, filePath }) { return { diagnostics:markupDiagnostics(content, path.extname(filePath).slice(1).toUpperCase(), /\.html?$/.test(filePath)) }; } });
+registerChecker({ id:'styles', language:'CSS / Sass / Less', extensions:['.css','.scss','.sass','.less'], fix:webServices.cssFix, check:webServices.cssCheck });
 registerChecker({ id:'text-structure', language:'Structured text', extensions:['.md','.mdx','.sql','.graphql','.toml'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Structure') }; } });
 registerChecker({ id:'dockerfile', language:'Dockerfile', extensions:['dockerfile'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Dockerfile') }; } });
 externalAdapter({ id:'python', language:'Python', extensions:['.py'], command:'python', args:['-c','import ast,sys; ast.parse(sys.stdin.read())'], install:'Install Python and ensure python is on PATH.' });
