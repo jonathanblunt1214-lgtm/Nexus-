@@ -75,3 +75,15 @@ test('Nexus exposes consent-gated training controls and records verified autonom
   assert.match(renderer, /Review & Start Training|trainingStart/);
   assert.match(renderer, /may incur charges/);
 });
+
+test('checker learning stores only approved passing corrections and excludes faulty source', () => {
+  const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  assert.match(main, /stageVerifiedCheckerCorrection/);
+  assert.match(main, /originalErrors\.length/);
+  assert.match(main, /correctedChecker\.available/);
+  assert.match(main, /Only the verified corrected result is included; faulty source and failed attempts are excluded/);
+  assert.match(main, /savedContent === candidate\.expectedContent/);
+  assert.match(main, /trainingCandidates\.delete\(path\.resolve\(filePath\)\)/);
+  assert.match(main, /Nexus \$\{candidate\.checker\} checker/);
+  assert.doesNotMatch(main.match(/function stageVerifiedCheckerCorrection[\s\S]*?\n}\n/)?.[0] || '', /BEFORE:/);
+});
