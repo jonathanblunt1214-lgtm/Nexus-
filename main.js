@@ -66,6 +66,7 @@ const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
 const { checkCode, proposeCheckerFix, checkerCatalog } = require('./codeChecker');
+const officialLanguageServers = require('./officialLanguageServers');
 const gitWorkflow = require('./gitWorkflow');
 const portableProjectConfig = require('./portableProjectConfig');
 
@@ -975,14 +976,37 @@ async function callSelectedCodingModel(prompt, meta = {}, maxTokens = 4000) {
 }
 
 async function runIntegratedCodeCheck(folder, filePath, content) {
+  officialLanguageServers.configureOfficialLanguageServices(loadConfig().languageServicePaths || {});
   const trust = getWorkspaceTrust(folder);
   return checkCode({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('commands') });
 }
 
 async function runIntegratedCheckerFix(folder, filePath, content) {
+  officialLanguageServers.configureOfficialLanguageServices(loadConfig().languageServicePaths || {});
   const trust = getWorkspaceTrust(folder);
   return proposeCheckerFix({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('commands') });
 }
+
+ipcMain.handle('language-services:status', async () => {
+  const cfg = loadConfig(); officialLanguageServers.configureOfficialLanguageServices(cfg.languageServicePaths || {});
+  return { ok:true, providers:await officialLanguageServers.languageServerStatus(), paths:cfg.languageServicePaths || {} };
+});
+ipcMain.handle('language-services:choose', async (_event, { provider }) => {
+  const allowed = { jdtls:'Eclipse JDT LS executable', roslyn:'Roslyn executable or DLL', clangd:'clangd executable', powershellEditorServices:'Start-EditorServices.ps1' };
+  if (!allowed[provider]) return { ok:false, error:'Unknown language-service provider.' };
+  const picked = await dialog.showOpenDialog(mainWindow, { title:`Select ${allowed[provider]}`, properties:['openFile'] });
+  if (picked.canceled || !picked.filePaths[0]) return { ok:false, canceled:true };
+  const selected = path.resolve(picked.filePaths[0]); const cfg = loadConfig(); cfg.languageServicePaths = { ...(cfg.languageServicePaths || {}) };
+  const base = path.basename(selected).toLowerCase();
+  const valid = provider === 'jdtls' ? base.includes('jdtls') : provider === 'roslyn' ? /roslyn|microsoft\.codeanalysis\.languageserver/.test(base) : provider === 'clangd' ? /^clangd(?:\.exe)?$/.test(base) : /^start-editorservices\.ps1$/.test(base);
+  if (!valid) return { ok:false, error:`That file does not look like the selected ${allowed[provider]}.` };
+  cfg.languageServicePaths[provider] = selected; await saveConfig(cfg);
+  officialLanguageServers.configureOfficialLanguageServices(cfg.languageServicePaths); return { ok:true, provider, path:selected };
+});
+ipcMain.handle('language-services:clear', async (_event, { provider }) => {
+  if (!['jdtls','roslyn','clangd','powershellEditorServices'].includes(provider)) return { ok:false, error:'Unknown language-service provider.' };
+  const cfg = loadConfig(); cfg.languageServicePaths = { ...(cfg.languageServicePaths || {}) }; delete cfg.languageServicePaths[provider]; await saveConfig(cfg); return { ok:true };
+});
 
 async function checkerPromptContext(folder, filePath, content) {
   const result = await runIntegratedCodeCheck(folder, filePath, content);

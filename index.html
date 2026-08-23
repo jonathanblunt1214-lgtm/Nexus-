@@ -1495,6 +1495,13 @@ Type "help" for tips.
         <div class="form-row" style="margin-top:8px"><label class="small"><input type="checkbox" id="diagnostics-telemetry"> Allow anonymous telemetry</label><label class="small"><input type="checkbox" id="diagnostics-paths"> Include local paths in exported diagnostics</label><button class="btn btn-secondary" onclick="saveDiagnosticsSettings()">Save privacy settings</button><button class="btn" onclick="exportDiagnosticsBundle()">Export support bundle</button><button class="btn btn-secondary" onclick="loadDiagnostics()">View recent logs</button></div>
         <div id="diagnostics-log" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto"></div>
       </div>
+      <div class="card" aria-labelledby="language-services-title">
+        <label class="label" id="language-services-title">Official Local Language Services</label>
+        <p class="muted small" style="margin-top:6px;">Pyright is included with Nexus. Connect locally installed JDT LS, Roslyn, clangd, and PowerShell Editor Services for first-party diagnostics and code actions. Project code stays on this computer.</p>
+        <div id="language-services-list" class="suggestions-list" style="margin-top:8px;"><p class="muted small">Checking local language services…</p></div>
+        <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="refreshLanguageServices()">Refresh status</button><button class="btn btn-secondary" onclick="chooseLanguageService('jdtls')">Select JDT LS</button><button class="btn btn-secondary" onclick="chooseLanguageService('roslyn')">Select Roslyn</button><button class="btn btn-secondary" onclick="chooseLanguageService('clangd')">Select clangd</button><button class="btn btn-secondary" onclick="chooseLanguageService('powershellEditorServices')">Select PowerShell service</button></div>
+        <p class="muted small" style="margin-top:6px;">Licenses and publishers are recorded in THIRD_PARTY_NOTICES.md. External services run only after Workspace Trust permits commands.</p>
+      </div>
       <div class="card" aria-labelledby="connected-services-title">
         <label class="label" id="connected-services-title">Connected Services</label>
         <p class="muted small" style="margin-top:6px;">Sign in through your system browser. Account tokens are Windows-encrypted. Google Drive access is limited to files Nexus creates or you explicitly select.</p>

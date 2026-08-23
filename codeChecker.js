@@ -3,6 +3,7 @@ const { execFile } = require('child_process');
 const yaml = require('js-yaml');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
 const webServices = require('./webLanguageServices');
+const officialServers = require('./officialLanguageServers');
 
 const registry = new Map();
 const extensionIndex = new Map();
@@ -128,6 +129,13 @@ function externalAdapter({ id, language, extensions, command, args, install }) {
   } });
 }
 
+function officialServerAdapter({ id, language, extensions, install }) {
+  registerChecker({ id, language, extensions, external:true, install,
+    async check(input) { if (!input.allowExternal) return { diagnostics:structuralDiagnostics(input.content, language), available:false, restricted:true, install }; return officialServers.runLanguageServer(input); },
+    async fix(input) { if (!input.allowExternal) return { ok:true, correctedContent:input.content, fixesApplied:0, source:id }; return officialServers.runLanguageServer({ ...input, fix:true }); },
+  });
+}
+
 registerChecker({ id:'typescript', language:'JavaScript / TypeScript', extensions:['.js','.jsx','.mjs','.cjs','.ts','.tsx','.mts','.cts'], async check(input) { return queryLanguageIntelligence({ ...input, action:'diagnostics' }); }, async fix(input) { const result = queryLanguageIntelligence({ ...input, action:'fix' }); return result.fixesApplied ? result : genericStructuralFix({ ...input, language:'JavaScript / TypeScript' }); } });
 registerChecker({ id:'json', language:'JSON', extensions:['.json','.jsonc'], fix:webServices.jsonFix, check:webServices.jsonCheck });
 registerChecker({ id:'yaml', language:'YAML', extensions:['.yml','.yaml'], fix:yamlFix, async check({ content }) { try { yaml.load(content); return { diagnostics:[] }; } catch (error) { return { diagnostics:[diagnostic(error.reason || error.message, { line:error.mark?.line, column:error.mark?.column, source:'YAML' })] }; } } });
@@ -135,17 +143,19 @@ registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:
 registerChecker({ id:'styles', language:'CSS / Sass / Less', extensions:['.css','.scss','.sass','.less'], fix:webServices.cssFix, check:webServices.cssCheck });
 registerChecker({ id:'text-structure', language:'Structured text', extensions:['.md','.mdx','.sql','.graphql','.toml'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Structure') }; } });
 registerChecker({ id:'dockerfile', language:'Dockerfile', extensions:['dockerfile'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Dockerfile') }; } });
-externalAdapter({ id:'python', language:'Python', extensions:['.py'], command:'python', args:['-c','import ast,sys; ast.parse(sys.stdin.read())'], install:'Install Python and ensure python is on PATH.' });
+officialServerAdapter({ id:'python', language:'Python', extensions:['.py'], install:'Microsoft Pyright is bundled with Nexus.' });
 externalAdapter({ id:'ruby', language:'Ruby', extensions:['.rb'], command:'ruby', args:['-c','-'], install:'Install Ruby and ensure ruby is on PATH.' });
 externalAdapter({ id:'go', language:'Go', extensions:['.go'], command:'gofmt', args:[], install:'Install Go; Nexus uses gofmt syntax validation.' });
 externalAdapter({ id:'rust', language:'Rust', extensions:['.rs'], command:'rustc', args:['--crate-type','lib','--emit','metadata','-o',path.join(require('os').tmpdir(),'nexus-check.rmeta'),'-'], install:'Install Rust and ensure rustc is on PATH.' });
-externalAdapter({ id:'java', language:'Java / Kotlin / Scala', extensions:['.java','.kt','.kts','.scala'], command:'java', args:['-version'], install:'Install the project language toolchain; structural checks remain available.' });
-externalAdapter({ id:'c', language:'C', extensions:['.c','.h'], command:'clang', args:['-fsyntax-only','-x','c','-'], install:'Install Clang and ensure clang is on PATH.' });
-externalAdapter({ id:'cpp', language:'C++', extensions:['.cpp','.cc','.hpp'], command:'clang++', args:['-fsyntax-only','-x','c++','-'], install:'Install Clang and ensure clang++ is on PATH.' });
-externalAdapter({ id:'csharp', language:'C#', extensions:['.cs'], command:'dotnet', args:['--info'], install:'Install the .NET SDK; project build diagnostics provide full C# checking.' });
+officialServerAdapter({ id:'java', language:'Java', extensions:['.java'], install:'Install Eclipse JDT LS and configure its executable in Nexus Settings.' });
+externalAdapter({ id:'jvm-other', language:'Kotlin / Scala', extensions:['.kt','.kts','.scala'], command:'java', args:['-version'], install:'Install the project language toolchain; structural checks remain available.' });
+officialServerAdapter({ id:'c', language:'C', extensions:['.c','.h'], install:'Install LLVM clangd or configure its executable in Nexus Settings.' });
+officialServerAdapter({ id:'cpp', language:'C++', extensions:['.cpp','.cc','.hpp'], install:'Install LLVM clangd or configure its executable in Nexus Settings.' });
+officialServerAdapter({ id:'csharp', language:'C#', extensions:['.cs'], install:'Install Roslyn Language Server and configure its executable in Nexus Settings.' });
 externalAdapter({ id:'php', language:'PHP', extensions:['.php'], command:'php', args:['-l'], install:'Install PHP and ensure php is on PATH.' });
 externalAdapter({ id:'shell', language:'Shell', extensions:['.sh','.bash'], command:'bash', args:['-n'], install:'Install Bash or use WSL.' });
-externalAdapter({ id:'powershell', language:'PowerShell / Batch', extensions:['.ps1','.bat'], command:'pwsh', args:['-NoProfile','-NonInteractive','-Command','$text=[Console]::In.ReadToEnd();$e=$null;$t=$null;[Management.Automation.Language.Parser]::ParseInput($text,[ref]$t,[ref]$e)|Out-Null;if($e.Count){$e|%{"$($_.Extent.StartLineNumber):$($_.Extent.StartColumnNumber): $($_.Message)"};exit 1}'], install:'Install PowerShell 7 for PowerShell diagnostics.' });
+officialServerAdapter({ id:'powershell', language:'PowerShell', extensions:['.ps1'], install:'Install PowerShell Editor Services and configure Start-EditorServices.ps1 in Nexus Settings.' });
+externalAdapter({ id:'batch', language:'Windows Batch', extensions:['.bat'], command:'cmd', args:['/d','/q','/c','exit /b 0'], install:'Windows Batch has no first-party language server; Nexus uses non-executing structural checks.' });
 externalAdapter({ id:'swift', language:'Swift', extensions:['.swift'], command:'swiftc', args:['-parse','-'], install:'Install the Swift toolchain.' });
 externalAdapter({ id:'dart', language:'Dart', extensions:['.dart'], command:'dart', args:['--version'], install:'Install the Dart SDK; project analysis provides full diagnostics.' });
 externalAdapter({ id:'lua', language:'Lua', extensions:['.lua'], command:'lua', args:['-e','assert(load(io.read("*a")))'], install:'Install Lua and ensure lua is on PATH.' });

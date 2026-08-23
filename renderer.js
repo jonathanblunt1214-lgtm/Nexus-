@@ -31,6 +31,18 @@ function showToast(type, title, message) {
 }
 
 async function loadDiagnostics() { const r = await window.nexus.diagnosticsGet(300); if (!r.ok) return; document.getElementById('diagnostics-telemetry').checked = r.settings.telemetry; document.getElementById('diagnostics-paths').checked = r.settings.includePaths; document.getElementById('diagnostics-log').innerHTML = r.entries.slice().reverse().map((entry) => `<p class="small mono">${escapeHtml(entry.timestamp)} · ${escapeHtml(entry.level)} · ${escapeHtml(entry.component)} · ${escapeHtml(entry.event)} · ${escapeHtml(entry.correlationId)}</p>`).join('') || '<p class="muted small">No diagnostics recorded yet.</p>'; }
+async function refreshLanguageServices() {
+  const panel = document.getElementById('language-services-list'); if (!panel) return;
+  const result = await window.nexus.languageServicesStatus();
+  if (!result.ok) { panel.innerHTML = `<p class="muted small">${escapeHtml(result.error)}</p>`; return; }
+  panel.innerHTML = result.providers.map((provider) => `<div class="suggestion-item"><strong>${escapeHtml(provider.name)}</strong><span class="muted small">${escapeHtml(provider.license)} · ${provider.bundled ? 'Included with Nexus' : provider.configured ? 'Local path configured' : 'Local installation required'}</span><span class="muted small">Languages: ${escapeHtml(provider.extensions.join(', '))}</span></div>`).join('');
+}
+async function chooseLanguageService(provider) {
+  const result = await window.nexus.chooseLanguageService(provider);
+  if (result.ok) showToast('success', 'Language service connected', 'Nexus will use this local first-party service in trusted workspaces.');
+  else if (!result.canceled) showToast('error', 'Language service was not connected', result.error);
+  refreshLanguageServices();
+}
 async function saveDiagnosticsSettings() { const r = await window.nexus.diagnosticsSettings({ telemetry: document.getElementById('diagnostics-telemetry').checked, includePaths: document.getElementById('diagnostics-paths').checked }); showToast(r.ok ? 'success' : 'error', r.ok ? 'Privacy settings saved' : 'Could not save settings', r.error || ''); }
 async function exportDiagnosticsBundle() { const r = await window.nexus.diagnosticsExport(); if (!r.canceled) showToast(r.ok ? 'success' : 'error', r.ok ? 'Support bundle exported' : 'Export failed', r.path || r.error); }
 
@@ -4015,6 +4027,7 @@ setInterval(async () => {
   loadEmailAccountConfiguration();
   refreshEmailAccountStatus();
   refreshPluginMarketplace();
+  refreshLanguageServices();
   refreshOpenAiStatus();
   renderGitHubAutoSyncSettings();
   scheduleGitHubAutoSync();
