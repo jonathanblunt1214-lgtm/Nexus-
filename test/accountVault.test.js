@@ -117,6 +117,12 @@ test('projects are optionally account-linked by safe metadata and restorable sou
   assert.match(renderer, /function restoreAccountProject/);
   assert.match(renderer, /projects: accountVaultProjects\(\)/);
   assert.match(html, /Projects linked to your Nexus account/);
+  assert.match(main, /account-project:sync/);
+  assert.match(main, /repairAndPushProject\(folder\)/);
+  assert.match(preload, /accountProjectSync/);
+  assert.match(renderer, /if \(automatic\) await syncAccountLinkedProjects\(\)/);
+  assert.match(renderer, /projects\.filter\(\(item\) => item\.accountLinked && item\.accountRepositoryUrl\)/);
+  assert.match(html, /pulls, rebases, and pushes it every 15 minutes/);
   const sanitizer = main.match(/function sanitizeAccountProjects[\s\S]*?\n}/)?.[0] || '';
   assert.doesNotMatch(sanitizer, /folder|projectPath|secret|workspaceTrust/);
 });

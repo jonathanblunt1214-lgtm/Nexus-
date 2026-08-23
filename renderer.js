@@ -4391,6 +4391,7 @@ async function refreshAccountVaultStatus() {
 const ACCOUNT_VAULT_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 let accountVaultAutoSyncTimer = null;
 let accountVaultSyncInProgress = false;
+let accountProjectSyncInProgress = false;
 
 function stopAccountVaultAutoSync() {
   if (accountVaultAutoSyncTimer) clearInterval(accountVaultAutoSyncTimer);
@@ -4416,6 +4417,7 @@ async function runAccountVaultSync(automatic = false) {
   accountVaultSyncInProgress = true;
   document.getElementById('account-vault-status').innerText = automatic ? 'Running the scheduled 15-minute account-vault sync…' : 'Encrypting and syncing the account vault…';
   try {
+    if (automatic) await syncAccountLinkedProjects();
     const currentContent = { preferences: accountVaultPreferences(), plugins: await accountVaultPlugins(), projects: accountVaultProjects() };
     const result = automatic ? await window.nexus.accountVaultAutoSync(currentContent) : await window.nexus.accountVaultSync({ ...value, ...currentContent });
     const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : name === 'google' ? 'Google Drive' : 'Nexus email account').join(', ');
@@ -4428,6 +4430,26 @@ async function runAccountVaultSync(automatic = false) {
     document.getElementById('account-vault-passphrase').value = '';
     refreshAccountVaultStatus();
   }
+}
+
+async function syncAccountLinkedProjects() {
+  if (accountProjectSyncInProgress) return { synced:0, failed:0, skipped:0 };
+  accountProjectSyncInProgress = true;
+  let synced = 0; let failed = 0; let skipped = 0;
+  try {
+    const saveResult = await saveAllDirtyEditorFiles('Account project sync before GitHub synchronization');
+    if (!saveResult.ok) return { synced, failed:1, skipped, error:saveResult.failures.join('; ') };
+    for (const project of projects.filter((item) => item.accountLinked && item.accountRepositoryUrl)) {
+      const result = await window.nexus.accountProjectSync(project.folder, project.name, project.accountRepositoryUrl);
+      if (result.ok) synced += 1;
+      else if (result.skipped) skipped += 1;
+      else {
+        failed += 1;
+        showToast('error', result.conflict ? 'Account project has a Git conflict' : 'Account project sync failed', `${project.name}: ${result.error}`);
+      }
+    }
+    return { synced, failed, skipped };
+  } finally { accountProjectSyncInProgress = false; }
 }
 
 async function syncAccountVault() {

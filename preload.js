@@ -148,6 +148,7 @@ contextBridge.exposeInMainWorld('nexus', {
   githubProjectPRSubmitReview: (folder, number, body, action) => ipcRenderer.invoke('github-project-pr-submit-review', { folder, number, body, action }),
   githubProjectPRMerge: (folder, number, method) => ipcRenderer.invoke('github-project-pr-merge', { folder, number, method }),
   gitAutoSync: (folder, projectName) => ipcRenderer.invoke('git-auto-sync', { folder, projectName }),
+  accountProjectSync: (folder, projectName, repositoryUrl) => ipcRenderer.invoke('account-project:sync', { folder, projectName, repositoryUrl }),
   setProjectsForExitSync: (projects) => ipcRenderer.send('set-projects-for-exit-sync', { projects }),
   onExitSyncStatus: (callback) => ipcRenderer.on('exit-sync-status', (_e, payload) => callback(payload)),
   onExitSaveRequest: (callback) => ipcRenderer.on('exit-save-request', (_e, payload) => callback(payload)),

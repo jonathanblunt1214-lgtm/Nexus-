@@ -2334,6 +2334,18 @@ ipcMain.handle('git-auto-sync', async (_event, { folder, projectName }) => {
   return autoSyncProject(folder, projectName);
 });
 
+ipcMain.handle('account-project:sync', async (_event, { folder, projectName, repositoryUrl }) => {
+  if (!folder || !projectsForExitSync.some((project) => path.resolve(project.folder) === path.resolve(folder))) return { ok: false, skipped: true, error: 'Only a project already saved in Nexus can be account-synced.' };
+  const expected = gitWorkflow.parseGitHubRemote(repositoryUrl);
+  const remote = await runGitArgs(folder, ['remote', 'get-url', 'origin']);
+  const actual = remote.ok ? gitWorkflow.parseGitHubRemote(remote.output) : null;
+  if (!expected || !actual || expected.owner.toLowerCase() !== actual.owner.toLowerCase() || expected.repo.toLowerCase() !== actual.repo.toLowerCase()) return { ok: false, skipped: true, error: 'The local GitHub origin does not match this account-linked project.' };
+  const first = await autoSyncProject(folder, projectName);
+  if (first.ok || first.skipped || isNetworkGitError(first.error)) return first;
+  const repaired = await repairAndPushProject(folder);
+  return repaired.ok ? { ok: true, changed: first.committed === true, repaired: true } : { ok: false, conflict: /conflict|could not apply/i.test(repaired.error || ''), error: repaired.error || first.error };
+});
+
 async function syncProjectsBeforeExit() {
   if (exitSyncInProgress || exitSyncComplete) return;
   exitSyncInProgress = true;
