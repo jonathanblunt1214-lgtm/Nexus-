@@ -60,14 +60,15 @@ async function runLanguageServer({ folder, filePath, content, fix = false }) {
   const launch = launchFor(provider, folder); if (!launch) return { ok:true, available:false, provider, reason:`Configure the local ${provider.name} path in Nexus Settings.` };
   return new Promise((resolve) => {
     let child; try { child = spawn(launch.command, launch.args, { cwd:folder, env:launch.env || process.env, windowsHide:true, stdio:['pipe','pipe','pipe'] }); } catch (error) { resolve({ ok:true, available:false, provider, reason:error.message }); return; }
-    let buffer = Buffer.alloc(0); let id = 0; const pending = new Map(); let diagnostics = []; let settled = false;
+    let buffer = Buffer.alloc(0); let id = 0; const pending = new Map(); let diagnostics = []; let diagnosticsPublished = false; const diagnosticWaiters = []; let settled = false;
     const finish = (result) => { if (settled) return; settled = true; clearTimeout(overall); for (const waiter of pending.values()) clearTimeout(waiter.timer); pending.clear(); try { child.kill(); } catch {} resolve(result); };
     const send = (message) => { const body = Buffer.from(JSON.stringify({ jsonrpc:'2.0', ...message })); child.stdin.write(`Content-Length: ${body.length}\r\n\r\n`); child.stdin.write(body); };
     const request = (method, params) => new Promise((res, rej) => { const requestId = ++id; const timer = setTimeout(() => { if (pending.delete(requestId)) rej(new Error(`${provider.name} timed out during ${method}.`)); }, 10000); pending.set(requestId, { res, rej, timer }); send({ id:requestId, method, params }); });
+    const waitForDiagnostics = (timeoutMs = 10000) => diagnosticsPublished ? Promise.resolve() : new Promise((res, rej) => { const timer = setTimeout(() => rej(new Error(`${provider.name} timed out waiting for diagnostics.`)), timeoutMs); diagnosticWaiters.push(() => { clearTimeout(timer); res(); }); });
     const respond = (requestId, result = null) => send({ id:requestId, result });
     const processMessage = (message) => {
       if (message.id != null && !message.method) { const waiter = pending.get(message.id); if (waiter) { pending.delete(message.id); clearTimeout(waiter.timer); message.error ? waiter.rej(new Error(message.error.message)) : waiter.res(message.result); } return; }
-      if (message.method === 'textDocument/publishDiagnostics') diagnostics = message.params?.diagnostics || [];
+      if (message.method === 'textDocument/publishDiagnostics') { diagnostics = message.params?.diagnostics || []; diagnosticsPublished = true; diagnosticWaiters.splice(0).forEach((notify) => notify()); }
       if (message.id != null) respond(message.id, message.method === 'workspace/configuration' ? [] : null);
     };
     child.stdout.on('data', (chunk) => { buffer = Buffer.concat([buffer, chunk]); while (true) { const marker = buffer.indexOf('\r\n\r\n'); if (marker < 0) break; const header = buffer.slice(0, marker).toString(); const length = Number(header.match(/Content-Length:\s*(\d+)/i)?.[1]); if (!Number.isFinite(length) || buffer.length < marker + 4 + length) break; const body = buffer.slice(marker + 4, marker + 4 + length); buffer = buffer.slice(marker + 4 + length); try { processMessage(JSON.parse(body.toString())); } catch {} } });
@@ -79,7 +80,7 @@ async function runLanguageServer({ folder, filePath, content, fix = false }) {
         const uri = fileUri(filePath); const rootUri = fileUri(folder);
         await request('initialize', { processId:process.pid, rootUri, capabilities:{ workspace:{ configuration:true }, textDocument:{ publishDiagnostics:{}, codeAction:{ codeActionLiteralSupport:{ codeActionKind:{ valueSet:['quickfix','source.fixAll'] } } } } }, workspaceFolders:[{ uri:rootUri, name:path.basename(folder) }] });
         send({ method:'initialized', params:{} }); send({ method:'textDocument/didOpen', params:{ textDocument:{ uri, languageId:provider.languageId, version:1, text:content } } });
-        await new Promise((res) => setTimeout(res, provider.id === 'jdtls' ? 3500 : 1500));
+        await waitForDiagnostics(provider.id === 'jdtls' ? 20000 : 10000);
         if (!fix) return finish({ ok:true, available:true, provider, diagnostics:normalizedDiagnostics(diagnostics, provider) });
         const endLines = content.split(/\r?\n/); const range = { start:{ line:0, character:0 }, end:{ line:endLines.length - 1, character:endLines.at(-1).length } };
         const actions = await request('textDocument/codeAction', { textDocument:{ uri }, range, context:{ diagnostics, only:['quickfix','source.fixAll'] } });

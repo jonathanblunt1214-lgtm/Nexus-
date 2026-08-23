@@ -21,7 +21,7 @@ jobs:
       release_ref: ${{ steps.prepare.outputs.release_ref }}
     steps:
       - name: Check out confirmed main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
@@ -85,7 +85,7 @@ jobs:
     if: needs.publish-update.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0

@@ -20,8 +20,8 @@ jobs:
         node: [20, 22, 24]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci --ignore-scripts --no-audit --no-fund
@@ -32,8 +32,8 @@ jobs:
   dependency-and-release-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
       - run: npm ci --ignore-scripts --no-audit --no-fund
@@ -43,8 +43,8 @@ jobs:
   windows-package-smoke:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - run: npm ci --ignore-scripts --no-audit --no-fund
