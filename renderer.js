@@ -4507,6 +4507,46 @@ async function aiToolsListKnowledge() {
   aiToolsPrint('aitools-out-kb', await window.nexus.aiFwKnowledgeList());
 }
 
+async function trainingRefreshSummary() {
+  aiToolsPrint('aitools-out-training', await window.nexus.trainingSummary());
+}
+
+async function trainingPrepareDataset() {
+  const output = document.getElementById('aitools-out-training');
+  output.innerText = 'Redacting, validating, and building JSONL…';
+  aiToolsPrint('aitools-out-training', await window.nexus.trainingPrepare());
+}
+
+function trainingProviderChanged() {
+  const local = document.getElementById('training-provider').value === 'local-lora';
+  document.getElementById('training-python-row').style.display = local ? '' : 'none';
+}
+
+async function trainingChoosePython() {
+  const result = await window.nexus.trainingChoosePython();
+  if (result.ok) document.getElementById('training-python').value = result.path;
+}
+
+async function trainingStart() {
+  const provider = document.getElementById('training-provider').value;
+  const model = document.getElementById('training-model').value.trim();
+  const pythonExecutable = document.getElementById('training-python').value.trim();
+  if (!model) return alert('Enter a compatible base model.');
+  if (provider === 'local-lora' && !pythonExecutable) return alert('Choose the Python environment used for local LoRA training.');
+  const destination = provider === 'openai' ? 'upload the redacted dataset to OpenAI and may incur charges' : 'run weight training on this computer and may use substantial GPU memory, disk space, and time';
+  if (!confirm(`Nexus will ${destination}. The dataset contains only examples that passed project checks. Start training now?`)) return;
+  document.getElementById('aitools-out-training').innerText = 'Starting the approved training run…';
+  const result = await window.nexus.trainingStart({ provider, model, pythonExecutable, approved:true });
+  if (result.jobId) document.getElementById('training-job-id').value = result.jobId;
+  aiToolsPrint('aitools-out-training', result);
+}
+
+async function trainingCheckStatus() {
+  const jobId = document.getElementById('training-job-id').value.trim();
+  if (!jobId) return alert('Start a training job first.');
+  aiToolsPrint('aitools-out-training', await window.nexus.trainingStatus(jobId));
+}
+
 async function aiToolsCreateExperiment() {
   const folder = aiToolsRequireFolder();
   if (!folder) return;

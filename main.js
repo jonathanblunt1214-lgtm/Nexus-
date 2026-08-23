@@ -17,10 +17,15 @@ const { OperationalDiagnostics } = require('./operationalDiagnostics');
 const { detectGameProject } = require('./gameProjectDetector');
 const { searchCodeLibrary, libraryFacets } = require('./codeLibrary');
 const { buildLearningContext } = require('./webDevelopmentKnowledge');
+const { TrainingDataset } = require('./trainingDataset');
+const { startOpenAiFineTune, getOpenAiFineTune, startLocalLora } = require('./fineTuneTrainer');
 const { discover: discoverTests, snapshots: discoverSnapshots, TestHistory, readCoverage } = require('./advancedTesting');
 const diagnostics = new OperationalDiagnostics(app.getPath('userData'));
 const { getProjectTemplate } = require('./projectTemplates');
 const testHistory = new TestHistory(app.getPath('userData'));
+const trainingDataset = new TrainingDataset(path.join(app.getPath('userData'), 'training'));
+const trainingJobs = new Map();
+const trainingCandidates = new Map();
 const testWatchers = new Map();
 const startupStartedAt = performance.now();
 crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
@@ -1513,6 +1518,7 @@ ipcMain.handle('ai-propose-fix', async (_event, { filePath, errorText, folder })
   // Strip a leading newline and any stray markdown code fences the model might add.
   newContent = newContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
 
+  trainingCandidates.set(path.resolve(filePath), { folder:path.resolve(folder), request:errorText || 'Correct the identified code problem.', context:`FILE: ${path.relative(folder, filePath)}\n\nBEFORE:\n${oldContent}`, response:`${explanation}\n\nVERIFIED FILE:\n${newContent}`, expectedContent:newContent, applied:false });
   return { ok: true, oldContent, newContent, explanation, filePath };
 });
 
@@ -1560,6 +1566,7 @@ ipcMain.handle('ai-edit-file-with-prompt', async (_event, { filePath, instructio
   let editNewContent = editResult.text.slice(editIdx + editMarker.length);
   editNewContent = editNewContent.replace(/^\n/, '').replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '');
 
+  trainingCandidates.set(path.resolve(filePath), { folder:path.resolve(folder), request:instruction, context:`FILE: ${path.relative(folder, filePath)}\n\nBEFORE:\n${editOldContent}`, response:`${editExplanation}\n\nVERIFIED FILE:\n${editNewContent}`, expectedContent:editNewContent, applied:false });
   return { ok: true, oldContent: editOldContent, newContent: editNewContent, explanation: editExplanation, filePath };
 });
 
@@ -1633,8 +1640,23 @@ function applyFileChangeInternal(filePath, newContent, source) {
 }
 
 ipcMain.handle('apply-file-change', (_event, { filePath, newContent, source }) => {
-  return applyFileChangeInternal(filePath, newContent, source);
+  const result = applyFileChangeInternal(filePath, newContent, source);
+  const candidate = trainingCandidates.get(path.resolve(filePath));
+  if (result.ok && candidate?.expectedContent === newContent) candidate.applied = true;
+  return result;
 });
+
+function recordPassingTrainingCandidates(folder, verification) {
+  const root = path.resolve(folder);
+  let recorded = 0;
+  for (const [filePath, candidate] of trainingCandidates) {
+    if (!candidate.applied || candidate.folder !== root) continue;
+    const result = trainingDataset.recordVerified({ request:candidate.request, context:candidate.context, response:candidate.response, verification, project:folder, file:path.relative(root, filePath) });
+    if (result.ok) recorded += result.duplicate ? 0 : 1;
+    trainingCandidates.delete(filePath);
+  }
+  return recorded;
+}
 
 // --- Linting/formatting on save: always runs the PROJECT'S OWN installed
 // ESLint/Prettier (from its own node_modules) - never a version bundled
@@ -2511,6 +2533,19 @@ ipcMain.handle('run-feature-plan-autonomous', async (_event, { folder, plan, des
     };
   }
 
+  if (guardrailResult.hasGuardrails && guardrailResult.passed === guardrailResult.total) {
+    for (const change of applied) {
+      trainingDataset.recordVerified({
+        request:description,
+        context:`FILE: ${change.file}\n\nBEFORE:\n${change.oldContent}`,
+        response:`${change.explanation}\n\nVERIFIED FILE:\n${change.newContent}`,
+        verification:{ passed:true, testsRun:guardrailResult.total, command:guardrailResult.results.map((result) => `npm run ${result.script}`).join(' && '), summary:`${guardrailResult.passed}/${guardrailResult.total} project guardrails passed.` },
+        project:folder,
+        file:change.file,
+      });
+    }
+  }
+
   // Changelog bookkeeping for these files happens back in the renderer,
   // via the same real recordChangelogEntry()/pendingChangeLog path the
   // manual-approval flow already uses - appliedFiles below is exactly what
@@ -2856,7 +2891,9 @@ ipcMain.handle('run-tests', async (_event, { folder }) => {
   if (!pkg.scripts || !pkg.scripts.test || /no test specified/i.test(pkg.scripts.test)) {
     return { ok: true, skipped: true, output: 'No "test" script defined in package.json — skipping (not a failure).' };
   }
-  return runCommandForPipeline(folder, 'npm test');
+  const result = await runCommandForPipeline(folder, 'npm test');
+  if (result.ok) result.trainingExamplesRecorded = recordPassingTrainingCandidates(folder, { passed:true, testsRun:1, command:'npm test', summary:result.output.slice(-4000) });
+  return result;
 });
 
 // --- Real per-test results, not just overall pass/fail. Only Jest and
@@ -2911,6 +2948,7 @@ ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern, c
         scripts.push({ name, ok: result.ok, output: (result.stdout + '\n' + result.stderr).trim().slice(-4000) });
       }
       const passed = scripts.filter((s) => s.ok).length;
+      if (passed === scripts.length) recordPassingTrainingCandidates(folder, { passed:true, testsRun:scripts.length, command:scripts.map((script) => `npm run ${script.name}`).join(' && '), summary:`${passed}/${scripts.length} test scripts passed.` });
       return {
         ok: passed === scripts.length,
         detailed: false,
@@ -2922,6 +2960,7 @@ ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern, c
     // Honest fallback - no structured per-test data and no separate test:*
     // scripts either, but still give real output rather than a dead end.
     const plain = await runCommandForPipeline(folder, 'npm test');
+    if (plain.ok) recordPassingTrainingCandidates(folder, { passed:true, testsRun:1, command:'npm test', summary:plain.output.slice(-4000) });
     return { ok: plain.ok, detailed: false, output: plain.output, error: plain.ok ? null : 'No supported test framework (Jest or Vitest) detected - showing plain output instead.' };
   }
 
@@ -2958,6 +2997,7 @@ ipcMain.handle('run-tests-detailed', async (_event, { folder, testNamePattern, c
   }
 
   const history = testHistory.record(folder, parsed.tests);
+  if (runResult.ok) recordPassingTrainingCandidates(folder, { passed:true, testsRun:Math.max(1, parsed.tests.length), command:`${framework} test suite`, summary:`${parsed.tests.length} structured tests passed.` });
   return { ok: runResult.ok, detailed: true, framework, ...parsed, history, coverage: coverage ? readCoverage(folder) : null };
 });
 
@@ -3826,6 +3866,42 @@ ipcMain.handle('ai-fw-generate-changelog', wrapAsync(({ folder, limit }) => chan
 ipcMain.handle('ai-fw-knowledge-add', wrapAsync(({ entry }) => knowledgeBase.addEntry(entry || {})));
 ipcMain.handle('ai-fw-knowledge-search', wrapAsync(({ query }) => ({ ok: true, entries: knowledgeBase.search(query) })));
 ipcMain.handle('ai-fw-knowledge-list', wrapAsync(() => ({ ok: true, entries: knowledgeBase.listAll() })));
+
+// Verified-example collection and true model fine-tuning. Dataset creation is
+// local. Cloud upload or local GPU training requires a separate explicit UI
+// confirmation and never starts merely because enough examples exist.
+ipcMain.handle('training:summary', wrapAsync(() => trainingDataset.summary()));
+ipcMain.handle('training:prepare', wrapAsync(() => trainingDataset.prepare()));
+ipcMain.handle('training:choose-python', wrapAsync(async () => {
+  const selected = await dialog.showOpenDialog(mainWindow, { title:'Choose the Python executable for local LoRA training', properties:['openFile'], filters:[{ name:'Python', extensions:['exe'] }] });
+  return selected.canceled ? { ok:false, canceled:true } : { ok:true, path:selected.filePaths[0] };
+}));
+ipcMain.handle('training:start', wrapAsync(async ({ provider, model, pythonExecutable, approved }) => {
+  if (approved !== true) return { ok:false, error:'Review and approve the prepared dataset before training.' };
+  const prepared = trainingDataset.prepare();
+  if (!prepared.ok) return prepared;
+  if (!String(model || '').trim() || String(model).length > 200) return { ok:false, error:'Choose a valid base model.' };
+  if (provider === 'openai') {
+    const result = await startOpenAiFineTune({ apiKey:getOpenAiKey(), trainingFile:prepared.trainingFile, validationFile:prepared.validationFile, model:String(model).trim() });
+    trainingJobs.set(result.jobId, result);
+    return { ...result, dataset:prepared.manifest };
+  }
+  if (provider === 'local-lora') {
+    const jobId = crypto.randomUUID();
+    const outputDir = path.join(app.getPath('userData'), 'training', 'models', jobId);
+    fs.mkdirSync(outputDir, { recursive:true });
+    const result = startLocalLora({ pythonExecutable, scriptPath:path.join(__dirname, 'scripts', 'train_lora.py'), trainingFile:prepared.trainingFile, validationFile:prepared.validationFile, model:String(model).trim(), outputDir, onExit:(state) => trainingJobs.set(jobId, { ...trainingJobs.get(jobId), status:state.ok ? 'succeeded' : 'failed', exitCode:state.code, log:state.log }) });
+    trainingJobs.set(jobId, { ...result, jobId, status:'running', dataset:prepared.manifest });
+    return trainingJobs.get(jobId);
+  }
+  return { ok:false, error:'Choose OpenAI cloud or Local LoRA training.' };
+}));
+ipcMain.handle('training:status', wrapAsync(async ({ jobId }) => {
+  const job = trainingJobs.get(String(jobId || ''));
+  if (!job) return { ok:false, error:'Training job not found.' };
+  if (job.provider === 'openai') return getOpenAiFineTune(getOpenAiKey(), job.jobId);
+  return { ...job, log:String(job.log || '').slice(-12000) };
+}));
 
 // Experiments
 ipcMain.handle('ai-fw-create-experiment', wrapAsync(({ folder, experiment }) => experimentationFramework.createExperiment(folder, experiment || {})));

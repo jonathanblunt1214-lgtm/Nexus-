@@ -1924,6 +1924,34 @@ Measure-Object</pre>
         </details>
 
         <details class="aitools-section">
+          <summary>Model Training</summary>
+          <div class="aitools-section-body">
+            <p class="muted small">Nexus collects an example only after a generated change passes real project guardrails. Credentials and personal paths are removed before the example is stored. Ten verified examples are required before training.</p>
+            <div class="form-row">
+              <button class="btn btn-secondary" onclick="trainingRefreshSummary()">Dataset Status</button>
+              <button class="btn btn-secondary" onclick="trainingPrepareDataset()">Build JSONL</button>
+            </div>
+            <div class="form-row">
+              <select id="training-provider" onchange="trainingProviderChanged()">
+                <option value="local-lora">Local LoRA / QLoRA</option>
+                <option value="openai">OpenAI cloud fine-tuning (eligible accounts)</option>
+              </select>
+              <input id="training-model" type="text" placeholder="Base model, e.g. Qwen/Qwen3-4B or gpt-4.1-mini-2025-04-14">
+            </div>
+            <div class="form-row" id="training-python-row">
+              <input id="training-python" type="text" readonly placeholder="Choose python.exe with transformers, datasets, TRL, and PEFT">
+              <button class="btn btn-secondary" onclick="trainingChoosePython()">Choose Python</button>
+            </div>
+            <div class="form-row">
+              <button class="btn" onclick="trainingStart()">Review &amp; Start Training</button>
+              <input id="training-job-id" type="text" readonly placeholder="Training job ID">
+              <button class="btn btn-secondary" onclick="trainingCheckStatus()">Check Status</button>
+            </div>
+            <pre class="aitools-output" id="aitools-out-training">No training dataset prepared yet.</pre>
+          </div>
+        </details>
+
+        <details class="aitools-section">
           <summary>Experiments</summary>
           <div class="aitools-section-body">
             <p class="muted small">Side-by-side comparison of two variants (models, prompts, whatever) using real recorded numeric observations.</p>
