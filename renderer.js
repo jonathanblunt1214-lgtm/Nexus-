@@ -4117,6 +4117,7 @@ async function signInEmailAccount() {
 }
 
 async function signOutEmailAccount() {
+  stopAccountVaultAutoSync();
   await window.nexus.emailAccountSignOut();
   document.getElementById('email-account-password').value = '';
   showToast('info', 'Signed out of Nexus email account'); refreshEmailAccountStatus(); refreshAccountVaultStatus();
@@ -4319,7 +4320,25 @@ async function refreshAccountVaultStatus() {
   if (!panel || !result.ok) return;
   const connectionCount = [result.email, result.github, result.google].filter(Boolean).length;
   const linked = connectionCount > 1 ? `${connectionCount} account destinations are connected.` : connectionCount === 1 ? 'One account destination is connected; add another for redundant backup.' : 'Connect an email account, GitHub, or Google before syncing.';
-  panel.innerText = `${linked}${result.lastSyncedAt ? ` Last synced ${new Date(result.lastSyncedAt).toLocaleString()}.` : ''} The passphrase is never saved.`;
+  const schedule = accountVaultAutoSyncTimer ? ' Automatic sync is active every 15 minutes for this Nexus session.' : '';
+  panel.innerText = `${linked}${result.lastSyncedAt ? ` Last synced ${new Date(result.lastSyncedAt).toLocaleString()}.` : ''}${schedule} The passphrase is never saved.`;
+}
+
+const ACCOUNT_VAULT_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+let accountVaultSessionPassphrase = '';
+let accountVaultAutoSyncTimer = null;
+let accountVaultSyncInProgress = false;
+
+function stopAccountVaultAutoSync() {
+  if (accountVaultAutoSyncTimer) clearInterval(accountVaultAutoSyncTimer);
+  accountVaultAutoSyncTimer = null;
+  accountVaultSessionPassphrase = '';
+}
+
+function scheduleAccountVaultAutoSync(passphrase) {
+  stopAccountVaultAutoSync();
+  accountVaultSessionPassphrase = passphrase;
+  accountVaultAutoSyncTimer = setInterval(() => runAccountVaultSync(true), ACCOUNT_VAULT_SYNC_INTERVAL_MS);
 }
 
 function accountVaultFormValue() {
@@ -4329,15 +4348,29 @@ function accountVaultFormValue() {
   };
 }
 
-async function syncAccountVault() {
+async function runAccountVaultSync(automatic = false) {
   const value = accountVaultFormValue();
+  if (automatic) value.passphrase = accountVaultSessionPassphrase;
   if (value.passphrase.length < 12) { showToast('error', 'Choose a longer sync passphrase', 'Use at least 12 characters. It cannot be recovered by Nexus.'); return; }
-  document.getElementById('account-vault-status').innerText = 'Encrypting and syncing the account vault…';
-  const result = await window.nexus.accountVaultSync({ ...value, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() });
-  const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : name === 'google' ? 'Google Drive' : 'Nexus email account').join(', ');
-  showToast(result.ok ? 'success' : 'error', result.ok ? 'Account vault synced' : 'Account vault sync failed', result.ok ? `Encrypted backup saved to ${destinations}.` : result.error);
-  document.getElementById('account-vault-passphrase').value = '';
-  refreshAccountVaultStatus();
+  if (accountVaultSyncInProgress) return;
+  accountVaultSyncInProgress = true;
+  document.getElementById('account-vault-status').innerText = automatic ? 'Running the scheduled 15-minute account-vault sync…' : 'Encrypting and syncing the account vault…';
+  try {
+    const result = await window.nexus.accountVaultSync({ ...value, preferences: accountVaultPreferences(), plugins: await accountVaultPlugins() });
+    const destinations = Object.entries(result.results || {}).filter(([, state]) => state.ok).map(([name]) => name === 'github' ? 'GitHub' : name === 'google' ? 'Google Drive' : 'Nexus email account').join(', ');
+    if (!automatic || !result.ok) showToast(result.ok ? 'success' : 'error', result.ok ? 'Account vault synced' : 'Account vault sync failed', result.ok ? `Encrypted backup saved to ${destinations}. Automatic sync will repeat every 15 minutes while Nexus remains open.` : result.error);
+    if (result.ok && !automatic) scheduleAccountVaultAutoSync(value.passphrase);
+  } catch (error) {
+    showToast('error', 'Account vault sync failed', error.message);
+  } finally {
+    accountVaultSyncInProgress = false;
+    document.getElementById('account-vault-passphrase').value = '';
+    refreshAccountVaultStatus();
+  }
+}
+
+async function syncAccountVault() {
+  await runAccountVaultSync(false);
 }
 
 async function restoreAccountVault() {
@@ -4417,6 +4450,7 @@ async function connectGoogleOAuth() {
 
 async function disconnectGoogleOAuth() {
   if (!confirm('Disconnect Google and revoke the Nexus session?')) return;
+  stopAccountVaultAutoSync();
   await window.nexus.googleOAuthDisconnect(); googleDriveFiles = []; document.getElementById('google-drive-files').innerHTML = ''; refreshOAuthServices();
 }
 
@@ -4481,6 +4515,7 @@ async function githubConnect() {
 
 async function githubDisconnect() {
   if (!confirm('Remove the saved GitHub token?')) return;
+  stopAccountVaultAutoSync();
   await window.nexus.clearGitHubToken();
   refreshGitHubStatus();
   showToast('info', 'Logged out of GitHub');
