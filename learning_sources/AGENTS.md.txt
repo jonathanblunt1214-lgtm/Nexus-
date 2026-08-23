@@ -1,0 +1,17 @@
+# Nexus AI: Tacit Knowledge Repository
+This file serves as the persistent memory for the Nexus AI agent. 
+Agents must append successful patterns, bug fixes, and lessons learned to this file 
+to ensure knowledge persists across sessions.
+
+## LOGGING TEMPLATE
+Use this format for every new entry:
+
+## [YYYY-MM-DD] - [Task Name/Category]
+**Request:** [Briefly describe the user request]
+**Context:** [What files or systems were involved?]
+**Problem:** [What went wrong or what was the blocker?]
+**Solution:** [What code was changed to fix it?]
+**Key Learning:** [Why did this work? What specific Nexus AI rule applies here?]
+**Verification:** [Which CI/CD gate confirmed this fix?]
+
+---

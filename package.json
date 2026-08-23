@@ -112,6 +112,10 @@
       "languageBreakdown.js",
       "languageIntelligence.js",
       "webDevelopmentKnowledge.js",
+      "learning_sources/AGENTS.md.txt",
+      "learning_sources/scriptsprocess_logs.py.txt",
+      "learning_sources/system_instruction.md.txt",
+      "learning_sources/TECHNICAL_MANUAL.md.txt",
       "release-notes.md"
     ],
     "releaseInfo": {

@@ -1,0 +1,40 @@
+import json
+import re
+from pathlib import Path
+
+def extract_log_data(agents_md_path, trace_log_path):
+    # Initialize the training sample container
+    sample = {
+        "user_request": "",
+        "context_snapshot": "",
+        "verification_failure": "",
+        "corrective_diff": ""
+    }
+
+    # Extract data from AGENTS.md
+    with open(agents_md_path, 'r') as f:
+        content = f.read()
+        user_req_match = re.search(r"Request: (.*)", content)
+        if user_req_match:
+            sample["user_request"] = user_req_match.group(1)
+
+    # Extract diagnostic trace
+    with open(trace_log_path, 'r') as f:
+        trace_data = f.read()
+        sample["verification_failure"] = trace_data[-500:] 
+        sample["context_snapshot"] = "Ref: commit_hash_placeholder"
+
+    sample["corrective_diff"] = "git diff HEAD^" 
+    return sample
+
+def save_to_jsonl(data, output_file):
+    with open(output_file, 'a') as f:
+        f.write(json.dumps(data) + '\n')
+
+# Execution Pipeline
+if __name__ == "__main__":
+    DATASET_PATH = Path("./training_data.jsonl")
+    # Assumes ci_failure.log is created by your CI tool
+    new_sample = extract_log_data("./AGENTS.md", "./ci_failure.log")
+    save_to_jsonl(new_sample, DATASET_PATH)
+    print(f"Successfully processed log into {DATASET_PATH}")
