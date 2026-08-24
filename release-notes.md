@@ -1,5 +1,7 @@
 # Nexus 1.0.2
 
+- Set the dedicated approved-build sequence to propose `0.0.03` next, then increment it predictably within the pre-launch line; `1.0.0` is explicitly reserved for the real public launch and is never reached by automatic build-number rollover.
+
 - Fixed Add a Project so Nexus automatically derives the display name from a selected folder or GitHub repository.
 - Added support for GitHub shorthand such as `owner/repository` and `github.com/owner/repository`.
 - Fixed the installed-app startup update check so updater events are registered before the window loads.

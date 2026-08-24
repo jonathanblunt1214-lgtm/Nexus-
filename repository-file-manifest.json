@@ -971,8 +971,8 @@
     {
       "path": "buildNumber.js",
       "type": ".js",
-      "size": 1392,
-      "sha256": "617417a07d96d6924c02543035bb6c7bf8eedb5317de5cb6f26c96190eab7235"
+      "size": 1726,
+      "sha256": "8a9f16cb6efb7b2332ab8347698adf3c2e31356fb77ff430444f7a2e84dff3ed"
     },
     {
       "path": "changelogGenerator.js",
@@ -1091,8 +1091,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 134385,
-      "sha256": "100f9dfcb646d3a5b7c882a7af1f0fb2aa0f646a9bb37fd818b5ae959f9163d2"
+      "size": 134421,
+      "sha256": "6ea5822863e9286e0e04bf38ce54a5ca0ec5eeebbdf04e5bb834419036d7777e"
     },
     {
       "path": "inventoryWorker.js",
@@ -1343,14 +1343,14 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 5676,
-      "sha256": "68611e19fc7d3a8b554b3d2187397371b2b88fde4cedc346afe838b37a2be324"
+      "size": 5920,
+      "sha256": "9fc55353214d388edb3852f753db47c90ae4e659c766f31b95173fb3b0954bd9"
     },
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 272583,
-      "sha256": "942c2fc02d1efdefdbeec7253b8ed7021c8fe424628df33b45ab2fd3447d5e9c"
+      "size": 272623,
+      "sha256": "873dae1e05091f79e1421a46c05e33f33d17a12ece207aa3f6bb9e5c39c92e45"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1559,8 +1559,8 @@
     {
       "path": "test/buildNumber.test.js",
       "type": ".js",
-      "size": 1762,
-      "sha256": "99babca80ca27aa06f4316e3152c8f42415bf6e6947a8fc4cf95a4387d496bc2"
+      "size": 2393,
+      "sha256": "1dfb87b417fc9f19eefb04ec0511e1a13b87ed2ef213738bdbc8e1e31883e9b1"
     },
     {
       "path": "test/codeChecker.test.js",
