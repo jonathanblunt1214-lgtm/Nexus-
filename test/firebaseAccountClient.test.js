@@ -48,6 +48,14 @@ test('GitHub Google and email are presented as methods for one Nexus account pro
   assert.match(html, /id="nexus-profile-email"[^>]*readonly/);
   assert.match(renderer, /profileEmail\.value = result\.nexusEmail \|\| ''/);
   assert.match(renderer, /sign-in methods:/);
+  assert.match(html, /id="google-service-btn"[^>]*onclick="toggleGoogleConnection\(\)"/);
+  assert.match(html, /id="wordpress-service-btn"[^>]*onclick="toggleWordPressConnection\(\)"/);
+  assert.doesNotMatch(html, /onclick="disconnectGoogleOAuth\(\)"/);
+  assert.doesNotMatch(html, /onclick="disconnectWordPressOAuth\(\)"/);
+  assert.match(html, /id="wordpress-sites-btn"[^>]*hidden/);
+  assert.match(html, /id="google-drive-actions"[^>]*hidden/);
+  assert.match(renderer, /googleConnectionActive \? 'Log out of Google' : 'Sign in with Google'/);
+  assert.match(renderer, /wordpressConnectionActive \? 'Disconnect WordPress\.com' : 'Connect WordPress\.com'/);
 });
 
 test('unified account wiring never places provider tokens in renderer state or the portable vault inventory', () => {

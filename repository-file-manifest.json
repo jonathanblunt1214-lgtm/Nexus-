@@ -1044,8 +1044,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 134464,
-      "sha256": "26919a3a43a6718b90a47fa53884e59a2d9f91872cddc535e1d991867007bcd3"
+      "size": 134385,
+      "sha256": "100f9dfcb646d3a5b7c882a7af1f0fb2aa0f646a9bb37fd818b5ae959f9163d2"
     },
     {
       "path": "inventoryWorker.js",
@@ -1296,14 +1296,14 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 4107,
-      "sha256": "05e398d70194e5406780663da9fcd83bdf381d9a3f9bde38faa45dfeb25dc24b"
+      "size": 4288,
+      "sha256": "9fef77792988bd361d5c4422828da9a23b4edd699c90ba08b451ba7011f28aef"
     },
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 271229,
-      "sha256": "8e16e793e94f76ba749d460b4707794b569173020d35dc00ae914a0ba70f5dcd"
+      "size": 272583,
+      "sha256": "942c2fc02d1efdefdbeec7253b8ed7021c8fe424628df33b45ab2fd3447d5e9c"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1524,8 +1524,8 @@
     {
       "path": "test/firebaseAccountClient.test.js",
       "type": ".js",
-      "size": 6001,
-      "sha256": "9b3715818f36e5485baa80fe1c48875577e00f9c1a57a6967b186dd75868a7e2"
+      "size": 6661,
+      "sha256": "5235966490644a626ced274efa6453b3491b0dfb1b7d4e2ad9e9048ec30f77d9"
     },
     {
       "path": "test/gameProjectDetector.test.js",

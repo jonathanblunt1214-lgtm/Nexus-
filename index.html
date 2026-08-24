@@ -1536,7 +1536,7 @@ Type "help" for tips.
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label" id="connected-services-title">Nexus Account</label>
         <p class="muted small" style="margin-top:6px;">GitHub, Google, and email are sign-in methods for the same Nexus account and profile. Your email is profile information—not a separate account. Provider tokens are Windows-encrypted.</p>
-        <div class="form-row" style="margin-top:8px;"><button class="btn" id="github-oauth-connect-btn" onclick="toggleGitHubConnection()">Connect GitHub</button><button class="btn" onclick="connectGoogleOAuth()">Sign in with Google</button><button class="btn btn-secondary" onclick="disconnectGoogleOAuth()">Disconnect Google</button></div>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" id="github-oauth-connect-btn" onclick="toggleGitHubConnection()">Connect GitHub</button><button class="btn" id="google-service-btn" onclick="toggleGoogleConnection()">Sign in with Google</button></div>
         <p id="oauth-service-status" class="muted small" style="margin-top:8px;">Checking connections…</p>
         <div id="github-device-panel" class="github-device-panel" hidden>
           <strong id="github-device-heading">Finish connecting GitHub</strong>
@@ -1552,8 +1552,8 @@ Type "help" for tips.
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label">Linked Services</label>
         <p class="muted small" style="margin-top:6px;">Link optional services to the signed-in Nexus profile. Google Drive can access only files Nexus creates or you explicitly select.</p>
-        <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="connectWordPressOAuth()">Connect WordPress.com</button><button class="btn btn-secondary" onclick="disconnectWordPressOAuth()">Disconnect WordPress.com</button><button class="btn btn-secondary" onclick="loadWordPressSites()">Load my WordPress.com sites</button></div><div id="wordpress-sites" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto;"></div>
-        <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="uploadGoogleDriveFile()">Upload file to Drive</button><button class="btn btn-secondary" onclick="loadGoogleDriveFiles()">Browse Nexus Drive files</button></div>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" id="wordpress-service-btn" onclick="toggleWordPressConnection()">Connect WordPress.com</button><button class="btn btn-secondary" id="wordpress-sites-btn" onclick="loadWordPressSites()" hidden>My WordPress.com sites</button></div><div id="wordpress-sites" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto;"></div>
+        <div class="form-row" id="google-drive-actions" style="margin-top:8px;" hidden><button class="btn btn-secondary" onclick="uploadGoogleDriveFile()">Upload file to Drive</button><button class="btn btn-secondary" onclick="loadGoogleDriveFiles()">Browse Nexus Drive files</button></div>
         <div id="google-drive-files" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto;"></div>
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label" for="account-vault-passphrase">Encrypted Account Vault</label>

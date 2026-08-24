@@ -23,4 +23,5 @@
 - Bundled Nexus's public GitHub OAuth Client ID so every downloaded build can start the guided Connect GitHub flow without developer configuration or personal access tokens.
 - Changed Connect GitHub into a persistent toggle that becomes a clickable Log out of GitHub button after authorization instead of a disabled gray control.
 - Unified GitHub, Google, and email under one Nexus Account and profile; email is now shown as profile information rather than a separate email-account identity.
+- Replaced permanent Google and WordPress connect/disconnect button pairs with one state-aware control per service, and hid Drive and site actions until their service is connected.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.
