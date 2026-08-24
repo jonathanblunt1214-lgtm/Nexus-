@@ -25,6 +25,11 @@ test('Crucible configuration keeps execution bounded and reports through one gat
   assert.equal(config.security.enabled, true);
   assert.equal(config.commands.prepare[0].run, 'npm');
   assert.ok(config.commands.verify.every((command) => command.run === 'npm'));
+  assert.deepEqual(config.authenticity.claims[0], {
+    name: 'Crucible boundary is pinned and least privilege',
+    run: 'node',
+    args: ['--test', 'test/crucibleIntegration.test.js'],
+  });
   assert.match(config.$schema, new RegExp(PINNED_CRUCIBLE_REF));
 });
 

@@ -35,7 +35,7 @@
   },
   "authenticity": {
     "claims": [
-      { "name": "Repository inventory is complete and current", "run": "npm", "args": ["run", "inventory:verify"] }
+      { "name": "Crucible boundary is pinned and least privilege", "run": "node", "args": ["--test", "test/crucibleIntegration.test.js"] }
     ]
   },
   "workload": {

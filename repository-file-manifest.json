@@ -818,8 +818,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 1401,
-      "sha256": "5e049a9badcba9004b056eb2f9037fab98fe659b71d587ca25c290d11303df34"
+      "size": 1424,
+      "sha256": "9c95f9027faba7a9cef351057e65f3f633db565d263f2f3167d0796c2eaf210d"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1562,8 +1562,8 @@
     {
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
-      "size": 1947,
-      "sha256": "2d6fcfaff741e1c64f3e788dbebe226233be505807f2760c911ef025ac3564b8"
+      "size": 2141,
+      "sha256": "f7d6f75111451be1cb92881e3ed87d13b9fdc01c05b2ccac0ed7e31805505c73"
     },
     {
       "path": "test/debugAdapter.test.js",
