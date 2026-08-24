@@ -8,6 +8,9 @@ on:
       - main
       - upgrade/nexus-overhaul
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: The Crucible
