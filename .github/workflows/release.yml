@@ -38,6 +38,10 @@ jobs:
           npm test
           npm run audit:release
           npm run audit:architecture
+          npm run inventory:verify
+
+      - name: Heavy-load release stress gate
+        run: npm run release:stress
 
       - name: Confirm tag matches package version
         shell: pwsh

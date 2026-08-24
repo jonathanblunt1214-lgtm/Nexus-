@@ -1,0 +1,1724 @@
+{
+  "schemaVersion": 1,
+  "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
+  "generatedBy": "npm run inventory:update",
+  "fileCount": 169,
+  "types": {
+    ".yml": 4,
+    "[no extension]": 1,
+    ".md": 7,
+    ".bat": 2,
+    ".js": 141,
+    ".rules": 2,
+    ".html": 1,
+    ".txt": 5,
+    ".json": 2,
+    ".ps1": 2,
+    ".py": 1,
+    ".css": 1
+  },
+  "crossReferences": [
+    {
+      "source": "aiAlerts.js",
+      "reference": "./aiMetrics",
+      "resolved": "aiMetrics.js"
+    },
+    {
+      "source": "aiCostOptimizer.js",
+      "reference": "./aiMetrics",
+      "resolved": "aiMetrics.js"
+    },
+    {
+      "source": "aiInventory.js",
+      "reference": "./semanticContext",
+      "resolved": "semanticContext.js"
+    },
+    {
+      "source": "aiPerformanceTuner.js",
+      "reference": "./aiMetrics",
+      "resolved": "aiMetrics.js"
+    },
+    {
+      "source": "aiRecommendations.js",
+      "reference": "./aiMetrics",
+      "resolved": "aiMetrics.js"
+    },
+    {
+      "source": "aiRecommendations.js",
+      "reference": "./complianceMonitor",
+      "resolved": "complianceMonitor.js"
+    },
+    {
+      "source": "aiRecommendations.js",
+      "reference": "./dependencyAuditor",
+      "resolved": "dependencyAuditor.js"
+    },
+    {
+      "source": "aiUpgradeOrchestrator.js",
+      "reference": "./aiGuardrailTester",
+      "resolved": "aiGuardrailTester.js"
+    },
+    {
+      "source": "bootstrap.js",
+      "reference": "./section7Ipc",
+      "resolved": "section7Ipc.js"
+    },
+    {
+      "source": "bootstrap.js",
+      "reference": "./section8Ipc",
+      "resolved": "section8Ipc.js"
+    },
+    {
+      "source": "bootstrap.js",
+      "reference": "./projectRegistry",
+      "resolved": "projectRegistry.js"
+    },
+    {
+      "source": "bootstrap.js",
+      "reference": "./ipcSecurity",
+      "resolved": "ipcSecurity.js"
+    },
+    {
+      "source": "bootstrap.js",
+      "reference": "./main.js",
+      "resolved": "main.js"
+    },
+    {
+      "source": "codeChecker.js",
+      "reference": "./languageIntelligence",
+      "resolved": "languageIntelligence.js"
+    },
+    {
+      "source": "codeChecker.js",
+      "reference": "./webLanguageServices",
+      "resolved": "webLanguageServices.js"
+    },
+    {
+      "source": "codeChecker.js",
+      "reference": "./officialLanguageServers",
+      "resolved": "officialLanguageServers.js"
+    },
+    {
+      "source": "complianceMonitor.js",
+      "reference": "./aiGuardrailTester",
+      "resolved": "aiGuardrailTester.js"
+    },
+    {
+      "source": "fullStackSupport.js",
+      "reference": "./officialDevelopmentPlatforms",
+      "resolved": "officialDevelopmentPlatforms.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./atomicWrite",
+      "resolved": "atomicWrite.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./buildNumber",
+      "resolved": "buildNumber.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./operationalDiagnostics",
+      "resolved": "operationalDiagnostics.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./gameProjectDetector",
+      "resolved": "gameProjectDetector.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./codeLibrary",
+      "resolved": "codeLibrary.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./webDevelopmentKnowledge",
+      "resolved": "webDevelopmentKnowledge.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./trainingDataset",
+      "resolved": "trainingDataset.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./fineTuneTrainer",
+      "resolved": "fineTuneTrainer.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./advancedTesting",
+      "resolved": "advancedTesting.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectTemplates",
+      "resolved": "projectTemplates.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectCloner",
+      "resolved": "projectCloner.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectLaunchPreflight",
+      "resolved": "projectLaunchPreflight.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectSettings",
+      "resolved": "projectSettings.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectRegistry",
+      "resolved": "projectRegistry.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./pipelineEngine",
+      "resolved": "pipelineEngine.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./pureLogic",
+      "resolved": "pureLogic.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./updater",
+      "resolved": "updater.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiInventory",
+      "resolved": "aiInventory.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiMetrics",
+      "resolved": "aiMetrics.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiGuardrailTester",
+      "resolved": "aiGuardrailTester.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiUpgradeOrchestrator",
+      "resolved": "aiUpgradeOrchestrator.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./promptTesting",
+      "resolved": "promptTesting.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./dependencyAuditor",
+      "resolved": "dependencyAuditor.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./complianceMonitor",
+      "resolved": "complianceMonitor.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./changelogGenerator",
+      "resolved": "changelogGenerator.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./knowledgeBase",
+      "resolved": "knowledgeBase.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./experimentationFramework",
+      "resolved": "experimentationFramework.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiRecommendations",
+      "resolved": "aiRecommendations.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiAlerts",
+      "resolved": "aiAlerts.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiCostOptimizer",
+      "resolved": "aiCostOptimizer.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./aiPerformanceTuner",
+      "resolved": "aiPerformanceTuner.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./fullStackSupport",
+      "resolved": "fullStackSupport.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./languageBreakdown",
+      "resolved": "languageBreakdown.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./languageIntelligence",
+      "resolved": "languageIntelligence.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./codeChecker",
+      "resolved": "codeChecker.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./officialLanguageServers",
+      "resolved": "officialLanguageServers.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./gitWorkflow",
+      "resolved": "gitWorkflow.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./portableProjectConfig",
+      "resolved": "portableProjectConfig.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./codingModelProviders",
+      "resolved": "codingModelProviders.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./providerDiscovery",
+      "resolved": "providerDiscovery.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./secretScanner",
+      "resolved": "secretScanner.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./githubClient",
+      "resolved": "githubClient.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./section7Ipc",
+      "resolved": "section7Ipc.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./firebaseAccountClient",
+      "resolved": "firebaseAccountClient.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./pluginMarketplaceClient",
+      "resolved": "pluginMarketplaceClient.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./oauthIntegrations",
+      "resolved": "oauthIntegrations.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./wordpressComClient",
+      "resolved": "wordpressComClient.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./googleDriveClient",
+      "resolved": "googleDriveClient.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./accountVault",
+      "resolved": "accountVault.js"
+    },
+    {
+      "source": "pipelineEngine.test.js",
+      "reference": "./pipelineEngine",
+      "resolved": "pipelineEngine.js"
+    },
+    {
+      "source": "pluginManager.js",
+      "reference": "./pluginManifest",
+      "resolved": "pluginManifest.js"
+    },
+    {
+      "source": "pluginManager.js",
+      "reference": "./pluginRuntime",
+      "resolved": "pluginRuntime.js"
+    },
+    {
+      "source": "pluginManager.js",
+      "reference": "./atomicWrite",
+      "resolved": "atomicWrite.js"
+    },
+    {
+      "source": "pluginManager.js",
+      "reference": "./pluginSecurityScanner",
+      "resolved": "pluginSecurityScanner.js"
+    },
+    {
+      "source": "projectCloner.js",
+      "reference": "./projectPortDetector",
+      "resolved": "projectPortDetector.js"
+    },
+    {
+      "source": "projectCloner.js",
+      "reference": "./projectSettings",
+      "resolved": "projectSettings.js"
+    },
+    {
+      "source": "projectCloner.js",
+      "reference": "./projectRegistry",
+      "resolved": "projectRegistry.js"
+    },
+    {
+      "source": "projectCloner.js",
+      "reference": "./githubGitAuth",
+      "resolved": "githubGitAuth.js"
+    },
+    {
+      "source": "projectCloner.js",
+      "reference": "./projectSourceInput",
+      "resolved": "projectSourceInput.js"
+    },
+    {
+      "source": "projectCloner.js",
+      "reference": "./projectLaunchPreflight",
+      "resolved": "projectLaunchPreflight.js"
+    },
+    {
+      "source": "projectRegistry.js",
+      "reference": "./atomicWrite",
+      "resolved": "atomicWrite.js"
+    },
+    {
+      "source": "pureLogic.test.js",
+      "reference": "./pureLogic",
+      "resolved": "pureLogic.js"
+    },
+    {
+      "source": "scripts/buildAndPublishVerified.js",
+      "reference": "./verifyPackagedContents",
+      "resolved": "scripts/verifyPackagedContents.js"
+    },
+    {
+      "source": "scripts/buildLocalSigned.js",
+      "reference": "./verifyPackagedContents",
+      "resolved": "scripts/verifyPackagedContents.js"
+    },
+    {
+      "source": "section7Ipc.js",
+      "reference": "./visualContext",
+      "resolved": "visualContext.js"
+    },
+    {
+      "source": "section7Ipc.js",
+      "reference": "./runtimeDebugger",
+      "resolved": "runtimeDebugger.js"
+    },
+    {
+      "source": "section7Ipc.js",
+      "reference": "./debugAdapter",
+      "resolved": "debugAdapter.js"
+    },
+    {
+      "source": "section8Ipc.js",
+      "reference": "./pluginManager",
+      "resolved": "pluginManager.js"
+    },
+    {
+      "source": "semanticWorker.js",
+      "reference": "./astEngine",
+      "resolved": "astEngine.js"
+    },
+    {
+      "source": "semanticWorker.js",
+      "reference": "./workspaceIndexer",
+      "resolved": "workspaceIndexer.js"
+    },
+    {
+      "source": "test/accountVault.test.js",
+      "reference": "../accountVault",
+      "resolved": "accountVault.js"
+    },
+    {
+      "source": "test/advancedTesting.test.js",
+      "reference": "../advancedTesting",
+      "resolved": "advancedTesting.js"
+    },
+    {
+      "source": "test/agentOrchestrator.test.js",
+      "reference": "../agentOrchestrator",
+      "resolved": "agentOrchestrator.js"
+    },
+    {
+      "source": "test/buildNumber.test.js",
+      "reference": "../buildNumber",
+      "resolved": "buildNumber.js"
+    },
+    {
+      "source": "test/codeChecker.test.js",
+      "reference": "../languageBreakdown",
+      "resolved": "languageBreakdown.js"
+    },
+    {
+      "source": "test/codeChecker.test.js",
+      "reference": "../codeChecker",
+      "resolved": "codeChecker.js"
+    },
+    {
+      "source": "test/codeLibrary.test.js",
+      "reference": "../codeLibrary",
+      "resolved": "codeLibrary.js"
+    },
+    {
+      "source": "test/codingModelProviders.test.js",
+      "reference": "../codingModelProviders",
+      "resolved": "codingModelProviders.js"
+    },
+    {
+      "source": "test/debugAdapter.test.js",
+      "reference": "../debugAdapter",
+      "resolved": "debugAdapter.js"
+    },
+    {
+      "source": "test/evalsEngine.test.js",
+      "reference": "../evalsEngine",
+      "resolved": "evalsEngine.js"
+    },
+    {
+      "source": "test/firebaseAccountClient.test.js",
+      "reference": "../firebaseAccountClient",
+      "resolved": "firebaseAccountClient.js"
+    },
+    {
+      "source": "test/gameProjectDetector.test.js",
+      "reference": "../gameProjectDetector",
+      "resolved": "gameProjectDetector.js"
+    },
+    {
+      "source": "test/gitWorkflow.test.js",
+      "reference": "../gitWorkflow",
+      "resolved": "gitWorkflow.js"
+    },
+    {
+      "source": "test/governanceEngine.test.js",
+      "reference": "../governanceEngine",
+      "resolved": "governanceEngine.js"
+    },
+    {
+      "source": "test/ipcSecurity.test.js",
+      "reference": "../ipcSecurity",
+      "resolved": "ipcSecurity.js"
+    },
+    {
+      "source": "test/languageIntelligence.test.js",
+      "reference": "../languageIntelligence",
+      "resolved": "languageIntelligence.js"
+    },
+    {
+      "source": "test/memoryEngine.test.js",
+      "reference": "../memoryEngine",
+      "resolved": "memoryEngine.js"
+    },
+    {
+      "source": "test/officialDevelopmentPlatforms.test.js",
+      "reference": "../officialDevelopmentPlatforms",
+      "resolved": "officialDevelopmentPlatforms.js"
+    },
+    {
+      "source": "test/officialLanguageServers.test.js",
+      "reference": "../officialLanguageServers",
+      "resolved": "officialLanguageServers.js"
+    },
+    {
+      "source": "test/operationalDiagnostics.test.js",
+      "reference": "../operationalDiagnostics",
+      "resolved": "operationalDiagnostics.js"
+    },
+    {
+      "source": "test/packageInventory.test.js",
+      "reference": "../scripts/verifyPackagedContents",
+      "resolved": "scripts/verifyPackagedContents.js"
+    },
+    {
+      "source": "test/packageInventory.test.js",
+      "reference": "../package.json",
+      "resolved": "package.json"
+    },
+    {
+      "source": "test/pluginManager.test.js",
+      "reference": "../pluginManager",
+      "resolved": "pluginManager.js"
+    },
+    {
+      "source": "test/pluginManifest.test.js",
+      "reference": "../pluginManifest",
+      "resolved": "pluginManifest.js"
+    },
+    {
+      "source": "test/pluginMarketplace.test.js",
+      "reference": "../pluginManager",
+      "resolved": "pluginManager.js"
+    },
+    {
+      "source": "test/pluginMarketplace.test.js",
+      "reference": "../pluginMarketplaceClient",
+      "resolved": "pluginMarketplaceClient.js"
+    },
+    {
+      "source": "test/pluginRuntime.test.js",
+      "reference": "../pluginRuntime",
+      "resolved": "pluginRuntime.js"
+    },
+    {
+      "source": "test/pluginSecurityScanner.test.js",
+      "reference": "../pluginSecurityScanner",
+      "resolved": "pluginSecurityScanner.js"
+    },
+    {
+      "source": "test/pluginSecurityScanner.test.js",
+      "reference": "../pluginManager",
+      "resolved": "pluginManager.js"
+    },
+    {
+      "source": "test/portableProjectConfig.test.js",
+      "reference": "../portableProjectConfig",
+      "resolved": "portableProjectConfig.js"
+    },
+    {
+      "source": "test/privateRepositoryClone.test.js",
+      "reference": "../githubGitAuth",
+      "resolved": "githubGitAuth.js"
+    },
+    {
+      "source": "test/projectImport.test.js",
+      "reference": "../projectSourceInput",
+      "resolved": "projectSourceInput.js"
+    },
+    {
+      "source": "test/projectLaunchPreflight.test.js",
+      "reference": "../projectLaunchPreflight",
+      "resolved": "projectLaunchPreflight.js"
+    },
+    {
+      "source": "test/projectPortDetection.test.js",
+      "reference": "../projectPortDetector",
+      "resolved": "projectPortDetector.js"
+    },
+    {
+      "source": "test/projectTemplates.test.js",
+      "reference": "../projectTemplates",
+      "resolved": "projectTemplates.js"
+    },
+    {
+      "source": "test/providerDiscovery.test.js",
+      "reference": "../providerDiscovery",
+      "resolved": "providerDiscovery.js"
+    },
+    {
+      "source": "test/runtimeDebugger.test.js",
+      "reference": "../runtimeDebugger",
+      "resolved": "runtimeDebugger.js"
+    },
+    {
+      "source": "test/secretScanner.test.js",
+      "reference": "../secretScanner",
+      "resolved": "secretScanner.js"
+    },
+    {
+      "source": "test/section0.test.js",
+      "reference": "../atomicWrite",
+      "resolved": "atomicWrite.js"
+    },
+    {
+      "source": "test/section0.test.js",
+      "reference": "../aiInventory",
+      "resolved": "aiInventory.js"
+    },
+    {
+      "source": "test/section1.test.js",
+      "reference": "../workspaceIndexer",
+      "resolved": "workspaceIndexer.js"
+    },
+    {
+      "source": "test/section1.test.js",
+      "reference": "../semanticContext",
+      "resolved": "semanticContext.js"
+    },
+    {
+      "source": "test/section7Ipc.test.js",
+      "reference": "../section7Ipc",
+      "resolved": "section7Ipc.js"
+    },
+    {
+      "source": "test/section8Ipc.test.js",
+      "reference": "../section8Ipc",
+      "resolved": "section8Ipc.js"
+    },
+    {
+      "source": "test/toolRegistry.test.js",
+      "reference": "../toolRegistry",
+      "resolved": "toolRegistry.js"
+    },
+    {
+      "source": "test/trainingPipeline.test.js",
+      "reference": "../trainingDataset",
+      "resolved": "trainingDataset.js"
+    },
+    {
+      "source": "test/updaterIntegration.test.js",
+      "reference": "../scripts/buildLocalSigned",
+      "resolved": "scripts/buildLocalSigned.js"
+    },
+    {
+      "source": "test/visualContext.test.js",
+      "reference": "../visualContext",
+      "resolved": "visualContext.js"
+    },
+    {
+      "source": "test/webDevelopmentKnowledge.test.js",
+      "reference": "../webDevelopmentKnowledge",
+      "resolved": "webDevelopmentKnowledge.js"
+    }
+  ],
+  "missingCrossReferences": [],
+  "files": [
+    {
+      "path": ".github/workflows/release-audit.yml",
+      "type": ".yml",
+      "size": 1705,
+      "sha256": "c7eab05fa73488a488b860eb761d223847a819bfdba9c29925a882da6eb9b469"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "type": ".yml",
+      "size": 1482,
+      "sha256": "8a6afb422b716b5b1f8df26d10870cb99b5e0e7f1b45e98656ce074564761cc6"
+    },
+    {
+      "path": ".github/workflows/section0-stability.yml",
+      "type": ".yml",
+      "size": 526,
+      "sha256": "fcd8377b214d8669f32baddacf76a6965ceffcc76f032ccb2fa2e52b0a26165a"
+    },
+    {
+      "path": ".github/workflows/sync-upgrade-branch.yml",
+      "type": ".yml",
+      "size": 4731,
+      "sha256": "1f5621bca1c1531e98b24e85838af2ecf2390aceb7ab34320193d2de3d813708"
+    },
+    {
+      "path": ".gitignore",
+      "type": "[no extension]",
+      "size": 199,
+      "sha256": "140a8c95b02d8bd0b6709d35f92a7353f54f8dbda1622701504593de01a9f06d"
+    },
+    {
+      "path": "AI_IMPROVEMENT_FRAMEWORK.md",
+      "type": ".md",
+      "size": 7171,
+      "sha256": "692303e0984da35abbcd0e0953ef787647dba03215089cd3336cea5bd5d21cd0"
+    },
+    {
+      "path": "CONSTITUTION.md",
+      "type": ".md",
+      "size": 946,
+      "sha256": "c79a194eddd3a74e77ba8263de837c3aa2638db98d6601f2130fdb610ba862fc"
+    },
+    {
+      "path": "FIREBASE_SETUP.md",
+      "type": ".md",
+      "size": 1935,
+      "sha256": "64e98c499ef648a407373336124b1c172cc9ba9788a4eb6f5662d6f433a657a7"
+    },
+    {
+      "path": "README.md",
+      "type": ".md",
+      "size": 20135,
+      "sha256": "3619089d13180a6311c138904300abbe2011746423ee2327a84d2a707b10a997"
+    },
+    {
+      "path": "SECURITY.md",
+      "type": ".md",
+      "size": 640,
+      "sha256": "f1eeb89d80a2b39428616c848cfac99edb15d77b59dcc11d0c9dede412a22754"
+    },
+    {
+      "path": "START-NEXUS.bat",
+      "type": ".bat",
+      "size": 2470,
+      "sha256": "1f8cb1d57abd50424f7caf9a6ddaa5c9f48495ac861458aabb33c74f073a5330"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "type": ".md",
+      "size": 1141,
+      "sha256": "e8782caf120732aaa8cad71e78ffcb8502e31582e0af67b07c66ad8e9d0449f2"
+    },
+    {
+      "path": "accountVault.js",
+      "type": ".js",
+      "size": 2411,
+      "sha256": "8ee225c33cf1e673ec4d4383db1b566c61f8a4ec6babb9b4dbdd4a2d89345829"
+    },
+    {
+      "path": "advancedTesting.js",
+      "type": ".js",
+      "size": 3040,
+      "sha256": "c335a1f3b1d22394d58f0d217ee8694a9887f09f2ec05b305b98d938ab364d16"
+    },
+    {
+      "path": "agentOrchestrator.js",
+      "type": ".js",
+      "size": 3309,
+      "sha256": "4fabd36e661dc2d1dec99fc2ef1deb77a8795056267d4a02a1eeef1590d23a1c"
+    },
+    {
+      "path": "aiAlerts.js",
+      "type": ".js",
+      "size": 3654,
+      "sha256": "c24031558c9081d992d74f47f3cfa851f6718e55663991acf4c4b9af9a866d50"
+    },
+    {
+      "path": "aiCostOptimizer.js",
+      "type": ".js",
+      "size": 5325,
+      "sha256": "58aa2d48cd77e8ea5f569c7087fe775aa6568c40fa9ff2f6c730ea3344b2f515"
+    },
+    {
+      "path": "aiGuardrailTester.js",
+      "type": ".js",
+      "size": 3717,
+      "sha256": "c0d7e23b286672a4cedbc02521ea6fd82bb8f5ba3ad561d70e65cb14b310156f"
+    },
+    {
+      "path": "aiInventory.js",
+      "type": ".js",
+      "size": 1843,
+      "sha256": "687097557589024259d0638b31c9829f7efeceacaa010d17207f3fd2b477202d"
+    },
+    {
+      "path": "aiMetrics.js",
+      "type": ".js",
+      "size": 5202,
+      "sha256": "02ba7fc89e47adc1f5fa75d16238844e4cb4a5ffb3c7e5b2bb85a52f64385588"
+    },
+    {
+      "path": "aiPerformanceTuner.js",
+      "type": ".js",
+      "size": 1889,
+      "sha256": "9572a2e91030cddda16cca15d1685116c9ccae1b1a78e7ba09fbbdf6833a54dc"
+    },
+    {
+      "path": "aiRecommendations.js",
+      "type": ".js",
+      "size": 7312,
+      "sha256": "0a32b31eaa931548ab7c06a683e3d4e4d185f97cdf702a3d7e43a0cf701fcf47"
+    },
+    {
+      "path": "aiUpgradeOrchestrator.js",
+      "type": ".js",
+      "size": 6416,
+      "sha256": "8d8d8b88a557eeea6d7c73871440440e680faa2db04aba315d72a4349b0b96ab"
+    },
+    {
+      "path": "astEngine.js",
+      "type": ".js",
+      "size": 6056,
+      "sha256": "ed475834111b5c8526a5367c61576a57ce14180db5a741d43b23a8b71b3d9e42"
+    },
+    {
+      "path": "atomicWrite.js",
+      "type": ".js",
+      "size": 2759,
+      "sha256": "094e7e942dac75bbbe6116ab30f8a3cbb493bcdde4633ad35356d43675e946bf"
+    },
+    {
+      "path": "backgroundGitSync.js",
+      "type": ".js",
+      "size": 1329,
+      "sha256": "e3e9412761b37691bfd0d381620022233e11b623a3a6f3dcbeeada351e49a6a1"
+    },
+    {
+      "path": "bootstrap.js",
+      "type": ".js",
+      "size": 1636,
+      "sha256": "cd805a63c53fa709bc2e49ae6b1103b9ed5a2aa8b5d430da112f399ad2572d65"
+    },
+    {
+      "path": "build-installer.bat",
+      "type": ".bat",
+      "size": 2245,
+      "sha256": "ee29a6f9def81f87242ca7e24c3b159f7233816374d7b6f4ebdee4b09e67d044"
+    },
+    {
+      "path": "buildNumber.js",
+      "type": ".js",
+      "size": 1420,
+      "sha256": "f5fec0685aaf6361d1d60b85657f20a12648ba7dc990921626b43b02782ae493"
+    },
+    {
+      "path": "changelogGenerator.js",
+      "type": ".js",
+      "size": 2639,
+      "sha256": "9092eac1f9d8c8297b07511941b395eacb243da35342674a3c486535cc30bf5e"
+    },
+    {
+      "path": "codeChecker.js",
+      "type": ".js",
+      "size": 17626,
+      "sha256": "2f8a49b3f26ed4be119b57b8996acdd1291d59e160f0210b75cf4f52d76fa193"
+    },
+    {
+      "path": "codeLibrary.js",
+      "type": ".js",
+      "size": 12003,
+      "sha256": "79eb5a76e03369c8abb3d8ce813ab05d31dfc74553a6aedcbce8a98d065c168e"
+    },
+    {
+      "path": "codingModelProviders.js",
+      "type": ".js",
+      "size": 2312,
+      "sha256": "f0d82b8b49705bd532cf349a5bcf4ed55f504d2726faa4a023134c29ceaf3d99"
+    },
+    {
+      "path": "complianceMonitor.js",
+      "type": ".js",
+      "size": 2775,
+      "sha256": "e32178f55c00a8b345b7b5047a942198f6bc9d5ef8cfd79b36ff7450362c712c"
+    },
+    {
+      "path": "debugAdapter.js",
+      "type": ".js",
+      "size": 3922,
+      "sha256": "078371bf94c04ccf6f8e28da365aa35c1c5bac1a728f73c7ef5deef00668173e"
+    },
+    {
+      "path": "dependencyAuditor.js",
+      "type": ".js",
+      "size": 2954,
+      "sha256": "b0105244c1b48a7f3512dcdac16c14584ab3a30d9d0ac4406338bbdbe15e9cf3"
+    },
+    {
+      "path": "evalsEngine.js",
+      "type": ".js",
+      "size": 2111,
+      "sha256": "4d6e7d686b2c44c55d9e217386fcc776fceb32a2829be6cf6b40f7125320da7a"
+    },
+    {
+      "path": "experimentationFramework.js",
+      "type": ".js",
+      "size": 4611,
+      "sha256": "fd794a9d9b5cce5c692aa014d046f4b094b35eac5bc772227284b49c25025be1"
+    },
+    {
+      "path": "fineTuneTrainer.js",
+      "type": ".js",
+      "size": 3295,
+      "sha256": "73c26d1675ce920c3cfb6010ed42847d816263bfdb40e385984bbbb38a4aeb10"
+    },
+    {
+      "path": "firebaseAccountClient.js",
+      "type": ".js",
+      "size": 5811,
+      "sha256": "08fff8ab6531745c9b98f789c5729c280d6a548d852686a9c8a30b3be18bd2af"
+    },
+    {
+      "path": "firestore.rules",
+      "type": ".rules",
+      "size": 2049,
+      "sha256": "fb6bec5a833afdb71c8c157f8c5d4f9217afbac03abd5a3b7ff0d267ca842fac"
+    },
+    {
+      "path": "fullStackSupport.js",
+      "type": ".js",
+      "size": 11066,
+      "sha256": "b7793c6282b5425a0970cedd7d3ce9c1c85af62dcd7a1b1d355cb1e94f62e23a"
+    },
+    {
+      "path": "gameProjectDetector.js",
+      "type": ".js",
+      "size": 4800,
+      "sha256": "0c4092480e706f69305b8b8fb1dcc83a01bd85568b67b025cfe81ddbb4eae379"
+    },
+    {
+      "path": "gitWorkflow.js",
+      "type": ".js",
+      "size": 6229,
+      "sha256": "76fab3b3ed1281f72410f1a5fc9a8652d0098eefea6248a97eae4a8ac79dfc27"
+    },
+    {
+      "path": "githubClient.js",
+      "type": ".js",
+      "size": 13193,
+      "sha256": "e84e2d3129e61e4b864f6af296b315897c2c385baa5b6e8057208499d05da94f"
+    },
+    {
+      "path": "githubGitAuth.js",
+      "type": ".js",
+      "size": 758,
+      "sha256": "71ab2bac34f637e83e32d570940df18a27c3ce3de835ef0e63d8199e7fe0ece1"
+    },
+    {
+      "path": "googleDriveClient.js",
+      "type": ".js",
+      "size": 3613,
+      "sha256": "f77216661ef2636c1a8f0ed9fc5e31e817a69d7da13110b69b650e979aecd6ca"
+    },
+    {
+      "path": "governanceEngine.js",
+      "type": ".js",
+      "size": 2624,
+      "sha256": "a6025fb51fd7a7cc6ba8ce43ea5f861a99b0cc4cf1eeaf1d176a8a1dc3e3d889"
+    },
+    {
+      "path": "index.html",
+      "type": ".html",
+      "size": 134232,
+      "sha256": "2e791f5181a83984d49174107f23e6bb1c619d6b48eb10d08c9a5ed8469c9cab"
+    },
+    {
+      "path": "inventoryWorker.js",
+      "type": ".js",
+      "size": 4957,
+      "sha256": "ca8437c0674078f8a848c475e8d3cc1dfb497ef726cb2d4941bfa8f798ab7a15"
+    },
+    {
+      "path": "ipcSecurity.js",
+      "type": ".js",
+      "size": 789,
+      "sha256": "49f2d49798af62a0507af58e4a576ff9ece01dc664c4abc4ab2f901fb9f24b19"
+    },
+    {
+      "path": "knowledgeBase.js",
+      "type": ".js",
+      "size": 2129,
+      "sha256": "397e2e9cda2f546f85fe1a8ae332ba37c091599ff79b6ec07f6c585829622018"
+    },
+    {
+      "path": "languageBreakdown.js",
+      "type": ".js",
+      "size": 9475,
+      "sha256": "8e0458bad2a5396b19ac1ec80f75b77ad8202857b769a30c8af7142bc167c580"
+    },
+    {
+      "path": "languageIntelligence.js",
+      "type": ".js",
+      "size": 8198,
+      "sha256": "fa19685ff801caa04614deecee7ebd0ae3bb4183b54b99d12521d085e3d95960"
+    },
+    {
+      "path": "learning_sources/AGENTS.md.txt",
+      "type": ".txt",
+      "size": 701,
+      "sha256": "14e7927d7e53c61d22a9a7b51a3f7ec528304b1c028fb39aa899e22900df184a"
+    },
+    {
+      "path": "learning_sources/SPEC.md.txt",
+      "type": ".txt",
+      "size": 1273,
+      "sha256": "84e5a946ab506832a2d67b519028ac1e55e77fac2fc156bfca8482975e8b0052"
+    },
+    {
+      "path": "learning_sources/TECHNICAL_MANUAL.md.txt",
+      "type": ".txt",
+      "size": 40195,
+      "sha256": "d4663c2d6297464966b601005113aa13e8b3324cd7d669a2e8ca631c8e2b826f"
+    },
+    {
+      "path": "learning_sources/scriptsprocess_logs.py.txt",
+      "type": ".txt",
+      "size": 1335,
+      "sha256": "7e72cae6044daac468d512f97d581a115898260a533aa0012275fbee2c44cc88"
+    },
+    {
+      "path": "learning_sources/system_instruction.md.txt",
+      "type": ".txt",
+      "size": 2136,
+      "sha256": "7bc18c266a802db154f840e87d0630d46db8ae671fda613170e309bd829aaf5d"
+    },
+    {
+      "path": "main.js",
+      "type": ".js",
+      "size": 219767,
+      "sha256": "4d3dcf09fb4083bd89ec47aaa02adff4a22cddc6c18b4c91a2225cdd8eaf7520"
+    },
+    {
+      "path": "memoryEngine.js",
+      "type": ".js",
+      "size": 3024,
+      "sha256": "c6d98c7bfbfb6912dbccd0506a3cabcbee9b8bb8e66790b151c80036c2ab03c8"
+    },
+    {
+      "path": "oauthIntegrations.js",
+      "type": ".js",
+      "size": 7851,
+      "sha256": "88d24e72a4828b4dbdee3851e91926272a44d487abba3ab95bb2bb49fd0a3d4c"
+    },
+    {
+      "path": "officialDevelopmentPlatforms.js",
+      "type": ".js",
+      "size": 6649,
+      "sha256": "08e063902bfd301f3891ae6563950e6cd184c0378bd071c8fc0c98f17c7b8b2f"
+    },
+    {
+      "path": "officialLanguageServers.js",
+      "type": ".js",
+      "size": 11075,
+      "sha256": "911fac21bdb864c0bf8e3c20f4c371b2b0f39b658f879475d8cace7c5e10d089"
+    },
+    {
+      "path": "operationalDiagnostics.js",
+      "type": ".js",
+      "size": 3208,
+      "sha256": "69bfa3a44c5f5644897db554c02544150ece8baed0e612a4f40d57a3d3e7fa5e"
+    },
+    {
+      "path": "package-lock.json",
+      "type": ".json",
+      "size": 159322,
+      "sha256": "cc9b22ec0d0f0d9e09de6750be7bef41589e5be5c6de2fe4c92424d8b9747be8"
+    },
+    {
+      "path": "package.json",
+      "type": ".json",
+      "size": 5130,
+      "sha256": "cafdd092d79d33b5b7ab2a6165e8bb7bd72f6f8f94a73c4cfe1be89769b962a8"
+    },
+    {
+      "path": "pipelineEngine.js",
+      "type": ".js",
+      "size": 7658,
+      "sha256": "d3321a804303e18c401b70ef718fe3ae582be859d3a59463efd06f5b6c4189eb"
+    },
+    {
+      "path": "pipelineEngine.test.js",
+      "type": ".js",
+      "size": 6113,
+      "sha256": "462d8b5e5e206b0f77730e0525fe5c819b9237d7e8b28f12e49852ddbfae8f89"
+    },
+    {
+      "path": "pluginManager.js",
+      "type": ".js",
+      "size": 12744,
+      "sha256": "4baacab46fb76d6eb336b1b85c39c1d3e136bdabdf76f0b25d77d9c49f5e6d50"
+    },
+    {
+      "path": "pluginManifest.js",
+      "type": ".js",
+      "size": 3267,
+      "sha256": "088455f77d8f062ffd5b1e19bbb013adf241cc1b856477295f1735fe99eb019a"
+    },
+    {
+      "path": "pluginMarketplaceClient.js",
+      "type": ".js",
+      "size": 4734,
+      "sha256": "809dcdf423989a586aa8e374484b1d3012b05ed230e261e1a9058fe96e629bb1"
+    },
+    {
+      "path": "pluginRuntime.js",
+      "type": ".js",
+      "size": 7657,
+      "sha256": "24869a9903ca4b66c100b67a88a4a8c25512d3525767c66a7a1d8a937ed38fe1"
+    },
+    {
+      "path": "pluginSecurityScanner.js",
+      "type": ".js",
+      "size": 6315,
+      "sha256": "be67898a711ecca641c8b0e2ad71797e79704ee729606516685f935b0b78cdc1"
+    },
+    {
+      "path": "pluginWorker.js",
+      "type": ".js",
+      "size": 5487,
+      "sha256": "455325bea205b7819dc9681bec331b99725965fdd9007f1b096f4f92992181bb"
+    },
+    {
+      "path": "portableProjectConfig.js",
+      "type": ".js",
+      "size": 5552,
+      "sha256": "147a8281c0cfc2f7cfd05ac35ebc10243fd28d221990e4052afc05de7445ba63"
+    },
+    {
+      "path": "preload.js",
+      "type": ".js",
+      "size": 28863,
+      "sha256": "dcc167e3385a8f35a3c736715e13736c907b1d773b3316fbc154628dedf73be3"
+    },
+    {
+      "path": "projectCloner.js",
+      "type": ".js",
+      "size": 5679,
+      "sha256": "d98e54eef85e714984aaabe8173723f16f86bcf9fa4a6360536684f86640d9b2"
+    },
+    {
+      "path": "projectLaunchPreflight.js",
+      "type": ".js",
+      "size": 4849,
+      "sha256": "6bc87a2b2a7dba3c70f07357532fbc94bb5644b94e58d04553f45847a1fd182c"
+    },
+    {
+      "path": "projectPortDetector.js",
+      "type": ".js",
+      "size": 1987,
+      "sha256": "494e4b34e4a84aef7ce114162482434a31270649f35757b0612b06723dc14f1a"
+    },
+    {
+      "path": "projectRegistry.js",
+      "type": ".js",
+      "size": 2968,
+      "sha256": "0e820cd3155a7f25c5dddd5b0dfcb5f3105bc9d1c28c7a696017f804289d392f"
+    },
+    {
+      "path": "projectSettings.js",
+      "type": ".js",
+      "size": 2443,
+      "sha256": "ce704540c039b2a78f9944a2328ef321ce169709f28f59e6101ac0eac0e1f60e"
+    },
+    {
+      "path": "projectSourceInput.js",
+      "type": ".js",
+      "size": 1046,
+      "sha256": "8e53ceacdefa0462a25f6a17fb495beeb65d818f381db82f4072df6d44009af2"
+    },
+    {
+      "path": "projectTemplates.js",
+      "type": ".js",
+      "size": 1314,
+      "sha256": "6f1d82a0c360b833422e1b0e329e6f9e117814340dd6d5cf35179c88ed70f947"
+    },
+    {
+      "path": "promptTesting.js",
+      "type": ".js",
+      "size": 2911,
+      "sha256": "df82fec4242fb17726a993cbb653960f7f8ba4665dca56f28d307f0db05f7bcb"
+    },
+    {
+      "path": "providerDiscovery.js",
+      "type": ".js",
+      "size": 1708,
+      "sha256": "fcd17517cbff7c4cc41e0363853b5971e35cf238bac13fd4d4434dc8f4e58c1e"
+    },
+    {
+      "path": "pureLogic.js",
+      "type": ".js",
+      "size": 3357,
+      "sha256": "af0017159005f09ab9894cb975f3c6c190f3375440ad5bb206deef613740c4a4"
+    },
+    {
+      "path": "pureLogic.test.js",
+      "type": ".js",
+      "size": 8799,
+      "sha256": "83c50dfcaada1e235a1b4416d2734b5e8d115feb7caeb3493e6a25fad9949eb5"
+    },
+    {
+      "path": "release-notes.md",
+      "type": ".md",
+      "size": 1513,
+      "sha256": "1463e39534c0be998101d9d06df394df8dec8db559473c0005f4a5b4b895e034"
+    },
+    {
+      "path": "renderer.js",
+      "type": ".js",
+      "size": 270161,
+      "sha256": "ebbf11bd24d07c9ad91404b96fa2aea5eb7a45536730a3e2bfa8b5dab4b49146"
+    },
+    {
+      "path": "runtimeDebugger.js",
+      "type": ".js",
+      "size": 9426,
+      "sha256": "840853d0b22c91aed5192b44144b5a31e64a4d2ad9c03772c67dfd344e2b35b8"
+    },
+    {
+      "path": "scripts/buildAndPublishVerified.js",
+      "type": ".js",
+      "size": 1111,
+      "sha256": "8ca9fddd0007dee295f8886c6bd05ef1314f61fc39e7b99ba8f2cca5b96cd55e"
+    },
+    {
+      "path": "scripts/buildLocalSigned.js",
+      "type": ".js",
+      "size": 4576,
+      "sha256": "8facc6546b587f1094ec8d765cc84712ed71d325b3b312a63ed47a33c5c8d365"
+    },
+    {
+      "path": "scripts/checkSyntax.js",
+      "type": ".js",
+      "size": 1097,
+      "sha256": "d6e483946f9cd482c26ee60b7e9e58a90d9d7afe262031f672e44838399bc766"
+    },
+    {
+      "path": "scripts/releaseAudit.js",
+      "type": ".js",
+      "size": 5605,
+      "sha256": "d15be83a5d0ecb51278178bfce082fcfc15d7835d1563f450bc3ddc88f9f4807"
+    },
+    {
+      "path": "scripts/releaseStressGate.js",
+      "type": ".js",
+      "size": 1625,
+      "sha256": "e8ddd4067ffcf953cbf5c4fcd77a83b55bee7e13a9d7796ff10454d524b99d5c"
+    },
+    {
+      "path": "scripts/renew-local-signing.ps1",
+      "type": ".ps1",
+      "size": 2834,
+      "sha256": "caba60b19ed3332dbd03404226f0112a924dbbd632dccba953438eccb48f0697"
+    },
+    {
+      "path": "scripts/repairRepositoryInventory.js",
+      "type": ".js",
+      "size": 4414,
+      "sha256": "8a46f008bf3ef7b398bd1cf6a3bcd4df4c6f68d53f4e2963137ac5062db8536e"
+    },
+    {
+      "path": "scripts/restore-local-signing.ps1",
+      "type": ".ps1",
+      "size": 1495,
+      "sha256": "8923e3f5eb54d93f24d90e1363c1270d74903a3ac6bbecc8aa6ec7b66909f723"
+    },
+    {
+      "path": "scripts/signLocalWindows.js",
+      "type": ".js",
+      "size": 922,
+      "sha256": "b75577e63da41a0c1e15a50a03ddba7ea252ca3ee07fdb2d00830d80e004b5c4"
+    },
+    {
+      "path": "scripts/train_lora.py",
+      "type": ".py",
+      "size": 1914,
+      "sha256": "8417f289b570e0785a42af6876345b0e234e4877e0beacafee4ddc424767e474"
+    },
+    {
+      "path": "scripts/verifyArchitecture.js",
+      "type": ".js",
+      "size": 9642,
+      "sha256": "711a4581378915816a78e25b01ea70ac66dfb80054b67e753b896f79c66596f3"
+    },
+    {
+      "path": "scripts/verifyPackagedContents.js",
+      "type": ".js",
+      "size": 2542,
+      "sha256": "cfd2d6cfd67575751ebeb9c8eebc85d06995b7da276bd7c0152834f8f57ad4ea"
+    },
+    {
+      "path": "scripts/verifyRepositoryInventory.js",
+      "type": ".js",
+      "size": 5358,
+      "sha256": "90fe2c30356c90566077e9a0b7a8af4971813e39098bbd60605ef70a91a434ba"
+    },
+    {
+      "path": "secretScanner.js",
+      "type": ".js",
+      "size": 1201,
+      "sha256": "8111a5a12dc4d6ccc025a835e3a8f85a259921432fdc5d94906e44a6fffc561a"
+    },
+    {
+      "path": "section7Ipc.js",
+      "type": ".js",
+      "size": 5201,
+      "sha256": "28536876e122e5eb2de80459f0c2e98aff57ba754ffe6c5f9ee2995f75c32a50"
+    },
+    {
+      "path": "section8Ipc.js",
+      "type": ".js",
+      "size": 3801,
+      "sha256": "2ccaf05b9026a06e3baa7fff2008e0cff42c93e909467a38d6f40f1fb3eb0b11"
+    },
+    {
+      "path": "semanticContext.js",
+      "type": ".js",
+      "size": 1708,
+      "sha256": "23ee4857544c17df3d6a4940374a6d4f6ab2aabf729aaa738d1ec6818baa5ee9"
+    },
+    {
+      "path": "semanticWorker.js",
+      "type": ".js",
+      "size": 6598,
+      "sha256": "66f59dfb744a2bfbeb60ed2aed851444e0dcd50c280a3e33ddd265b9919ad14f"
+    },
+    {
+      "path": "storage.rules",
+      "type": ".rules",
+      "size": 769,
+      "sha256": "f555c99fceb7acfbabb5a68b90ea9393c4469579f1aafb2b5bc72d724359043d"
+    },
+    {
+      "path": "styles.css",
+      "type": ".css",
+      "size": 18352,
+      "sha256": "3bf6e4689fc72a51491cd3b75446ebbc72a16a75eea855abe38dbe3eaf6f8a35"
+    },
+    {
+      "path": "test/accountVault.test.js",
+      "type": ".js",
+      "size": 8459,
+      "sha256": "27661238e5a95248e106f60f8c98090b86b7080e786154d4e4b26758968e002a"
+    },
+    {
+      "path": "test/advancedTesting.test.js",
+      "type": ".js",
+      "size": 1875,
+      "sha256": "f3b348ae04e5588a81096c33df756c7df2fa0684944056c428a64e72858c036e"
+    },
+    {
+      "path": "test/agentOrchestrator.test.js",
+      "type": ".js",
+      "size": 1981,
+      "sha256": "00b75763bb0166d962231c23efdf412877851aa6465e62cacf1054058a8e3932"
+    },
+    {
+      "path": "test/branchSyncWorkflow.test.js",
+      "type": ".js",
+      "size": 2291,
+      "sha256": "6d1462d241d55a1aaf26a01cdf7bc6c5bb5a83cc9f5aa9d00ef6ddc898c0bf1b"
+    },
+    {
+      "path": "test/buildNumber.test.js",
+      "type": ".js",
+      "size": 1797,
+      "sha256": "7f865f046824b682035972b2fad2567b67a405e4a9f242c1d475511e07d95377"
+    },
+    {
+      "path": "test/codeChecker.test.js",
+      "type": ".js",
+      "size": 4717,
+      "sha256": "7cba702b0fc7bcf9a3cc195a48270c94d68504e7ecba75d7b699e8492d66826e"
+    },
+    {
+      "path": "test/codeLibrary.test.js",
+      "type": ".js",
+      "size": 2206,
+      "sha256": "e3b8345a3386b0aa696167782351cb266f5f41cafa74815f3fa7ba3af38fae50"
+    },
+    {
+      "path": "test/codingModelProviders.test.js",
+      "type": ".js",
+      "size": 1429,
+      "sha256": "c0e565abf5ef8a0c39113fc34b87d3f334880f570c3029b5b17d762e2725475a"
+    },
+    {
+      "path": "test/debugAdapter.test.js",
+      "type": ".js",
+      "size": 1347,
+      "sha256": "1e45b46510d3db745f4a940277c8c08fc57a73863283f2a97258235a39ef1895"
+    },
+    {
+      "path": "test/evalsEngine.test.js",
+      "type": ".js",
+      "size": 1567,
+      "sha256": "d0a56099116b684e692c715de1703e87d5efa8087849e318100e6a828198a213"
+    },
+    {
+      "path": "test/explainAndLearn.test.js",
+      "type": ".js",
+      "size": 1499,
+      "sha256": "344b60ceaba2dc29fc1042a0680498baf7adde6a3565ce692fe5679e1687f0bd"
+    },
+    {
+      "path": "test/firebaseAccountClient.test.js",
+      "type": ".js",
+      "size": 5354,
+      "sha256": "47a65e215c7fbac8ae349eea8b0db8716b72cce80f126b8d1cc2176f758771e0"
+    },
+    {
+      "path": "test/gameProjectDetector.test.js",
+      "type": ".js",
+      "size": 2389,
+      "sha256": "54ba8662ff1cd53664c51dfb72ce716a9408f01da1b9c0c10d11beec9854658c"
+    },
+    {
+      "path": "test/gitWorkflow.test.js",
+      "type": ".js",
+      "size": 2703,
+      "sha256": "63248a6fbc87fc26523ab51c9d8a2096b0a430500290cd56d605c75e823c0a89"
+    },
+    {
+      "path": "test/githubAutoSync.test.js",
+      "type": ".js",
+      "size": 3940,
+      "sha256": "8cdfda478472235ea87b21d0a3299d5c61597b9c96797c9f116e983681c72482"
+    },
+    {
+      "path": "test/githubOperations.test.js",
+      "type": ".js",
+      "size": 1125,
+      "sha256": "5ba81be96390c9c880be229bc7c299f5e591cf81c6af5fbd3ec346817e6079c1"
+    },
+    {
+      "path": "test/governanceEngine.test.js",
+      "type": ".js",
+      "size": 964,
+      "sha256": "35df1e9671d40c27782b3254d00cf92f65f8ff7082895f03dba8e5c9fdb79d75"
+    },
+    {
+      "path": "test/ipcSecurity.test.js",
+      "type": ".js",
+      "size": 2739,
+      "sha256": "1ca6e0577cf9f4f90f6f0e34286ddda5150697b0c0458117815b38ee0c74da59"
+    },
+    {
+      "path": "test/languageIntelligence.test.js",
+      "type": ".js",
+      "size": 2754,
+      "sha256": "9c9891aae4bdf704d0899caa84462bbb5b8a7c6b6306c33e3460042d40d993b9"
+    },
+    {
+      "path": "test/memoryEngine.test.js",
+      "type": ".js",
+      "size": 2057,
+      "sha256": "615ea0bb4e175f9fe427ca11b297911b0f14d8e7da3f31317dff7ac292d18352"
+    },
+    {
+      "path": "test/modernShell.test.js",
+      "type": ".js",
+      "size": 1979,
+      "sha256": "8cc7da4495f3fe2410d3693b28df9e5ac0091ae93055d578c5b7b94bb337b966"
+    },
+    {
+      "path": "test/oauthIntegrations.test.js",
+      "type": ".js",
+      "size": 2603,
+      "sha256": "d17944a3963c98ce4a3cbbd030f1767fbaf34035d1e7c2bfa51ef7da42ff98ea"
+    },
+    {
+      "path": "test/officialDevelopmentPlatforms.test.js",
+      "type": ".js",
+      "size": 1831,
+      "sha256": "8d1548ec0a2eb2f10d49813cff14bf4bd315ccc5617eaa154eb4a3397f878944"
+    },
+    {
+      "path": "test/officialLanguageServers.test.js",
+      "type": ".js",
+      "size": 2858,
+      "sha256": "754b8378b831a665fe2181816690e13acac993d263c04cf1b04b62779ccabb04"
+    },
+    {
+      "path": "test/operationalDiagnostics.test.js",
+      "type": ".js",
+      "size": 1817,
+      "sha256": "39550af3ad644e6d1e1f4bc2c074817e69a32d02c627bb7bed74c915e7bb0db8"
+    },
+    {
+      "path": "test/packageInventory.test.js",
+      "type": ".js",
+      "size": 2821,
+      "sha256": "f8f647fe49a2c2cb3cecbb9ac3b7059d05122bb85071831948660c32cb9a7f56"
+    },
+    {
+      "path": "test/pluginManager.test.js",
+      "type": ".js",
+      "size": 2354,
+      "sha256": "5c3c2e57d04c80e31e7ca96525c5731f22f86dafe12c6e6d66ad0fd815cc6e2a"
+    },
+    {
+      "path": "test/pluginManifest.test.js",
+      "type": ".js",
+      "size": 1221,
+      "sha256": "cd1a6e2ee0a529968313216f05bcf354d73941c4823d4bcdc9c8b812b99fa61e"
+    },
+    {
+      "path": "test/pluginMarketplace.test.js",
+      "type": ".js",
+      "size": 5593,
+      "sha256": "0687957a3a45d9195c9c120b622a2c3224defcb9305f60f5e5023cc934833aa5"
+    },
+    {
+      "path": "test/pluginRuntime.test.js",
+      "type": ".js",
+      "size": 3572,
+      "sha256": "68be2a435c9991bad755d1f6da789bf1c75af2ed03d1613097f7c06b7a8439fa"
+    },
+    {
+      "path": "test/pluginSecurityScanner.test.js",
+      "type": ".js",
+      "size": 2910,
+      "sha256": "fe67dc0ca83eacef1d529b587e29c026c012036229788f861f6cc2e42222239b"
+    },
+    {
+      "path": "test/portableProjectConfig.test.js",
+      "type": ".js",
+      "size": 1827,
+      "sha256": "c936cb6f68ca88dcb1fa8b14957d2a361bfdba1c3093d7eac9b909663c436a38"
+    },
+    {
+      "path": "test/privateRepositoryClone.test.js",
+      "type": ".js",
+      "size": 1398,
+      "sha256": "5bb67505d0d0cb42a78b52068ea84aa4c9bc3bf7142ceebe1a92f054006c8e87"
+    },
+    {
+      "path": "test/projectImport.test.js",
+      "type": ".js",
+      "size": 993,
+      "sha256": "85e43080f47418bcdc11dd591fcc7395331a6086af5095aafc1c4614c8e4432c"
+    },
+    {
+      "path": "test/projectLaunchPreflight.test.js",
+      "type": ".js",
+      "size": 4810,
+      "sha256": "bd64c77f77830d32252840c7f5d75b52fd3a88ac6d83c183201c3973c4ef69c2"
+    },
+    {
+      "path": "test/projectPortDetection.test.js",
+      "type": ".js",
+      "size": 2092,
+      "sha256": "89aff90e0b2fbc0279d645eced1b0e687c263dfaf8a5f61883e32d60d395fa0b"
+    },
+    {
+      "path": "test/projectTemplates.test.js",
+      "type": ".js",
+      "size": 1245,
+      "sha256": "21c94b32e37cffc4049a2d72c2a4ad5b9274a77f92afcf3027613417ac705c93"
+    },
+    {
+      "path": "test/providerDiscovery.test.js",
+      "type": ".js",
+      "size": 1325,
+      "sha256": "c84f3083a3978cd5170f41f9a92ddcfbc40e5bd711de6ef1019cdc630c9c90d7"
+    },
+    {
+      "path": "test/runtimeDebugger.test.js",
+      "type": ".js",
+      "size": 2557,
+      "sha256": "7a4cbb71b110e75590e25be6133dbee0c30addf8a3319ed8c892381798a40f98"
+    },
+    {
+      "path": "test/secretScanner.test.js",
+      "type": ".js",
+      "size": 1269,
+      "sha256": "5f602ed22433b19cef15a8f2ee2a46f374650020f481035b3b092fed62043b95"
+    },
+    {
+      "path": "test/section0.test.js",
+      "type": ".js",
+      "size": 3725,
+      "sha256": "7fd594bc2b2ad4ad30647779ad9706a19b185c11105383902687befb921b80f0"
+    },
+    {
+      "path": "test/section1.test.js",
+      "type": ".js",
+      "size": 2858,
+      "sha256": "120e45651287efb403692b3cc504529e635707a01eba1e27ab51872d0211fb28"
+    },
+    {
+      "path": "test/section7Ipc.test.js",
+      "type": ".js",
+      "size": 954,
+      "sha256": "308ee4bb7df555ba32119f60b366a2d403bad45265f4568eea31476858e73fbe"
+    },
+    {
+      "path": "test/section8Ipc.test.js",
+      "type": ".js",
+      "size": 1802,
+      "sha256": "43ced02eb14c0b31c9b95c566764b6f0f4a293189d71f77ea1949985eca691b1"
+    },
+    {
+      "path": "test/toolRegistry.test.js",
+      "type": ".js",
+      "size": 1085,
+      "sha256": "280976c21c6db62195a629f0e6868cde09c61958a13abc57fbec14db6ee5938b"
+    },
+    {
+      "path": "test/trainingPipeline.test.js",
+      "type": ".js",
+      "size": 5319,
+      "sha256": "8482ddcb080840f45b82e82ca906aea9f8faf054567149914f4f723299a4ecd4"
+    },
+    {
+      "path": "test/uiUsability.test.js",
+      "type": ".js",
+      "size": 1649,
+      "sha256": "3c971ae79f1cfa0d5ae76f22e5a2d6d79ed721914d1283ac23af966714c1ea5f"
+    },
+    {
+      "path": "test/updaterIntegration.test.js",
+      "type": ".js",
+      "size": 6553,
+      "sha256": "15e87277effbdc573e10a0d98577b9650e30cf47983c560b1b047ce9485631d4"
+    },
+    {
+      "path": "test/visualContext.test.js",
+      "type": ".js",
+      "size": 1901,
+      "sha256": "268b40122c5af7b5f80154ba8a9f456889d119406884467fa7a977792248000f"
+    },
+    {
+      "path": "test/webDevelopmentKnowledge.test.js",
+      "type": ".js",
+      "size": 2690,
+      "sha256": "9a2da2fcbfaac18c843c5ec44b9602a28ccb4708b2d88a6982914efb3a305dab"
+    },
+    {
+      "path": "toolRegistry.js",
+      "type": ".js",
+      "size": 2819,
+      "sha256": "bcbff3dc7530518ff70ca366aa5fbbf48fab876e2607898a365a88d13137ffb7"
+    },
+    {
+      "path": "trainingDataset.js",
+      "type": ".js",
+      "size": 5007,
+      "sha256": "d974d0da3cba2da951276008fdc7b9449d3a70b1c83512a67497efa3f1614107"
+    },
+    {
+      "path": "updater.js",
+      "type": ".js",
+      "size": 5601,
+      "sha256": "d89ed6a885bde0219d88dbd8baa045601cae65d9f63f9b1f0acf14b24b485b0a"
+    },
+    {
+      "path": "visualContext.js",
+      "type": ".js",
+      "size": 3109,
+      "sha256": "fc59c6f350982558bb4feb08ea4a8f66e7f99541a82c59ff075cf6dcda891e5f"
+    },
+    {
+      "path": "webDevelopmentKnowledge.js",
+      "type": ".js",
+      "size": 9212,
+      "sha256": "1caa216d24aadc76a1a1d39f0705225e619fbbb8dcc9252567dc822290fb18d5"
+    },
+    {
+      "path": "webLanguageServices.js",
+      "type": ".js",
+      "size": 4036,
+      "sha256": "a5f7887fc628320ab80be4bd6ebe51e256f18cf49f4effdd61615da4d52f6f61"
+    },
+    {
+      "path": "wordpressComClient.js",
+      "type": ".js",
+      "size": 1384,
+      "sha256": "6452a63f7e90b129945b96c9f58016c92dc7654002c7cb7c2ec59c247b925dbb"
+    },
+    {
+      "path": "workspaceIndexer.js",
+      "type": ".js",
+      "size": 1577,
+      "sha256": "d0e75c210d9516757ebbe9b642fe5f4e6f1b1a040496ffdce8a570ebeb7ad74e"
+    }
+  ]
+}

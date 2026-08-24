@@ -27,6 +27,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node scripts/checkSyntax.js
       - run: node scripts/verifyArchitecture.js
+      - run: npm run inventory:verify
       - run: node --test
 
   dependency-and-release-audit:
@@ -39,6 +40,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm audit --omit=dev --audit-level=high
       - run: node scripts/releaseAudit.js
+      - run: npm run inventory:verify
 
   windows-package-smoke:
     runs-on: windows-latest
@@ -49,6 +51,7 @@ jobs:
           node-version: '20'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx electron-builder --win nsis --publish never
+      - run: npm run inventory:package
       - uses: actions/upload-artifact@v4
         with:
           name: nexus-overhaul-windows-installer

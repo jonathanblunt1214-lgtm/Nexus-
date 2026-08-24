@@ -17,4 +17,6 @@ jobs:
           node-version: '24'
       - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
       - run: node scripts/verifyArchitecture.js
+      - run: npm run inventory:verify
       - run: node --test
+      - run: npm run release:stress

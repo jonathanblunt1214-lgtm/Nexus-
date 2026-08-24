@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { build, Platform } = require('electron-builder');
+const { verifySourcePackageList, verifyPackagedContents } = require('./verifyPackagedContents');
 
 const CERTIFICATE_SUBJECT = 'Nexus Local Development';
 const MIN_INSTALLER_BYTES = 10 * 1024 * 1024;
@@ -68,6 +69,7 @@ function validateArtifacts(artifacts, thumbprint, signatureVerifier = verifySign
 async function main() {
   if (process.platform !== 'win32') throw new Error('Local Nexus signing is available only on Windows.');
   const thumbprint = findCertificate();
+  verifySourcePackageList();
   process.env.NEXUS_LOCAL_SIGNING_THUMBPRINT = thumbprint;
   const artifacts = expectedArtifacts();
   removeStaleArtifacts(artifacts);
@@ -84,6 +86,7 @@ async function main() {
       },
     },
   });
+  verifyPackagedContents();
   const result = validateArtifacts(artifacts, thumbprint);
   console.log(`Signed and verified Nexus installer (${result.installerBytes} bytes) with ${CERTIFICATE_SUBJECT}.`);
 }

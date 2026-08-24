@@ -52,7 +52,8 @@ test('release configuration publishes GitHub updater metadata', () => {
     provider: 'github', owner: 'jonathanblunt1214-lgtm', repo: 'Nexus-',
   });
   assert.ok(pkg.dependencies['electron-updater']);
-  assert.ok(pkg.scripts['dist:publish'].includes('--publish always'));
+  assert.equal(pkg.scripts['dist:publish'], 'node scripts/buildAndPublishVerified.js');
+  assert.match(read('scripts/buildAndPublishVerified.js'), /verifyPackagedContents\(\)[\s\S]*'--publish', 'always'/);
 
   const workflow = read('.github/workflows/release.yml');
   assert.match(workflow, /tags:\s*\n\s*- ["']v\*["']/);
