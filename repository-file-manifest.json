@@ -770,38 +770,38 @@
     {
       "path": ".github/workflows/branch-integrity.yml",
       "type": ".yml",
-      "size": 928,
-      "sha256": "eabaa2430de06172ea8faf8fda6ed4bc698c1dc400516a1cb598c9397c7ccef6"
+      "size": 971,
+      "sha256": "0901291561c1001c5def3b16a4ad3aaeeb4d79de2fbabbd4c09a4ce52e66748a"
     },
     {
       "path": ".github/workflows/promote-upgrade-to-main.yml",
       "type": ".yml",
-      "size": 765,
-      "sha256": "34aa61455f2dc758dca45ac0d69d3c68bb94ef15afcfcba853b25e1ecb3efcd5"
+      "size": 851,
+      "sha256": "9aff9e56b61f544acaa223e09ba311d0d60fc47407e46ec78481f10bec0209d0"
     },
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 1730,
-      "sha256": "23e6988b39e766af55080360e37b6b7d411524fa92c61628c2e82b918ca1e23d"
+      "size": 2031,
+      "sha256": "4cde9908d883fcc2176559ee3530df0159bd988c8a9aa74d3a92162fb4d036a8"
     },
     {
       "path": ".github/workflows/release.yml",
       "type": ".yml",
-      "size": 1417,
-      "sha256": "f324ede5513fb7ea3ca7f0d20620434e80b68e3db794c46e8c3aa209430b3c3b"
+      "size": 1503,
+      "sha256": "0f8554c154b2680e2b22fd0185ad203166bb560839c284630dbf2a69cbb63c9e"
     },
     {
       "path": ".github/workflows/section0-stability.yml",
       "type": ".yml",
-      "size": 493,
-      "sha256": "8c4b211ab10a9a4ae83a09e1b4f015485cdc4032cd3ff841f2b10c6d1405fb37"
+      "size": 579,
+      "sha256": "1a988ba45d7d3c70bbf658705bf576d20d608f280b52663558673bd6981bc7dc"
     },
     {
       "path": ".github/workflows/sync-upgrade-branch.yml",
       "type": ".yml",
-      "size": 4588,
-      "sha256": "e88b76dfd7068b160d72a8c94947c6ab335ddf8f90a62c61e3be3232bf6a9443"
+      "size": 4674,
+      "sha256": "4ad93aa62971c66d993d501476998bd54e6cceeec3731d6f4224310b03c19521"
     },
     {
       "path": ".gitignore",
