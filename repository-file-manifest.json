@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 184,
+  "fileCount": 186,
   "types": {
     "[no extension]": 2,
-    ".yml": 6,
+    ".yml": 7,
+    ".json": 3,
     ".md": 7,
     ".bat": 2,
     ".js": 153,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
-    ".json": 2,
     ".ps1": 2,
     ".py": 1,
     ".css": 1
@@ -804,10 +804,22 @@
       "sha256": "e88b76dfd7068b160d72a8c94947c6ab335ddf8f90a62c61e3be3232bf6a9443"
     },
     {
+      "path": ".github/workflows/the-crucible.yml",
+      "type": ".yml",
+      "size": 601,
+      "sha256": "8eec3467159969786dacee400156b7cdfefad4c7d1d9cf427c979111e99fdc18"
+    },
+    {
       "path": ".gitignore",
       "type": "[no extension]",
       "size": 343,
       "sha256": "0c6937cdb5537714b571bc9d7fc6afafddaea7fe42071a5324c38d215affdf08"
+    },
+    {
+      "path": ".thecrucible.json",
+      "type": ".json",
+      "size": 1253,
+      "sha256": "50c6e31b5c6c6e771a6dcab5b56bee36c8b2fa77b6fa7324d2fbbd74680d69ec"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1136,8 +1148,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 217510,
-      "sha256": "eb5c9e906b0734b86b620ce37e3279a294b69688145bd32b5e270c952b0575db"
+      "size": 217672,
+      "sha256": "764417d390ed1d1be699f6a7b6ab3576078b5d07df85b93b195582bb9af21ddb"
     },
     {
       "path": "memoryEngine.js",

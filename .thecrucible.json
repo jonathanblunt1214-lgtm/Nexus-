@@ -1,0 +1,42 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jonathanblunt1214-lgtm/The-Crucible/main/.thecrucible.schema.json",
+  "schemaVersion": 1,
+  "project": {
+    "name": "Nexus",
+    "projectId": "nexus"
+  },
+  "commands": {
+    "prepare": [
+      { "name": "Install locked dependencies", "run": "npm", "args": ["ci", "--ignore-scripts", "--no-audit", "--no-fund"] }
+    ],
+    "verify": [
+      { "name": "Nexus release Crucible", "run": "npm", "args": ["run", "release:crucible"] },
+      { "name": "Repository inventory", "run": "npm", "args": ["run", "inventory:verify"] }
+    ]
+  },
+  "artifacts": ["package.json", "repository-file-manifest.json"],
+  "clutter": {
+    "allow": [],
+    "allowDuplicateContent": false
+  },
+  "privacy": {
+    "githubIdentity": "jonathanblunt1214-lgtm"
+  },
+  "security": {
+    "allow": [],
+    "allowBinaries": [],
+    "dependencyAudit": [
+      { "name": "High-severity npm dependency audit", "run": "npm", "args": ["audit", "--audit-level=high", "--omit=dev"] }
+    ]
+  },
+  "authenticity": {
+    "claims": [
+      { "name": "Repository inventory is complete and current", "run": "npm", "args": ["run", "inventory:verify"] }
+    ]
+  },
+  "workload": {
+    "workers": 1,
+    "cycles": 1,
+    "timeoutMinutes": 30
+  }
+}

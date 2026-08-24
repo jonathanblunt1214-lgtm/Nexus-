@@ -1952,8 +1952,11 @@ ipcMain.handle('ai-suggest-features', async (_event, { folder }) => {
     const suggestions = JSON.parse(cleaned);
     return { ok: true, suggestions };
   } catch {
-    // Model didn't return clean JSON — hand back the raw text so the UI can still show something.
-    return { ok: true, suggestions: null, raw: result.text };
+    return {
+      ok: false,
+      suggestions: null,
+      error: 'The provider returned an invalid feature-suggestion response.',
+    };
   }
 });
 
@@ -3408,12 +3411,15 @@ ipcMain.handle('npm-check-outdated', async (_event, { folder }) => {
   // npm outdated intentionally exits with a non-zero code when outdated
   // packages exist - that's normal, not a failure, so read stdout either way.
   const result = await runCommand(folder, 'npm outdated --json');
+  if (!result.stdout.trim()) {
+    if (result.ok) return { ok: true, outdated: {} };
+    return { ok: false, outdated: null, error: result.error || result.stderr || 'npm outdated failed.' };
+  }
   try {
-    const parsed = JSON.parse(result.stdout || '{}');
+    const parsed = JSON.parse(result.stdout);
     return { ok: true, outdated: parsed };
   } catch {
-    // No output at all usually means nothing is outdated.
-    return { ok: true, outdated: {} };
+    return { ok: false, outdated: null, error: 'npm outdated returned an invalid response.' };
   }
 });
 
@@ -3744,7 +3750,7 @@ ipcMain.handle('email-account:sign-in', async (_event, value = {}) => {
 });
 ipcMain.handle('email-account:status', async () => {
   try { const session = await getFirebaseSession({ refreshProfile: true }); return { ok: true, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(session), email: session?.email || null, emailVerified: session?.emailVerified === true }; }
-  catch (error) { const cfg = loadConfig(); return { ok: true, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), email: cfg.firebaseEmail || null, emailVerified: cfg.firebaseEmailVerified === true, error: error.message }; }
+  catch (error) { const cfg = loadConfig(); return { ok: false, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), email: cfg.firebaseEmail || null, emailVerified: cfg.firebaseEmailVerified === true, error: error.message }; }
 });
 ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase()); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
