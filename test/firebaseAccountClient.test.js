@@ -39,6 +39,17 @@ test('GitHub and Google credentials can sign in or link to one Firebase-backed N
   assert.equal(bodies[1].idToken, 'existing-firebase-id');
 });
 
+test('GitHub Google and email are presented as methods for one Nexus account profile', () => {
+  const html = require('fs').readFileSync(require.resolve('../index.html'), 'utf8');
+  const renderer = require('fs').readFileSync(require.resolve('../renderer'), 'utf8');
+  assert.match(html, /id="connected-services-title">Nexus Account</);
+  assert.match(html, /GitHub, Google, and email are sign-in methods for the same Nexus account and profile/);
+  assert.doesNotMatch(html, />Nexus Email Account</);
+  assert.match(html, /id="nexus-profile-email"[^>]*readonly/);
+  assert.match(renderer, /profileEmail\.value = result\.nexusEmail \|\| ''/);
+  assert.match(renderer, /sign-in methods:/);
+});
+
 test('unified account wiring never places provider tokens in renderer state or the portable vault inventory', () => {
   const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
   const renderer = fs.readFileSync(path.join(__dirname, '..', 'renderer.js'), 'utf8');

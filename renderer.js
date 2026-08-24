@@ -4209,7 +4209,7 @@ async function signOutEmailAccount() {
   stopAccountVaultAutoSync();
   await window.nexus.emailAccountSignOut();
   document.getElementById('email-account-password').value = '';
-  showToast('info', 'Signed out of Nexus email account'); refreshEmailAccountStatus(); refreshAccountVaultStatus();
+  showToast('info', 'Signed out of Nexus account'); refreshEmailAccountStatus(); refreshOAuthServices(); refreshAccountVaultStatus();
 }
 
 async function resendEmailVerification() {
@@ -4227,9 +4227,10 @@ async function resetEmailAccountPassword() {
 async function refreshEmailAccountStatus() {
   const panel = document.getElementById('email-account-status'); if (!panel) return;
   const result = await window.nexus.emailAccountStatus();
-  if (!result.configured) { panel.innerText = 'Email accounts need Firebase configuration. Open Account provider configuration below.'; return; }
+  if (!result.configured) { panel.innerText = 'Email sign-in needs Firebase configuration. Open Account provider configuration below.'; return; }
   if (!result.signedIn) { panel.innerText = 'Not signed in with email.'; return; }
-  panel.innerText = `${result.email || 'Email account'} · ${result.emailVerified ? 'verified and ready to sync' : 'verification required before vault sync'}${result.error ? ` · ${result.error}` : ''}`;
+  panel.innerText = `Email sign-in method: ${result.email || 'signed in'} · ${result.emailVerified ? 'verified and ready to sync' : 'verification required before vault sync'}${result.error ? ` · ${result.error}` : ''}`;
+  const profileEmail = document.getElementById('nexus-profile-email'); if (profileEmail && result.email) profileEmail.value = result.email;
   if (result.emailVerified) document.getElementById('account-vault-email').checked = true;
 }
 
@@ -4243,7 +4244,8 @@ async function refreshOAuthServices() {
   const result = await window.nexus.oauthStatus();
   if (!result.ok) return;
   const providers = (result.linkedProviders || []).map((id) => id === 'password' ? 'Email' : id === 'github.com' ? 'GitHub' : id === 'google.com' ? 'Google' : id).join(', ');
-  document.getElementById('oauth-service-status').innerText = `Nexus account: ${result.nexusAccount ? `${result.nexusEmail || 'signed in'}${providers ? ` · login methods: ${providers}` : ''}` : 'not signed in'} · GitHub service: ${result.github ? 'connected' : 'not connected'} · Google service: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `connected${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not connected'}`;
+  document.getElementById('oauth-service-status').innerText = `Nexus account: ${result.nexusAccount ? `signed in${providers ? ` · sign-in methods: ${providers}` : ''}` : 'not signed in'} · GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `linked${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not linked'}`;
+  const profileEmail = document.getElementById('nexus-profile-email'); if (profileEmail) profileEmail.value = result.nexusEmail || '';
 }
 
 const ACCOUNT_VAULT_PREFERENCE_KEYS = [
