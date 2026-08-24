@@ -26,4 +26,5 @@
 - Replaced permanent Google and WordPress connect/disconnect button pairs with one state-aware control per service, and hid Drive and site actions until their service is connected.
 - Added a local pre-push privacy gate and matching GitHub checks that block credentials, personal paths, personal email addresses, signing keys, and Nexus account-state files from repository uploads.
 - Replaced the four-suite concurrency check with a true release workload gate that simultaneously exercises 20,000 project files, 4,000 atomic saves, 6,000 checker calls, 32 independent builds, repeated indexing, and four complete test suites.
+- Folded architecture, release, privacy, and repository-inventory verification into that same concurrent heavy gate so one result covers the complete release check.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

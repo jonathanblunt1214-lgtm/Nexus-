@@ -27,20 +27,24 @@ function runProcess(label, args, env = {}) {
 }
 
 async function main() {
-  console.log(`[stress-gate] Running ${workerCount} complete test suites beside ${workerCount} heavy project workloads.`);
+  console.log(`[stress-gate] Running every release check together: ${workerCount} complete test suites, ${workerCount} heavy project workloads, architecture, release, privacy, and inventory verification.`);
   console.log(`[stress-gate] Heavy target: ${workerCount * (Number(process.env.NEXUS_HEAVY_FILES) || 5000)} files, ${workerCount * (Number(process.env.NEXUS_HEAVY_SAVES) || 1000)} atomic saves, ${workerCount * (Number(process.env.NEXUS_HEAVY_CHECKS) || 1500)} checks, and ${workerCount * (Number(process.env.NEXUS_HEAVY_BUILDS) || 8)} builds.`);
   const jobs = [];
   for (let index = 1; index <= workerCount; index += 1) {
     jobs.push(runProcess(`Test worker ${index}`, ['--test'], { NEXUS_STRESS_WORKER:String(index) }));
     jobs.push(runProcess(`Heavy worker ${index}`, [path.join('scripts','heavyWorkloadWorker.js')], { NEXUS_STRESS_WORKER:String(index) }));
   }
+  jobs.push(runProcess('Architecture audit', [path.join('scripts','verifyArchitecture.js')]));
+  jobs.push(runProcess('Release audit', [path.join('scripts','releaseAudit.js')]));
+  jobs.push(runProcess('Privacy verification', [path.join('scripts','verifyRepositoryPrivacy.js')]));
+  jobs.push(runProcess('Repository inventory verification', [path.join('scripts','verifyRepositoryInventory.js')]));
   const results = await Promise.allSettled(jobs);
   const failures = results.filter(result => result.status === 'rejected');
   if (failures.length) {
     for (const failure of failures) console.error(failure.reason?.stack || failure.reason);
     throw new Error(`${failures.length} of ${jobs.length} stress jobs failed. Release blocked.`);
   }
-  console.log(`[stress-gate] PASS: ${workerCount} full suites and ${workerCount} heavy project workloads completed without corruption, incomplete builds, or hidden spawn failures.`);
+  console.log(`[stress-gate] PASS: all tests, heavy workloads, audits, privacy checks, and inventory checks completed together without corruption, incomplete builds, or hidden failures.`);
 }
 
 main().catch(error => {

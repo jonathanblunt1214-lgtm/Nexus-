@@ -37,6 +37,8 @@ test('every release is blocked until the concurrent heavy-load stress gate passe
   assert.match(workload, /checkCode/);
   assert.match(workload, /Parallel builds produced different artifacts/);
   assert.match(stress, /could not spawn/);
+  for (const gate of ['verifyArchitecture.js','releaseAudit.js','verifyRepositoryPrivacy.js','verifyRepositoryInventory.js']) assert.match(stress, new RegExp(gate.replace('.', '\\.')));
+  assert.match(stress, /all tests, heavy workloads, audits, privacy checks, and inventory checks completed together/);
   assert.ok(publish.indexOf('releaseStressGate.js') < publish.indexOf("'--publish', 'always'"));
   assert.match(workflow, /Heavy-load release stress gate[\s\S]*npm run release:stress/);
 });

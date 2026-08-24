@@ -1322,8 +1322,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 4732,
-      "sha256": "39d81ef1397f92018384aac6ad50f750933993fd1bba33af798768e48fd14ea7"
+      "size": 4897,
+      "sha256": "a2a21d6ff97f5dfb62c0d5f01cb8a94d6471707e2d3f0385aa5ec74046dea7c4"
     },
     {
       "path": "renderer.js",
@@ -1388,8 +1388,8 @@
     {
       "path": "scripts/releaseStressGate.js",
       "type": ".js",
-      "size": 2656,
-      "sha256": "912f48611c4d7bc3846cd499cf8863ad5b850bd36e24ab4481d8b89dd64441d1"
+      "size": 3144,
+      "sha256": "c5399ee6e9b6c6b8b168dcf7e12c09c642693f8ef3a469558ada5af2b49fcb47"
     },
     {
       "path": "scripts/remediateUpgradeForPromotion.js",
@@ -1652,8 +1652,8 @@
     {
       "path": "test/packageInventory.test.js",
       "type": ".js",
-      "size": 3815,
-      "sha256": "bc92f7f4b645d2b09c341af27b769263421172c1e9253bfa20ba3653aa2be95c"
+      "size": 4120,
+      "sha256": "3596630d23148793e08d0df08fb56b0db06cfbe83177c11a8ce30fe278894a00"
     },
     {
       "path": "test/pluginManager.test.js",
