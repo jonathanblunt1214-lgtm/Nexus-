@@ -202,6 +202,10 @@ function createWindow() {
     },
   });
 
+  // Register updater events before navigation begins. This guarantees the
+  // renderer sees the startup check even on fast machines where index.html
+  // can finish loading almost immediately.
+  initUpdater(mainWindow);
   mainWindow.loadFile('index.html');
   mainWindow.webContents.once('did-finish-load', () => {
     if (!app.isPackaged) return;
@@ -342,8 +346,6 @@ app.whenReady().then(async () => {
   diagnostics.record('info', 'app', 'ready', { startupMs: Math.round(performance.now() - startupStartedAt), crashDumps: app.getPath('crashDumps') });
   setupPreviewSession();
   setupPopupAllowlist();
-  initUpdater(mainWindow);
-
   const buildInfo = await computeBuildInfo();
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (buildInfo.ok) {
@@ -580,7 +582,7 @@ ipcMain.handle('resolve-project-path', async (_event, { input }) => {
       }
     });
     const detectedPort = sourceType === 'git' ? detectProjectPort(resolvedPath) : null;
-    return { ok: true, path: resolvedPath, sourceType, detectedPort };
+    return { ok: true, path: resolvedPath, sourceType, detectedPort, suggestedName: path.basename(resolvedPath) };
   } catch (err) {
     return { ok: false, error: err.message };
   }

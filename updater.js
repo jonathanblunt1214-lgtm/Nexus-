@@ -17,6 +17,7 @@ const { app } = require('electron');
 autoUpdater.autoInstallOnAppQuit = true;
 autoUpdater.autoDownload = false;
 autoUpdater.fullChangelog = true;
+autoUpdater.allowPrerelease = false;
 
 let mainWindow = null;
 let initialized = false;

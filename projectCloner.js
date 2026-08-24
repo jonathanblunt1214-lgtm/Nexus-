@@ -15,6 +15,7 @@ const { detectProjectPort } = require('./projectPortDetector');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
 const { authenticatedGitEnvironment } = require('./githubGitAuth');
+const { isGitUrl, normalizeGitUrl, repoNameFromUrl } = require('./projectSourceInput');
 
 // --- Detection ----------------------------------------------------------
 
@@ -22,27 +23,6 @@ const { authenticatedGitEnvironment } = require('./githubGitAuth');
  * Returns true if the given input string looks like a remote git URL
  * rather than a local filesystem path.
  */
-function isGitUrl(input) {
-  if (typeof input !== 'string') return false;
-  const trimmed = input.trim();
-  return (
-    /^https?:\/\/.+\.git$/i.test(trimmed) ||
-    /^https?:\/\/(www\.)?github\.com\/[^/]+\/[^/]+\/?$/i.test(trimmed) ||
-    /^git@.+:.+\.git$/i.test(trimmed)
-  );
-}
-
-/**
- * Derives a filesystem-safe folder name from a repo URL.
- * https://github.com/user/my-web-app.git -> "my-web-app"
- */
-function repoNameFromUrl(url) {
-  const cleaned = url.trim().replace(/\.git$/i, '').replace(/\/+$/, '');
-  const parts = cleaned.split('/');
-  const name = parts[parts.length - 1] || 'nexus-project';
-  return name.replace(/[^a-zA-Z0-9._-]/g, '-');
-}
-
 // --- Cloning --------------------------------------------------------------
 
 /**
@@ -59,8 +39,9 @@ function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
       return;
     }
 
+    const normalizedUrl = normalizeGitUrl(gitUrl);
     const projectsRoot = getProjectsRoot(); // defaults to Documents\Nexus Projects
-    const folderName = repoNameFromUrl(gitUrl);
+    const folderName = repoNameFromUrl(normalizedUrl);
     const destPath = path.join(projectsRoot, folderName);
 
     if (fs.existsSync(destPath)) {
@@ -68,16 +49,16 @@ function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
       if (contents.length > 0) {
         // Already cloned - don't re-clone or silently overwrite. Load as-is.
         onLog(`Project already exists locally at ${destPath}, using existing clone.`);
-        saveProject({ localPath: destPath, name: folderName, sourceUrl: gitUrl });
+        saveProject({ localPath: destPath, name: folderName, sourceUrl: normalizedUrl });
         resolve(destPath);
         return;
       }
     }
 
-    onLog(`Cloning ${gitUrl} into ${destPath} …`);
+    onLog(`Cloning ${normalizedUrl} into ${destPath} …`);
 
-    const gitProcess = spawn('git', ['clone', gitUrl, destPath], {
-      env: authenticatedGitEnvironment(gitUrl, githubToken),
+    const gitProcess = spawn('git', ['clone', normalizedUrl, destPath], {
+      env: authenticatedGitEnvironment(normalizedUrl, githubToken),
     });
 
     gitProcess.stdout.on('data', (data) => onLog(data.toString().trim()));
@@ -98,7 +79,7 @@ function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
     gitProcess.on('close', (code) => {
       if (code === 0) {
         onLog(`Clone complete: ${destPath}`);
-        saveProject({ localPath: destPath, name: folderName, sourceUrl: gitUrl });
+        saveProject({ localPath: destPath, name: folderName, sourceUrl: normalizedUrl });
         resolve(destPath);
       } else {
         reject(new Error(`git clone exited with code ${code}`));
@@ -130,6 +111,7 @@ async function resolveProjectPath(input, onLog = () => {}, options = {}) {
 
 module.exports = {
   isGitUrl,
+  normalizeGitUrl,
   repoNameFromUrl,
   cloneProject,
   resolveProjectPath,

@@ -28,6 +28,8 @@ test('Settings exposes installed version, progress, and explicit restart action'
 
 test('installed Nexus checks for updates every time the application opens', () => {
   const main = read('main.js');
+  const createWindow = main.slice(main.indexOf('function createWindow()'), main.indexOf('function setupPreviewSession()'));
+  assert.ok(createWindow.indexOf('initUpdater(mainWindow)') < createWindow.indexOf("mainWindow.loadFile('index.html')"), 'updater must initialize before navigation');
   assert.match(main, /webContents\.once\(['"]did-finish-load['"]/);
   assert.match(main, /if \(!app\.isPackaged\) return;\s*checkForUpdates\(\)/);
   assert.match(main, /Startup update check failed/);

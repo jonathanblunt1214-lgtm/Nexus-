@@ -500,7 +500,7 @@ async function generateNewProjectUI(e) {
 }
 
 async function addProject(e) {
-  const name = document.getElementById('project-name').value.trim();
+  let name = document.getElementById('project-name').value.trim();
   const rawInput = document.getElementById('project-path').value.trim();
   const command = document.getElementById('project-command').value.trim() || 'npm run dev';
   const portInput = document.getElementById('project-port');
@@ -508,8 +508,8 @@ async function addProject(e) {
   const mayReplaceDefaultPort = portInput.value.trim() === '' || portInput.value.trim() === '3000';
   const progressEl = document.getElementById('clone-progress');
 
-  if (!name || !rawInput) {
-    alert('Give the project a name, then either pick a folder or paste a GitHub URL.');
+  if (!rawInput) {
+    alert('Pick a project folder, choose a GitHub repository, or paste its GitHub URL. Nexus will fill in the project name automatically.');
     return;
   }
 
@@ -564,6 +564,11 @@ async function addProject(e) {
 
   progressEl.innerText = '';
   const folder = result.path;
+  name = name || result.suggestedName;
+  if (!name) {
+    alert('Nexus could not determine a project name. Enter a display name and try again.');
+    return;
+  }
 
   if (result.sourceType === 'git' && result.detectedPort?.port && mayReplaceDefaultPort) {
     port = result.detectedPort.port;
