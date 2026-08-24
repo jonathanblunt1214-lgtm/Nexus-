@@ -1,9 +1,6 @@
-name: Publish update before synchronizing upgrade branch
+name: Manually publish update and synchronize upgrade branch
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

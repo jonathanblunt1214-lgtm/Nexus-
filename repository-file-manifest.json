@@ -764,8 +764,8 @@
     {
       "path": ".github/workflows/sync-upgrade-branch.yml",
       "type": ".yml",
-      "size": 4619,
-      "sha256": "a6750b8a46cfcf7a2ed3210d3080ad202d60b833c9f5c262ce2056eb3524b067"
+      "size": 4588,
+      "sha256": "e88b76dfd7068b160d72a8c94947c6ab335ddf8f90a62c61e3be3232bf6a9443"
     },
     {
       "path": ".gitignore",
@@ -1280,8 +1280,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 3442,
-      "sha256": "88301769714e99b89e0ceeb1b7d17e5051e740c8ef51023911cabd433c37ade0"
+      "size": 3615,
+      "sha256": "3200933bf5bdc68e94642ddeac50d7c79f9985869f353eb2c0da0e192057c61d"
     },
     {
       "path": "renderer.js",
@@ -1460,8 +1460,8 @@
     {
       "path": "test/branchSyncWorkflow.test.js",
       "type": ".js",
-      "size": 2244,
-      "sha256": "898a0f8a0d1942ccc1356e3c9c792fae129cff75b178516c0c743bc2f07555d0"
+      "size": 2894,
+      "sha256": "8fb16d85ec02a8b493227255b04ce4d7976730592a398c2aa9c09db29f5112df"
     },
     {
       "path": "test/buildNumber.test.js",

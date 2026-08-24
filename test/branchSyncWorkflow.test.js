@@ -5,8 +5,9 @@ const path = require('node:path');
 
 const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'sync-upgrade-branch.yml'), 'utf8');
 
-test('main pushes evaluate whether the upgrade branch reached the synchronization threshold', () => {
-  assert.match(workflow, /push:\s*\n\s*branches:\s*\n\s*- main/);
+test('branch-to-branch synchronization is manual and never triggered by a push', () => {
+  assert.match(workflow, /on:\s*\n\s*workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /\n\s+push:/);
   assert.match(workflow, /permissions:\s*\n\s*contents: write/);
   assert.match(workflow, /ahead_count="\$\(git rev-list --count "\$upgrade_sha\.\.\$main_sha"\)"/);
   assert.match(workflow, /if \[ "\$ahead_count" -lt 100 \]/);
@@ -44,4 +45,12 @@ test('branch synchronization is serialized and can be run manually', () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /group: sync-upgrade-branch/);
   assert.match(workflow, /cancel-in-progress: false/);
+});
+
+test('ordinary pushes still run validation gates without moving either branch', () => {
+  const integrity = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'branch-integrity.yml'), 'utf8');
+  const stability = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'section0-stability.yml'), 'utf8');
+  const audit = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release-audit.yml'), 'utf8');
+  for (const gate of [integrity, stability, audit]) assert.match(gate, /push:/);
+  for (const gate of [integrity, stability, audit]) assert.doesNotMatch(gate, /git push/);
 });

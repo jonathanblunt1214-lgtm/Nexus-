@@ -19,4 +19,5 @@
 - Kept ordinary-page scrolling available through mouse, touchpad, touch, and keyboard without showing permanent retro scrollbar tracks.
 - Replaced GitHub token and command-line setup with a guided Connect GitHub flow that copies the one-time code, waits for approval, retries transient network failures, and securely stores the authorized account.
 - Hid scrollbar tracks throughout Nexus while preserving wheel, touchpad, touch, and keyboard scrolling; development copies now expose a working Check source updates button in the Updates card.
+- Disabled automatic branch-to-branch synchronization: pushes now run validation gates only, while promotion and synchronization require an explicit manual workflow action.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.
