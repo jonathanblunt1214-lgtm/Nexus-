@@ -843,8 +843,8 @@
     {
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
-      "size": 623,
-      "sha256": "345074588b7084d9f18da51718c30eb69eb03e822a257c36a77b65941d821c58"
+      "size": 653,
+      "sha256": "0c162c90759ed660d91f665e12498d58fa9e7825de7f4552b6083554bee64352"
     },
     {
       "path": ".gitignore",
@@ -855,8 +855,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 1253,
-      "sha256": "50c6e31b5c6c6e771a6dcab5b56bee36c8b2fa77b6fa7324d2fbbd74680d69ec"
+      "size": 2013,
+      "sha256": "9292349163e9c1cef63f45d7b1183e5e7c30d0a4596cbb5a81d1c83e058d6331"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
