@@ -10,6 +10,7 @@ on:
 
 jobs:
   verify:
+    name: Unified heavy release gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -17,8 +18,4 @@ jobs:
         with:
           node-version: '24'
       - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
-      - run: npm run privacy:verify
-      - run: node scripts/verifyArchitecture.js
-      - run: npm run inventory:verify
-      - run: node --test
       - run: npm run release:stress

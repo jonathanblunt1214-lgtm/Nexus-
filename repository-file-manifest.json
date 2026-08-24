@@ -794,8 +794,8 @@
     {
       "path": ".github/workflows/section0-stability.yml",
       "type": ".yml",
-      "size": 567,
-      "sha256": "d4b9ea147bf05f3dd4071383402fc1c4d5a50a43ddcfaf69c79c7d808bc52d25"
+      "size": 457,
+      "sha256": "be666c2494262bed116d8af10ac12839dc9690a4437a23a0df4432bdfdc79686"
     },
     {
       "path": ".github/workflows/sync-upgrade-branch.yml",
@@ -1322,8 +1322,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 4897,
-      "sha256": "a2a21d6ff97f5dfb62c0d5f01cb8a94d6471707e2d3f0385aa5ec74046dea7c4"
+      "size": 5080,
+      "sha256": "f421f735914cef4ee6c25a1396f1aa98893c5c1671c01a80a4186fe11405ebed"
     },
     {
       "path": "renderer.js",
@@ -1376,8 +1376,8 @@
     {
       "path": "scripts/promoteTestedUpgrade.js",
       "type": ".js",
-      "size": 4242,
-      "sha256": "0661b93da864cab2e6613ff2e604dbb68b5c3ee0f37b2cd09c9ab51f8c787088"
+      "size": 4071,
+      "sha256": "fe657a445c8cc7224cc12471c913604f8cb5641a7e58a0a5acc4859ed65328e3"
     },
     {
       "path": "scripts/releaseAudit.js",
@@ -1514,8 +1514,8 @@
     {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
-      "size": 2282,
-      "sha256": "50b85868b8f09a0681943b05f5d1b2429144c58a596e46a18970679cabccb7f1"
+      "size": 2533,
+      "sha256": "d51e040701f85c8730c7775f886bd6507a5774ab097c290055d54b0538607370"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",
@@ -1736,8 +1736,8 @@
     {
       "path": "test/repositoryPrivacy.test.js",
       "type": ".js",
-      "size": 1211,
-      "sha256": "4dc5ff472bc193ca8de86ba5e3397b2f01442c13937a601f5c18a36604509ad1"
+      "size": 1365,
+      "sha256": "2198352ed83580f7ef1bf08577fda6aedc9bc465686e8b56d47bd3d121c94641"
     },
     {
       "path": "test/runtimeDebugger.test.js",

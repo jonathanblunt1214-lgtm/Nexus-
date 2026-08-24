@@ -27,4 +27,5 @@
 - Added a local pre-push privacy gate and matching GitHub checks that block credentials, personal paths, personal email addresses, signing keys, and Nexus account-state files from repository uploads.
 - Replaced the four-suite concurrency check with a true release workload gate that simultaneously exercises 20,000 project files, 4,000 atomic saves, 6,000 checker calls, 32 independent builds, repeated indexing, and four complete test suites.
 - Folded architecture, release, privacy, and repository-inventory verification into that same concurrent heavy gate so one result covers the complete release check.
+- Made the explicitly named Unified heavy release gate mandatory for the exact upgrade commit before promotion to main, while retaining cross-platform and Windows-package safeguards.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.
