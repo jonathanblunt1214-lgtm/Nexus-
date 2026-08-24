@@ -4,7 +4,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const repository = process.env.GITHUB_REPOSITORY;
 const token = process.env.GH_TOKEN;
-const required = ['Unified heavy release gate', 'dependency-and-release-audit', 'windows-package-smoke', ...['ubuntu-latest','windows-latest','macos-latest'].flatMap(os => [20,22,24].map(node => `Tests ${os} / Node ${node}`))];
+const required = ['The Crucible', 'dependency-and-release-audit', 'windows-package-smoke', ...['ubuntu-latest','windows-latest','macos-latest'].flatMap(os => [20,22,24].map(node => `Tests ${os} / Node ${node}`))];
 
 function git(args, options = {}) { const result = execFileSync('git', args, { cwd:root, encoding:'utf8', stdio:options.inherit ? 'inherit' : undefined }); return typeof result === 'string' ? result.trim() : ''; }
 async function api(endpoint, options = {}) {

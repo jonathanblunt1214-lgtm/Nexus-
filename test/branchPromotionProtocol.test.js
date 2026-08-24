@@ -8,14 +8,15 @@ const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 test('main promotion requires the exact successful cross-platform upgrade checks', () => {
   const workflow = read('.github/workflows/promote-upgrade-to-main.yml');
   const promotion = read('scripts/promoteTestedUpgrade.js');
-  for (const check of ['Unified heavy release gate', 'dependency-and-release-audit', 'windows-package-smoke']) {
+  for (const check of ['The Crucible', 'dependency-and-release-audit', 'windows-package-smoke']) {
     assert.match(promotion, new RegExp(check.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(promotion, /\['ubuntu-latest','windows-latest','macos-latest'\]/);
   assert.match(promotion, /\[20,22,24\]/);
   assert.match(promotion, /`Tests \$\{os\} \/ Node \$\{node\}`/);
   assert.match(workflow, /node scripts\/promoteTestedUpgrade\.js/);
-  assert.match(read('.github/workflows/section0-stability.yml'), /name: Unified heavy release gate[\s\S]*npm run release:stress/);
+  assert.match(read('.github/workflows/section0-stability.yml'), /name: The Crucible[\s\S]*npm run release:crucible/);
+  assert.match(read('.github/workflows/section0-stability.yml'), /timeout-minutes: 5/);
   assert.match(promotion, /execFileSync\(process\.execPath, \['scripts\/releaseStressGate\.js'\]/);
   assert.match(promotion, /currentUpgrade !== upgradeSha/);
   assert.match(promotion, /upgradeSha}:refs\/heads\/main/);

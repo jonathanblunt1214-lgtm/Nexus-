@@ -11,7 +11,7 @@ test('every push is locally gated against private Nexus account data', () => {
   assert.equal(pkg.scripts.prepare, 'node scripts/installGitHooks.js');
   assert.match(hook, /verifyRepositoryPrivacy\.js/);
   assert.match(hook, /inventory:verify/);
-  assert.match(workflow, /npm run release:stress/);
+  assert.match(workflow, /npm run release:crucible/);
   assert.match(stressGate, /verifyRepositoryPrivacy\.js/);
 });
 

@@ -28,19 +28,24 @@ test('every release is blocked until the concurrent heavy-load stress gate passe
   const pkg = require('../package.json');
   const publish = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'buildAndPublishVerified.js'), 'utf8');
   const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release.yml'), 'utf8');
-  assert.equal(pkg.scripts['release:stress'], 'node scripts/releaseStressGate.js');
+  assert.equal(pkg.scripts['release:crucible'], 'node scripts/releaseStressGate.js');
+  assert.equal(pkg.scripts['release:gauntlet'], undefined);
+  assert.equal(pkg.scripts['release:stress'], 'npm run release:crucible');
   const stress = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'releaseStressGate.js'), 'utf8');
   const workload = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'heavyWorkloadWorker.js'), 'utf8');
-  for (const marker of ['NEXUS_HEAVY_FILES','NEXUS_HEAVY_SAVES','NEXUS_HEAVY_CHECKS','NEXUS_HEAVY_BUILDS']) assert.match(stress, new RegExp(marker));
+  for (const marker of ['NEXUS_HEAVY_FILES','NEXUS_CRUCIBLE_TIMEOUT_MS']) assert.match(stress, new RegExp(marker));
   assert.match(workload, /writeJsonAtomic/);
   assert.match(workload, /indexWorkspace/);
   assert.match(workload, /checkCode/);
   assert.match(workload, /Parallel builds produced different artifacts/);
   assert.match(stress, /could not spawn/);
+  assert.match(stress, /NEXUS_CRUCIBLE_TIMEOUT_MS\) \|\| 240_000/);
+  assert.match(workload, /NEXUS_CRUCIBLE_WORKLOAD_MS/);
+  assert.match(workload, /Date\.now\(\) \+ 30_000 < deadline/);
   for (const gate of ['verifyArchitecture.js','releaseAudit.js','verifyRepositoryPrivacy.js','verifyRepositoryInventory.js']) assert.match(stress, new RegExp(gate.replace('.', '\\.')));
-  assert.match(stress, /all tests, heavy workloads, audits, privacy checks, and inventory checks completed together/);
+  assert.match(stress, /all tests, adaptive workloads, audits, privacy checks, and inventory checks completed/);
   assert.ok(publish.indexOf('releaseStressGate.js') < publish.indexOf("'--publish', 'always'"));
-  assert.match(workflow, /Heavy-load release stress gate[\s\S]*npm run release:stress/);
+  assert.match(workflow, /name: The Crucible[\s\S]*npm run release:crucible/);
 });
 
 test('verified release staging can redownload only missing hash-matched Nexus files and retry', () => {

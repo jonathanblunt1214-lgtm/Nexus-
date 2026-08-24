@@ -1,4 +1,4 @@
-name: Nexus Stability Gate
+name: Nexus Crucible
 
 on:
   workflow_dispatch:
@@ -10,12 +10,13 @@ on:
 
 jobs:
   verify:
-    name: Unified heavy release gate
+    name: The Crucible
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
       - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
-      - run: npm run release:stress
+      - run: npm run release:crucible
