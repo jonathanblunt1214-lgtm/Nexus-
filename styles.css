@@ -264,6 +264,9 @@ webview { width: 100%; flex: 3; background: #fff; }
 .update-progress-bar { width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .18s ease; }
 .update-notes { padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); }
 .update-notes pre { max-height: 220px; margin-top: 8px; overflow: auto; color: var(--text-muted); font: inherit; font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.github-device-panel { display: grid; gap: 10px; margin-top: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.github-device-panel[hidden] { display: none; }
+.github-device-code { width: fit-content; padding: 9px 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-3); color: var(--text); font-size: 20px; font-weight: 750; letter-spacing: .12em; user-select: all; }
 
 @media (max-width: 1100px) {
   :root { --sidebar-width: 204px; }

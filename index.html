@@ -1536,8 +1536,15 @@ Type "help" for tips.
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label" id="connected-services-title">Connected Services</label>
         <p class="muted small" style="margin-top:6px;">Sign in through your system browser. Account tokens are Windows-encrypted. Google Drive access is limited to files Nexus creates or you explicitly select.</p>
-        <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="connectGitHubOAuth()">Sign in with GitHub</button><button class="btn" onclick="connectGoogleOAuth()">Sign in with Google</button><button class="btn" onclick="connectWordPressOAuth()">Sign in with WordPress.com</button><button class="btn btn-secondary" onclick="disconnectGoogleOAuth()">Disconnect Google</button><button class="btn btn-secondary" onclick="disconnectWordPressOAuth()">Disconnect WordPress.com</button></div>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" id="github-oauth-connect-btn" onclick="connectGitHubOAuth()">Connect GitHub</button><button class="btn" onclick="connectGoogleOAuth()">Sign in with Google</button><button class="btn" onclick="connectWordPressOAuth()">Sign in with WordPress.com</button><button class="btn btn-secondary" onclick="disconnectGoogleOAuth()">Disconnect Google</button><button class="btn btn-secondary" onclick="disconnectWordPressOAuth()">Disconnect WordPress.com</button></div>
         <p id="oauth-service-status" class="muted small" style="margin-top:8px;">Checking connections…</p>
+        <div id="github-device-panel" class="github-device-panel" hidden>
+          <strong id="github-device-heading">Finish connecting GitHub</strong>
+          <p id="github-device-instruction" class="muted small">The code was copied. Paste it into the GitHub page that Nexus opened, approve access, then return here.</p>
+          <div class="github-device-code" id="github-device-code" aria-live="polite"></div>
+          <div class="form-row"><button class="btn btn-secondary" onclick="copyGithubDeviceCode()">Copy code again</button><button class="btn btn-secondary" id="github-device-retry" onclick="retryGitHubOAuthCompletion()" hidden>Try again</button></div>
+          <p id="github-device-status" class="muted small" aria-live="polite">Waiting for GitHub authorization…</p>
+        </div>
         <div class="form-row" style="margin-top:8px;"><button class="btn btn-secondary" onclick="loadWordPressSites()">Load my WordPress.com sites</button></div><div id="wordpress-sites" class="suggestions-list" style="margin-top:8px; max-height:260px; overflow:auto;"></div>
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label" for="email-account-email">Nexus Email Account</label>
@@ -1562,11 +1569,10 @@ Type "help" for tips.
       </div>
       <div class="card" aria-labelledby="github-settings-title">
         <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Save/Push</label>
-        <p class="muted small" style="margin-top:6px;">Use Connected Services above, or provide a Personal Access Token carrying <code>repo</code> access as a compatibility option. Nexus stores it encrypted on this Windows account.</p>
+        <p class="muted small" style="margin-top:6px;">Select Connect GitHub once. Nexus opens GitHub, copies the one-time code for you, waits for approval, and securely saves the connection. No command line or personal access token is required.</p>
         <div class="form-row" style="margin-top:8px;">
-          <input type="password" id="github-token" placeholder="GitHub token (ghp_…)">
-          <button class="btn" id="github-login-btn" onclick="githubConnect()">Log in</button>
-          <button class="btn btn-secondary" id="github-logout-btn" onclick="githubDisconnect()">Log out</button>
+          <button class="btn" id="github-login-btn" onclick="connectGitHubOAuth()">Connect GitHub</button>
+          <button class="btn btn-secondary" id="github-logout-btn" onclick="githubDisconnect()">Disconnect GitHub</button>
         </div>
         <p class="muted small" id="github-status" style="margin-top:8px;">Logged out.</p>
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">

@@ -1034,8 +1034,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 133519,
-      "sha256": "be27313a579765d31379c6d118f3e4b4fc9e4fa6282613cf9c2152e2daf972ea"
+      "size": 134295,
+      "sha256": "e9f8765cd505253fd9fb9865ab27cd98937817280120bc4d5598e584e77bffc1"
     },
     {
       "path": "inventoryWorker.js",
@@ -1100,8 +1100,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 216998,
-      "sha256": "597b8757fd79dc01353c1656842803b1f55df3f248d92c5110b59d21e8b6ce00"
+      "size": 217423,
+      "sha256": "e34f971c7cedd488aa9d7b26b386fc7634b33dc96dddef9c20e712e74fe16a5c"
     },
     {
       "path": "memoryEngine.js",
@@ -1112,8 +1112,8 @@
     {
       "path": "oauthIntegrations.js",
       "type": ".js",
-      "size": 7781,
-      "sha256": "0a81021d0e9a87d5e6d30d1ee5a59c998ac79de409a00f00ba48e7d3de10ebe0"
+      "size": 8348,
+      "sha256": "c7970a7ad43e2dda89cf4978bbd62b52e1a80aa10b5edb1636c2a7b33f8efc2b"
     },
     {
       "path": "officialDevelopmentPlatforms.js",
@@ -1202,8 +1202,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28740,
-      "sha256": "6ee2565d14b5471848b693af9ba0759bc51b7dfd5c685fede872de1334fb1bc7"
+      "size": 28815,
+      "sha256": "e266375322ebdb7bf133b8ed1b149faf213e5a3a653dd8823d4b3e736aece799"
     },
     {
       "path": "projectCloner.js",
@@ -1280,14 +1280,14 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 3036,
-      "sha256": "f14f2430afcd3fdcbf611b0bd63b54724547ffd82be7ec224709037789cbdb28"
+      "size": 3248,
+      "sha256": "fef6ee822d99a1dac399d47e43ee6aef78b6f17cd3f7165f23343d4d8ff97ccf"
     },
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 269433,
-      "sha256": "a18324ba22bc7e1d82c8b577a32963ddbbf4ffd18f3d4a7abf7651c2e8fe43d6"
+      "size": 270393,
+      "sha256": "252e9683b03b86d2241de6edd9088df1f03c03a659b9cb057c7c805d9f58bc0d"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1430,8 +1430,8 @@
     {
       "path": "styles.css",
       "type": ".css",
-      "size": 18851,
-      "sha256": "a694a06ee66c147b08ae95e8642e9c09522a5e0c603759360ba7428362a9a139"
+      "size": 19309,
+      "sha256": "fff7b296115ce23d0596728ee2b0f283355c420cd5c52cc7eca359646697991f"
     },
     {
       "path": "test/accountVault.test.js",
@@ -1526,8 +1526,8 @@
     {
       "path": "test/githubAutoSync.test.js",
       "type": ".js",
-      "size": 3940,
-      "sha256": "8cdfda478472235ea87b21d0a3299d5c61597b9c96797c9f116e983681c72482"
+      "size": 4000,
+      "sha256": "521de8f3a48f6abc061139965e4d6b5999310313b7947387ca7d0c36af46f623"
     },
     {
       "path": "test/githubOperations.test.js",
@@ -1568,8 +1568,8 @@
     {
       "path": "test/oauthIntegrations.test.js",
       "type": ".js",
-      "size": 2603,
-      "sha256": "d17944a3963c98ce4a3cbbd030f1767fbaf34035d1e7c2bfa51ef7da42ff98ea"
+      "size": 3656,
+      "sha256": "5f55177b1f870e2695cb51e8f15d9e590f73586344652261a9a4e05331a3d07c"
     },
     {
       "path": "test/officialDevelopmentPlatforms.test.js",

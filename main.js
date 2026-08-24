@@ -4,7 +4,7 @@
 // directly — it only talks to this file through the safe bridge in
 // preload.js. That separation is what makes it safe to load web-ish UI code.
 
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session, crashReporter } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, session, crashReporter, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { writeJsonAtomic } = require('./atomicWrite');
@@ -3797,9 +3797,15 @@ ipcMain.handle('oauth:github-start', async () => {
     const config = oauthConfiguration();
     const device = await require('./oauthIntegrations').startGitHubDeviceFlow(config.githubClientId);
     pendingGitHubDevice = device;
+    clipboard.writeText(device.user_code);
     await shell.openExternal(device.verification_uri);
-    return { ok: true, userCode: device.user_code, verificationUri: device.verification_uri, expiresIn: device.expires_in };
+    return { ok: true, userCode: device.user_code, verificationUri: device.verification_uri, expiresIn: device.expires_in, codeCopied: true };
   } catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('oauth:github-copy-code', () => {
+  if (!pendingGitHubDevice?.user_code) return { ok: false, error: 'Start GitHub sign-in first.' };
+  clipboard.writeText(pendingGitHubDevice.user_code);
+  return { ok: true };
 });
 ipcMain.handle('oauth:github-complete', async () => {
   if (!pendingGitHubDevice) return { ok: false, error: 'Start GitHub sign-in first.' };
@@ -3809,7 +3815,11 @@ ipcMain.handle('oauth:github-complete', async () => {
     const cfg = loadConfig(); setEncryptedConfigValue(cfg, 'githubToken', token.access_token); await saveConfig(cfg);
     const account = await establishNexusProviderAccount('github.com', token.access_token, 'access_token').catch((error) => ({ unified:false, error:error.message }));
     return { ok: true, account };
-  } catch (error) { pendingGitHubDevice = null; return { ok: false, error: error.message }; }
+  } catch (error) {
+    const retryable = error.code === 'GITHUB_NETWORK' && Boolean(pendingGitHubDevice);
+    if (!retryable) pendingGitHubDevice = null;
+    return { ok: false, error: error.message, retryable };
+  }
 });
 
 ipcMain.handle('oauth:google-connect', async () => {

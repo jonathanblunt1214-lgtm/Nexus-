@@ -201,6 +201,7 @@ contextBridge.exposeInMainWorld('nexus', {
   oauthConfigure: (value) => ipcRenderer.invoke('oauth:configure', value),
   oauthStatus: () => ipcRenderer.invoke('oauth:status'),
   githubOAuthStart: () => ipcRenderer.invoke('oauth:github-start'),
+  githubOAuthCopyCode: () => ipcRenderer.invoke('oauth:github-copy-code'),
   githubOAuthComplete: () => ipcRenderer.invoke('oauth:github-complete'),
   googleOAuthConnect: () => ipcRenderer.invoke('oauth:google-connect'),
   googleOAuthDisconnect: () => ipcRenderer.invoke('oauth:google-disconnect'),

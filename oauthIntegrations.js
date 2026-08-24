@@ -15,11 +15,23 @@ async function startGitHubDeviceFlow(clientId) {
 async function pollGitHubDeviceFlow(clientId, device) {
   const deadline = Date.now() + Number(device.expires_in || 900) * 1000;
   let interval = Math.max(5, Number(device.interval || 5));
+  let consecutiveNetworkFailures = 0;
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, interval * 1000));
     const body = new URLSearchParams({ client_id: clientId, device_code: device.device_code, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' });
-    const response = await fetch('https://github.com/login/oauth/access_token', { method: 'POST', headers: jsonHeaders, body });
-    const data = await response.json();
+    let response;
+    let data;
+    try {
+      response = await fetch('https://github.com/login/oauth/access_token', { method: 'POST', headers: jsonHeaders, body, signal: AbortSignal.timeout(30000) });
+      data = await response.json();
+      consecutiveNetworkFailures = 0;
+    } catch (error) {
+      consecutiveNetworkFailures += 1;
+      if (consecutiveNetworkFailures < 5 && Date.now() < deadline) continue;
+      const networkError = new Error('GitHub authorization was approved, but Nexus could not finish the connection. Check your internet connection and select Try again; you do not need to create a token.');
+      networkError.code = 'GITHUB_NETWORK';
+      throw networkError;
+    }
     if (data.access_token) return data;
     if (data.error === 'authorization_pending') continue;
     if (data.error === 'slow_down') { interval += 5; continue; }

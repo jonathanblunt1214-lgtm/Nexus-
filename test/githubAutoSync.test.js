@@ -11,17 +11,18 @@ test('project GitHub auto-sync is opt-in and constrained to 30 through 600 secon
   const renderer = read('renderer.js');
   assert.match(html, /id="github-auto-sync-enabled"/);
   assert.match(html, /min="30" max="600"/);
-  assert.match(html, /id="github-login-btn"[^>]*>Log in</);
-  assert.match(html, /id="github-logout-btn"[^>]*>Log out</);
+  assert.match(html, /id="github-login-btn"[^>]*>Connect GitHub</);
+  assert.match(html, /id="github-logout-btn"[^>]*>Disconnect GitHub</);
   assert.match(html, /for="github-auto-sync-seconds">Save\/push interval</);
-  assert.equal((html.match(/id="github-token"/g) || []).length, 1);
+  assert.equal((html.match(/id="github-token"/g) || []).length, 0);
+  assert.doesNotMatch(renderer, /async function githubConnect\(/);
   assert.match(renderer, /GITHUB_AUTO_SYNC_MIN_SECONDS = 30/);
   assert.match(renderer, /GITHUB_AUTO_SYNC_MAX_SECONDS = 600/);
   assert.match(renderer, /nexus_github_auto_sync_enabled/);
   assert.match(renderer, /intervalInput\.min = String\(GITHUB_AUTO_SYNC_MIN_SECONDS\)/);
   assert.match(renderer, /intervalInput\.max = String\(GITHUB_AUTO_SYNC_MAX_SECONDS\)/);
   assert.match(renderer, /const saveResult = await saveAllDirtyEditorFiles\('Timed Auto Save before GitHub push'\)/);
-  assert.match(renderer, /const validation = await window\.nexus\.githubListRepos\(\)/);
+  assert.match(renderer, /window\.nexus\.githubListRepos\(\)/);
   assert.match(renderer, /await window\.nexus\.clearGitHubToken\(\)/);
 });
 

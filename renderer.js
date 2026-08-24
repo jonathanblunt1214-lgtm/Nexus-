@@ -4590,16 +4590,60 @@ async function restoreAirGappedVault() {
   document.getElementById('account-vault-passphrase').value = '';
 }
 
-async function connectGitHubOAuth() {
-  const status = document.getElementById('oauth-service-status');
-  const start = await window.nexus.githubOAuthStart();
-  if (!start.ok) { showToast('error', 'GitHub sign-in could not start', start.error); return; }
-  status.innerText = `GitHub opened in your browser. Enter code ${start.userCode}. Waiting for authorization…`;
+let githubOAuthInProgress = false;
+
+function setGitHubOAuthWaiting(waiting) {
+  githubOAuthInProgress = waiting;
+  for (const id of ['github-oauth-connect-btn', 'github-login-btn']) {
+    const button = document.getElementById(id);
+    if (button) button.disabled = waiting;
+  }
+}
+
+async function copyGithubDeviceCode() {
+  const result = await window.nexus.githubOAuthCopyCode();
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub code copied' : 'Could not copy code', result.error || 'Paste it into the open GitHub page.');
+}
+
+async function completeGitHubOAuth() {
+  const panelStatus = document.getElementById('github-device-status');
+  const retry = document.getElementById('github-device-retry');
+  retry.hidden = true;
+  panelStatus.innerText = 'Waiting for GitHub authorization. You can safely return to Nexus after approving it…';
   const result = await window.nexus.githubOAuthComplete();
   const githubMessage = result.account?.unified ? `GitHub is linked to your Nexus account${result.account.email ? ` (${result.account.email})` : ''}.` : result.account?.error || result.account?.reason || 'Private repositories and GitHub tools are ready.';
-  showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub connected' : 'GitHub sign-in failed', result.error || githubMessage);
-  refreshOAuthServices(); refreshGitHubStatus();
-  refreshAccountVaultStatus();
+  if (result.ok) {
+    panelStatus.innerText = 'GitHub connected successfully. No token or command-line setup is required.';
+    document.getElementById('github-device-panel').hidden = true;
+  } else {
+    panelStatus.innerText = result.error;
+    retry.hidden = !result.retryable;
+  }
+  showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub connected' : 'GitHub sign-in needs attention', result.error || githubMessage);
+  setGitHubOAuthWaiting(false);
+  refreshOAuthServices(); refreshGitHubStatus(); refreshAccountVaultStatus();
+}
+
+async function retryGitHubOAuthCompletion() {
+  if (githubOAuthInProgress) return;
+  setGitHubOAuthWaiting(true);
+  await completeGitHubOAuth();
+}
+
+async function connectGitHubOAuth() {
+  if (githubOAuthInProgress) return;
+  const status = document.getElementById('oauth-service-status');
+  setGitHubOAuthWaiting(true);
+  const start = await window.nexus.githubOAuthStart();
+  if (!start.ok) {
+    setGitHubOAuthWaiting(false);
+    showToast('error', 'GitHub sign-in could not start', start.error);
+    return;
+  }
+  document.getElementById('github-device-code').innerText = start.userCode;
+  document.getElementById('github-device-panel').hidden = false;
+  status.innerText = 'GitHub sign-in is open. Nexus copied the one-time code and is waiting for approval.';
+  await completeGitHubOAuth();
 }
 
 async function connectGoogleOAuth() {
@@ -4653,42 +4697,23 @@ async function downloadGoogleDriveFile(index) {
   if (!result.canceled) showToast(result.ok ? 'success' : 'error', result.ok ? 'Drive file downloaded' : 'Drive download failed', result.path || result.error);
 }
 
-// Personal access tokens remain available for compatibility with existing setups.
-async function githubConnect() {
-  const input = document.getElementById('github-token');
-  const token = input.value.trim();
-  if (!token) { alert('Paste a GitHub personal access token first.'); return; }
-
-  const result = await window.nexus.saveGitHubToken(token);
-  if (result && result.ok) {
-    const validation = await window.nexus.githubListRepos();
-    if (validation?.ok) {
-      input.value = '';
-      showToast('success', 'Logged in to GitHub', 'GitHub actions and Auto Save/Push can now use this encrypted connection.');
-    } else {
-      await window.nexus.clearGitHubToken();
-      showToast('error', 'GitHub login failed', validation?.error || 'GitHub rejected the token.');
-    }
-  } else {
-    showToast('error', 'Could not save token', result?.error || 'Unknown error');
-  }
-  refreshGitHubStatus();
-}
-
 async function githubDisconnect() {
-  if (!confirm('Remove the saved GitHub token?')) return;
+  if (!confirm('Disconnect this GitHub account from Nexus?')) return;
   await window.nexus.clearGitHubToken();
   refreshGitHubStatus();
-  showToast('info', 'Logged out of GitHub');
+  refreshOAuthServices();
+  showToast('info', 'GitHub disconnected');
 }
 
 async function refreshGitHubStatus() {
   const statusEl = document.getElementById('github-status');
   if (!statusEl) return;
   const connected = await window.nexus.hasGitHubToken();
-  statusEl.innerText = connected ? 'Connected to GitHub.' : 'Logged out.';
+  statusEl.innerText = connected ? 'GitHub is connected and ready.' : 'GitHub is not connected. Select Connect GitHub—no token or command line is required.';
   document.getElementById('github-login-btn').disabled = connected;
   document.getElementById('github-logout-btn').disabled = !connected;
+  const accountButton = document.getElementById('github-oauth-connect-btn');
+  if (accountButton) accountButton.disabled = connected;
 }
 
 // ---------- AI Tools panel ----------

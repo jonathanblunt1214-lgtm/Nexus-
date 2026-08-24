@@ -17,4 +17,5 @@
 - Replaced the Settings scroll-fest with Account, GitHub, AI & API Keys, Project, and System sections; fixed broken legacy GitHub-settings navigation and made diagnostic messages visible.
 - Enabled vertical scrolling on every ordinary page while preserving the specialized internal scrolling layout in Run & Preview.
 - Kept ordinary-page scrolling available through mouse, touchpad, touch, and keyboard without showing permanent retro scrollbar tracks.
+- Replaced GitHub token and command-line setup with a guided Connect GitHub flow that copies the one-time code, waits for approval, retries transient network failures, and securely stores the authorized account.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.
