@@ -17,27 +17,27 @@ async function checkState(sha) {
   const successful = new Set(data.check_runs.filter(check => check.conclusion === 'success').map(check => check.name));
   return required.filter(name => !successful.has(name));
 }
-async function dispatch(workflow) { await api(`/actions/workflows/${workflow}/dispatches`, { method:'POST', body:JSON.stringify({ ref:'upgrade/nexus-overhaul' }), headers:{ 'Content-Type':'application/json' } }); }
+async function dispatch(workflow) { await api(`/actions/workflows/${workflow}/dispatches`, { method:'POST', body:JSON.stringify({ ref:'Development-branch' }), headers:{ 'Content-Type':'application/json' } }); }
 async function waitForChecks(sha, attempts = 60) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const missing = await checkState(sha);
     if (!missing.length) return;
-    if (attempt === attempts - 1) throw new Error(`Promotion retry exhausted. Upgrade remains unpromoted. Missing checks: ${missing.join(', ')}`);
+    if (attempt === attempts - 1) throw new Error(`Promotion retry exhausted. Development-branch remains unpromoted. Missing checks: ${missing.join(', ')}`);
     await new Promise(resolve => setTimeout(resolve, 15000));
   }
 }
 async function validateLocally() {
-  execFileSync(process.execPath, ['scripts/remediateUpgradeForPromotion.js'], { cwd:root, stdio:'inherit' });
+  execFileSync(process.execPath, ['scripts/remediateDevelopmentForPromotion.js'], { cwd:root, stdio:'inherit' });
   execFileSync(process.execPath, ['scripts/releaseStressGate.js'], { cwd:root, stdio:'inherit' });
 }
 async function main() {
   if (!repository || !token) throw new Error('GitHub promotion credentials are unavailable.');
-  git(['fetch', 'origin', 'main', 'upgrade/nexus-overhaul']);
+  git(['fetch', 'origin', 'main', 'Development-branch']);
   let mainSha = git(['rev-parse', 'origin/main']);
-  let upgradeSha = git(['rev-parse', 'origin/upgrade/nexus-overhaul']);
-  try { execFileSync('git', ['merge-base', '--is-ancestor', mainSha, upgradeSha], { cwd:root }); }
-  catch { throw new Error('Branches diverged. Upgrade was preserved; automatic rewriting will not discard either history.'); }
-  let missing = await checkState(upgradeSha);
+  let developmentSha = git(['rev-parse', 'origin/Development-branch']);
+  try { execFileSync('git', ['merge-base', '--is-ancestor', mainSha, developmentSha], { cwd:root }); }
+  catch { throw new Error('Branches diverged. Development-branch was preserved; automatic rewriting will not discard either history.'); }
+  let missing = await checkState(developmentSha);
   if (missing.length) {
     console.log(`Promotion checks need remediation/retry: ${missing.join(', ')}`);
     await validateLocally();
@@ -46,16 +46,16 @@ async function main() {
       git(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
       git(['add', '-A']);
       git(['commit', '-m', 'Apply deterministic promotion repairs']);
-      git(['push', 'origin', 'HEAD:upgrade/nexus-overhaul'], { inherit:true });
-      upgradeSha = git(['rev-parse', 'HEAD']);
+      git(['push', 'origin', 'HEAD:Development-branch'], { inherit:true });
+      developmentSha = git(['rev-parse', 'HEAD']);
     }
     await Promise.all([dispatch('section0-stability.yml'), dispatch('release-audit.yml')]);
-    await waitForChecks(upgradeSha);
+    await waitForChecks(developmentSha);
   }
-  const currentUpgrade = git(['ls-remote', 'origin', 'refs/heads/upgrade/nexus-overhaul']).split(/\s/)[0];
-  if (currentUpgrade !== upgradeSha) throw new Error('Upgrade moved during retry. No rejection or overwrite occurred; run promotion again for the newer commit.');
-  git(['push', 'origin', `${upgradeSha}:refs/heads/main`], { inherit:true });
-  console.log(`Promoted repaired and validated upgrade commit ${upgradeSha}.`);
+  const currentDevelopment = git(['ls-remote', 'origin', 'refs/heads/Development-branch']).split(/\s/)[0];
+  if (currentDevelopment !== developmentSha) throw new Error('Development-branch moved during retry. No rejection or overwrite occurred; run promotion again for the newer commit.');
+  git(['push', 'origin', `${developmentSha}:refs/heads/main`], { inherit:true });
+  console.log(`Promoted repaired and validated development commit ${developmentSha}.`);
 }
 
 main().catch(error => { console.error(error.message); process.exitCode = 1; });

@@ -1,4 +1,4 @@
-name: Nexus Crucible
+name: The Crucible
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - upgrade/nexus-overhaul
+      - Development-branch
 
 permissions:
   contents: read
