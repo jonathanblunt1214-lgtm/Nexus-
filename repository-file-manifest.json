@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 177,
+  "fileCount": 178,
   "types": {
     ".yml": 6,
     "[no extension]": 1,
     ".md": 7,
     ".bat": 2,
-    ".js": 147,
+    ".js": 148,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -1280,8 +1280,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 2407,
-      "sha256": "ee0d132197b3f06f79d5259d477d3ede8b07a86e31e8f4dc22f5dde62951d453"
+      "size": 2583,
+      "sha256": "0330fbe90ba2f8a1c29f31d64b1c415f390fc9116c37872c14c02e735895749f"
     },
     {
       "path": "renderer.js",
@@ -1430,8 +1430,8 @@
     {
       "path": "styles.css",
       "type": ".css",
-      "size": 18073,
-      "sha256": "20ca6dec3e35c1aa1ae4479f49c6f7c05579f5f2287164eaf68417017b8df0c4"
+      "size": 18203,
+      "sha256": "521ba3c1efbddf74e920662aba6b655f7d17e699c05dda7b5d4b9040a430d6d2"
     },
     {
       "path": "test/accountVault.test.js",
@@ -1708,6 +1708,12 @@
       "type": ".js",
       "size": 1765,
       "sha256": "8f662e735b10ec9655be40abe7890bdc126280971d5e0a4c9f9c88b5f70ccb94"
+    },
+    {
+      "path": "test/settingsScroll.test.js",
+      "type": ".js",
+      "size": 850,
+      "sha256": "f4f97af3215891e57f051a711c1b09e94ca32dd39bef842500ef609b81a4a9ac"
     },
     {
       "path": "test/toolRegistry.test.js",

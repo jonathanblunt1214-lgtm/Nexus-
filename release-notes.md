@@ -13,4 +13,5 @@
 - Added protected project export for apps, websites, and APIs: the existing deterministic checker API, local-reference validation, and a complete SHA-256 file manifest must pass in staging before Nexus copies and reverifies the export outside staging.
 - Changed failed main promotions into an upgrade-branch remediation and retry cycle: restore hash-matched missing files, apply only independently rechecked deterministic checker corrections, rerun every gate, and promote only the repaired upgrade commit.
 - Fixed plug-in handler timeouts under heavy scheduler contention by starting the strict execution timer only after the isolated worker confirms that the handler began.
+- Fixed Settings & Keys vertical scrolling so profiles, connected services, vault controls, GitHub settings, and AI API keys remain reachable at every supported window height.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

@@ -148,6 +148,7 @@ header .btn[title="Command Palette"]::after { content: "Search  Ctrl+K"; font-si
 
 .view-pane { flex: 1; display: none; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .view-pane.active { display: flex; }
+#view-cloud { overflow-x: hidden; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; overscroll-behavior: contain; }
 #view-projects::before {
   content: "Start a project\A1. Open an existing project\A2. Press Launch\A3. Open Run & Preview";
   white-space: pre-line;
