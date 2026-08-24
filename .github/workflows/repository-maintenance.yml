@@ -17,30 +17,37 @@ permissions:
 
 jobs:
   daily-clutter-audit:
-    name: Daily clutter audit
+    name: Daily clutter audit · main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+          package-manager-cache: false
       - run: npm run repository:clutter
       - run: npm run inventory:verify
       - run: npm run privacy:verify
 
   weekly-git-maintenance:
-    name: Weekly safe Git repack
+    name: Weekly safe Git repack · main
     if: github.event.schedule == '47 4 * * 0' || inputs.run_weekly_maintenance == true
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Skip repository code execution in privileged maintenance workflow
-        run: echo "Repository code execution is intentionally disabled here to prevent cache-poisoning paths."
+          package-manager-cache: false
+      - run: npm run repository:maintain
+      - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+      - run: npm run release:crucible
