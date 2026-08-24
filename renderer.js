@@ -4596,6 +4596,7 @@ async function restoreAirGappedVault() {
 }
 
 let githubOAuthInProgress = false;
+let githubConnectionActive = false;
 
 function setGitHubOAuthWaiting(waiting) {
   githubOAuthInProgress = waiting;
@@ -4608,6 +4609,12 @@ function setGitHubOAuthWaiting(waiting) {
 async function copyGithubDeviceCode() {
   const result = await window.nexus.githubOAuthCopyCode();
   showToast(result.ok ? 'success' : 'error', result.ok ? 'GitHub code copied' : 'Could not copy code', result.error || 'Paste it into the open GitHub page.');
+}
+
+async function toggleGitHubConnection() {
+  if (githubOAuthInProgress) return;
+  if (githubConnectionActive) await githubDisconnect();
+  else await connectGitHubOAuth();
 }
 
 async function completeGitHubOAuth() {
@@ -4714,11 +4721,15 @@ async function refreshGitHubStatus() {
   const statusEl = document.getElementById('github-status');
   if (!statusEl) return;
   const connected = await window.nexus.hasGitHubToken();
+  githubConnectionActive = connected;
   statusEl.innerText = connected ? 'GitHub is connected and ready.' : 'GitHub is not connected. Select Connect GitHub—no token or command line is required.';
-  document.getElementById('github-login-btn').disabled = connected;
-  document.getElementById('github-logout-btn').disabled = !connected;
-  const accountButton = document.getElementById('github-oauth-connect-btn');
-  if (accountButton) accountButton.disabled = connected;
+  for (const id of ['github-login-btn', 'github-oauth-connect-btn']) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    button.disabled = false;
+    button.innerText = connected ? 'Log out of GitHub' : 'Connect GitHub';
+    button.classList.toggle('btn-secondary', connected);
+  }
 }
 
 // ---------- AI Tools panel ----------

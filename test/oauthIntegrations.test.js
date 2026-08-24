@@ -37,6 +37,8 @@ test('GitHub connection is a guided token-free device flow with automatic copy a
   assert.match(main, /oauth:github-copy-code/);
   assert.match(preload, /githubOAuthCopyCode/);
   assert.match(renderer, /retryGitHubOAuthCompletion/);
+  assert.match(renderer, /async function toggleGitHubConnection\(\)/);
+  assert.match(renderer, /if \(githubConnectionActive\) await githubDisconnect\(\)/);
   assert.match(oauth, /AbortSignal\.timeout\(30000\)/);
   assert.match(oauth, /consecutiveNetworkFailures < 5/);
   assert.match(main, /retryable = error\.code === 'GITHUB_NETWORK'/);

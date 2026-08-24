@@ -1536,7 +1536,7 @@ Type "help" for tips.
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">
         <label class="label" id="connected-services-title">Connected Services</label>
         <p class="muted small" style="margin-top:6px;">Sign in through your system browser. Account tokens are Windows-encrypted. Google Drive access is limited to files Nexus creates or you explicitly select.</p>
-        <div class="form-row" style="margin-top:8px;"><button class="btn" id="github-oauth-connect-btn" onclick="connectGitHubOAuth()">Connect GitHub</button><button class="btn" onclick="connectGoogleOAuth()">Sign in with Google</button><button class="btn" onclick="connectWordPressOAuth()">Sign in with WordPress.com</button><button class="btn btn-secondary" onclick="disconnectGoogleOAuth()">Disconnect Google</button><button class="btn btn-secondary" onclick="disconnectWordPressOAuth()">Disconnect WordPress.com</button></div>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" id="github-oauth-connect-btn" onclick="toggleGitHubConnection()">Connect GitHub</button><button class="btn" onclick="connectGoogleOAuth()">Sign in with Google</button><button class="btn" onclick="connectWordPressOAuth()">Sign in with WordPress.com</button><button class="btn btn-secondary" onclick="disconnectGoogleOAuth()">Disconnect Google</button><button class="btn btn-secondary" onclick="disconnectWordPressOAuth()">Disconnect WordPress.com</button></div>
         <p id="oauth-service-status" class="muted small" style="margin-top:8px;">Checking connections…</p>
         <div id="github-device-panel" class="github-device-panel" hidden>
           <strong id="github-device-heading">Finish connecting GitHub</strong>
@@ -1571,8 +1571,7 @@ Type "help" for tips.
         <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Save/Push</label>
         <p class="muted small" style="margin-top:6px;">Select Connect GitHub once. Nexus opens GitHub, copies the one-time code for you, waits for approval, and securely saves the connection. No command line or personal access token is required.</p>
         <div class="form-row" style="margin-top:8px;">
-          <button class="btn" id="github-login-btn" onclick="connectGitHubOAuth()">Connect GitHub</button>
-          <button class="btn btn-secondary" id="github-logout-btn" onclick="githubDisconnect()">Disconnect GitHub</button>
+          <button class="btn" id="github-login-btn" onclick="toggleGitHubConnection()">Connect GitHub</button>
         </div>
         <p class="muted small" id="github-status" style="margin-top:8px;">Logged out.</p>
         <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;">

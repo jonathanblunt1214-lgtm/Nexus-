@@ -21,4 +21,5 @@
 - Hid scrollbar tracks throughout Nexus while preserving wheel, touchpad, touch, and keyboard scrolling; development copies now expose a working Check source updates button in the Updates card.
 - Disabled automatic branch-to-branch synchronization: pushes now run validation gates only, while promotion and synchronization require an explicit manual workflow action.
 - Bundled Nexus's public GitHub OAuth Client ID so every downloaded build can start the guided Connect GitHub flow without developer configuration or personal access tokens.
+- Changed Connect GitHub into a persistent toggle that becomes a clickable Log out of GitHub button after authorization instead of a disabled gray control.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

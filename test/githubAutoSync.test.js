@@ -12,7 +12,8 @@ test('project GitHub auto-sync is opt-in and constrained to 30 through 600 secon
   assert.match(html, /id="github-auto-sync-enabled"/);
   assert.match(html, /min="30" max="600"/);
   assert.match(html, /id="github-login-btn"[^>]*>Connect GitHub</);
-  assert.match(html, /id="github-logout-btn"[^>]*>Disconnect GitHub</);
+  assert.doesNotMatch(html, /id="github-logout-btn"/);
+  assert.match(html, /onclick="toggleGitHubConnection\(\)"/);
   assert.match(html, /for="github-auto-sync-seconds">Save\/push interval</);
   assert.equal((html.match(/id="github-token"/g) || []).length, 0);
   assert.doesNotMatch(renderer, /async function githubConnect\(/);
@@ -24,6 +25,7 @@ test('project GitHub auto-sync is opt-in and constrained to 30 through 600 secon
   assert.match(renderer, /const saveResult = await saveAllDirtyEditorFiles\('Timed Auto Save before GitHub push'\)/);
   assert.match(renderer, /window\.nexus\.githubListRepos\(\)/);
   assert.match(renderer, /await window\.nexus\.clearGitHubToken\(\)/);
+  assert.match(renderer, /connected \? 'Log out of GitHub' : 'Connect GitHub'/);
 });
 
 test('auto-sync uses a narrow bridge and only accepts GitHub origins', () => {
