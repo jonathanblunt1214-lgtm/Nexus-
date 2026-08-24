@@ -1,13 +1,23 @@
 const BUILD_NUMBER_PATTERN = /^(\d+)\.(\d+)\.(\d+)$/;
+const PUBLIC_LAUNCH_VERSION = '1.0.0';
+
+function canonicalBuildNumber(value) {
+  const match = BUILD_NUMBER_PATTERN.exec(String(value || ''));
+  if (!match) return null;
+  return `${Number(match[1])}.${Number(match[2])}.${String(Number(match[3])).padStart(2, '0')}`;
+}
 
 function normalizeBuildState(value) {
-  const history = Array.isArray(value?.history) ? value.history.filter((entry) => entry && BUILD_NUMBER_PATTERN.test(String(entry.number || ''))).slice(-100) : [];
-  const current = BUILD_NUMBER_PATTERN.test(String(value?.current || '')) ? String(value.current) : null;
+  const history = Array.isArray(value?.history) ? value.history
+    .filter((entry) => entry && canonicalBuildNumber(entry.number))
+    .map((entry) => ({ ...entry, number:canonicalBuildNumber(entry.number) }))
+    .slice(-100) : [];
+  const current = canonicalBuildNumber(value?.current);
   return { current, history };
 }
 
 function nextBuildNumber(current) {
-  if (!current) return '0.0.01';
+  if (!current) return '0.0.03';
   const match = BUILD_NUMBER_PATTERN.exec(String(current));
   if (!match) throw new Error('The saved build number is invalid.');
   const next = Number(match[3]) + 1;
@@ -25,4 +35,4 @@ function approveNextBuild(state, { approved, commitHash = null, approvedAt = new
   };
 }
 
-module.exports = { BUILD_NUMBER_PATTERN, normalizeBuildState, nextBuildNumber, approveNextBuild };
+module.exports = { BUILD_NUMBER_PATTERN, PUBLIC_LAUNCH_VERSION, canonicalBuildNumber, normalizeBuildState, nextBuildNumber, approveNextBuild };

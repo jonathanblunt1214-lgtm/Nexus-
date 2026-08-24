@@ -42,8 +42,8 @@ test('every release is blocked until the concurrent heavy-load stress gate passe
   assert.match(stress, /NEXUS_CRUCIBLE_TIMEOUT_MS\) \|\| 240_000/);
   assert.match(workload, /NEXUS_CRUCIBLE_WORKLOAD_MS/);
   assert.match(workload, /Date\.now\(\) \+ 30_000 < deadline/);
-  for (const gate of ['verifyArchitecture.js','releaseAudit.js','verifyRepositoryPrivacy.js','verifyRepositoryInventory.js']) assert.match(stress, new RegExp(gate.replace('.', '\\.')));
-  assert.match(stress, /all tests, adaptive workloads, audits, privacy checks, and inventory checks completed/);
+  for (const gate of ['verifyArchitecture.js','releaseAudit.js','privacyRetryGate.js','verifyRepositoryInventory.js','repositoryClutterAudit.js']) assert.match(stress, new RegExp(gate.replace('.', '\\.')));
+  assert.match(stress, /all tests, adaptive workloads, audits, privacy, inventory, and clutter checks completed/);
   assert.ok(publish.indexOf('releaseStressGate.js') < publish.indexOf("'--publish', 'always'"));
   assert.match(workflow, /name: The Crucible[\s\S]*npm run release:crucible/);
 });

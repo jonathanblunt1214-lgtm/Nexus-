@@ -4150,12 +4150,12 @@ function renderApprovedBuildNumber(buildInfo) {
   current.innerText = buildInfo.buildNumber
     ? `Current approved build: ${buildInfo.buildNumber}${buildInfo.approvedAt ? ` · approved ${new Date(buildInfo.approvedAt).toLocaleString()}` : ''}`
     : 'No build number has been approved yet.';
-  next.innerText = `Next build awaiting approval: ${buildInfo.nextBuildNumber || '0.0.01'}`;
+  next.innerText = `Next build awaiting approval: ${buildInfo.nextBuildNumber || '0.0.03'} · 1.0.0 is reserved for public launch.`;
 }
 
 async function approveBuildNumber() {
   const preview = await window.nexus.getBuildInfo();
-  const next = preview.nextBuildNumber || '0.0.01';
+  const next = preview.nextBuildNumber || '0.0.03';
   if (!confirm(`Approve Nexus build ${next}?\n\nThis permanently records the next build number for this Nexus installation. It will not run or publish the installer by itself.`)) return;
   const button = document.getElementById('approve-build-number-btn');
   button.disabled = true;

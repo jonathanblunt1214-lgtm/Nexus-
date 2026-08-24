@@ -2,12 +2,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { nextBuildNumber, approveNextBuild, normalizeBuildState } = require('../buildNumber');
+const { PUBLIC_LAUNCH_VERSION, nextBuildNumber, approveNextBuild, normalizeBuildState } = require('../buildNumber');
 
-test('the first user-approved build starts at 0.0.01 and increments predictably', () => {
-  assert.equal(nextBuildNumber(null), '0.0.01');
-  assert.equal(nextBuildNumber('0.0.01'), '0.0.02');
-  assert.equal(nextBuildNumber('0.0.09'), '0.0.10');
+test('the next user-approved build is 0.0.03 and remains one higher afterward', () => {
+  assert.equal(nextBuildNumber(null), '0.0.03');
+  assert.equal(nextBuildNumber('0.0.03'), '0.0.04');
+  assert.equal(nextBuildNumber('0.0.9'), '0.0.10');
+  assert.equal(nextBuildNumber('4.12.99'), '4.12.100');
+  assert.equal(PUBLIC_LAUNCH_VERSION, '1.0.0');
+  assert.equal(nextBuildNumber('0.0.999'), '0.0.1000');
+  assert.notEqual(nextBuildNumber('0.0.999'), PUBLIC_LAUNCH_VERSION);
 });
 
 test('a build number cannot be assigned without explicit approval', () => {
@@ -17,9 +21,19 @@ test('a build number cannot be assigned without explicit approval', () => {
 
 test('approval records the build, timestamp, and source commit in bounded history', () => {
   const state = approveNextBuild(null, { approved:true, commitHash:'abc1234', approvedAt:'2026-08-22T12:00:00.000Z' });
-  assert.equal(state.current, '0.0.01');
-  assert.deepEqual(state.history[0], { number:'0.0.01', approvedAt:'2026-08-22T12:00:00.000Z', commitHash:'abc1234' });
-  assert.equal(normalizeBuildState(state).current, '0.0.01');
+  assert.equal(state.current, '0.0.03');
+  assert.deepEqual(state.history[0], { number:'0.0.03', approvedAt:'2026-08-22T12:00:00.000Z', commitHash:'abc1234' });
+  assert.equal(normalizeBuildState(state).current, '0.0.03');
+});
+
+test('legacy zero-padded build numbers are migrated without going backwards', () => {
+  const state = normalizeBuildState({
+    current:'0.0.09',
+    history:[{ number:'0.0.08', approvedAt:'2026-08-22T12:00:00.000Z' }],
+  });
+  assert.equal(state.current, '0.0.09');
+  assert.equal(state.history[0].number, '0.0.08');
+  assert.equal(nextBuildNumber(state.current), '0.0.10');
 });
 
 test('Settings presents a preview and uses a narrow approval bridge', () => {

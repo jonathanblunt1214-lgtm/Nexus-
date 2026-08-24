@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - upgrade/nexus-overhaul
+      - Development-branch
   pull_request:
     branches:
       - main
@@ -19,16 +19,15 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - name: Enforce upgrade-first branch flow
+      - name: Enforce development-first branch flow
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main upgrade/nexus-overhaul
+          git fetch origin main Development-branch
           main_sha="$(git rev-parse origin/main)"
-          upgrade_sha="$(git rev-parse origin/upgrade/nexus-overhaul)"
-          if ! git merge-base --is-ancestor "$main_sha" "$upgrade_sha"; then
-            echo "::error::main contains work that was not promoted from upgrade/nexus-overhaul, or the branches diverged."
+          development_sha="$(git rev-parse origin/Development-branch)"
+          if ! git merge-base --is-ancestor "$main_sha" "$development_sha"; then
+            echo "::error::main contains work that was not promoted from Development-branch, or the branches diverged."
             exit 1
           fi
-          echo "Branch flow is valid: main is the same as, or behind, upgrade/nexus-overhaul."
-
+          echo "Branch flow is valid: main is the same as, or behind, Development-branch."
