@@ -825,8 +825,8 @@
     {
       "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 1507,
-      "sha256": "1293217f7ff63ac9932fa406b36afa10726a8cc515b916c0081e97ad1f448841"
+      "size": 1425,
+      "sha256": "0ef78dd9017026383e3bf3220ac2071c8e1ce65629ba79e19a1cd6e07b91d60a"
     },
     {
       "path": ".github/workflows/section0-stability.yml",
