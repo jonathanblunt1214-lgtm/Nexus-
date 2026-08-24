@@ -1,6 +1,6 @@
 # Nexus 1.0.2
 
-- Extended The Crucible with a deterministic clutter audit, scheduled that audit for both branches every 24 hours, and added weekly history-preserving Git integrity verification and object repacking followed by The Crucible.
+- Added deterministic clutter auditing to The Crucible, scheduled that audit for both branches every 24 hours, and added weekly history-preserving Git integrity verification and object repacking followed by The Crucible.
 - Set the dedicated approved-build sequence to propose `0.0.03` next, then increment it predictably within the pre-launch line; `1.0.0` is explicitly reserved for the real public launch and is never reached by automatic build-number rollover.
 
 - Fixed Add a Project so Nexus automatically derives the display name from a selected folder or GitHub repository.

@@ -1,4 +1,4 @@
-name: Nexus Crucible
+name: The Crucible
 
 on:
   workflow_dispatch:

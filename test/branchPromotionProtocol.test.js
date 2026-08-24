@@ -15,7 +15,9 @@ test('main promotion requires the exact successful cross-platform development ch
   assert.match(promotion, /\[20,22,24\]/);
   assert.match(promotion, /`Tests \$\{os\} \/ Node \$\{node\}`/);
   assert.match(workflow, /node scripts\/promoteTestedDevelopment\.js/);
-  assert.match(read('.github/workflows/section0-stability.yml'), /name: The Crucible[\s\S]*npm run release:crucible/);
+  const crucibleWorkflow = read('.github/workflows/section0-stability.yml');
+  assert.match(crucibleWorkflow, /^name: The Crucible/);
+  assert.match(crucibleWorkflow, /name: The Crucible[\s\S]*npm run release:crucible/);
   assert.match(read('.github/workflows/section0-stability.yml'), /timeout-minutes: 5/);
   assert.match(promotion, /execFileSync\(process\.execPath, \['scripts\/releaseStressGate\.js'\]/);
   assert.match(promotion, /currentDevelopment !== developmentSha/);
