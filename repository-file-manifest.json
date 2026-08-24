@@ -794,8 +794,8 @@
     {
       "path": ".github/workflows/section0-stability.yml",
       "type": ".yml",
-      "size": 462,
-      "sha256": "42bde797afbb1bf73095c925e7c4881809b29c0b32cac250900aaa1749d6a0b7"
+      "size": 493,
+      "sha256": "8c4b211ab10a9a4ae83a09e1b4f015485cdc4032cd3ff841f2b10c6d1405fb37"
     },
     {
       "path": ".github/workflows/sync-upgrade-branch.yml",
