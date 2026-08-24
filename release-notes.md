@@ -1,4 +1,4 @@
-# Nexus 1.1.1
+# Nexus 1.0.2
 
 - Fixed Add a Project so Nexus automatically derives the display name from a selected folder or GitHub repository.
 - Added support for GitHub shorthand such as `owner/repository` and `github.com/owner/repository`.
