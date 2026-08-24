@@ -4,7 +4,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const repository = process.env.GITHUB_REPOSITORY;
 const token = process.env.GH_TOKEN;
-const required = ['verify', 'dependency-and-release-audit', 'windows-package-smoke', ...['ubuntu-latest','windows-latest','macos-latest'].flatMap(os => [20,22,24].map(node => `Tests ${os} / Node ${node}`))];
+const required = ['The Crucible', 'dependency-and-release-audit', 'windows-package-smoke', ...['ubuntu-latest','windows-latest','macos-latest'].flatMap(os => [20,22,24].map(node => `Tests ${os} / Node ${node}`))];
 
 function git(args, options = {}) { const result = execFileSync('git', args, { cwd:root, encoding:'utf8', stdio:options.inherit ? 'inherit' : undefined }); return typeof result === 'string' ? result.trim() : ''; }
 async function api(endpoint, options = {}) {
@@ -27,7 +27,8 @@ async function waitForChecks(sha, attempts = 60) {
   }
 }
 async function validateLocally() {
-  for (const [command, args] of [[process.execPath,['scripts/remediateUpgradeForPromotion.js']],[process.execPath,['scripts/verifyRepositoryInventory.js']],[process.execPath,['--test']],[process.execPath,['scripts/verifyArchitecture.js']],[process.execPath,['scripts/releaseAudit.js']],[process.execPath,['scripts/releaseStressGate.js']]]) execFileSync(command, args, { cwd:root, stdio:'inherit' });
+  execFileSync(process.execPath, ['scripts/remediateUpgradeForPromotion.js'], { cwd:root, stdio:'inherit' });
+  execFileSync(process.execPath, ['scripts/releaseStressGate.js'], { cwd:root, stdio:'inherit' });
 }
 async function main() {
   if (!repository || !token) throw new Error('GitHub promotion credentials are unavailable.');

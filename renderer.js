@@ -4246,6 +4246,22 @@ async function refreshOAuthServices() {
   const providers = (result.linkedProviders || []).map((id) => id === 'password' ? 'Email' : id === 'github.com' ? 'GitHub' : id === 'google.com' ? 'Google' : id).join(', ');
   document.getElementById('oauth-service-status').innerText = `Nexus account: ${result.nexusAccount ? `signed in${providers ? ` · sign-in methods: ${providers}` : ''}` : 'not signed in'} · GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `linked${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not linked'}`;
   const profileEmail = document.getElementById('nexus-profile-email'); if (profileEmail) profileEmail.value = result.nexusEmail || '';
+  googleConnectionActive = Boolean(result.google);
+  wordpressConnectionActive = Boolean(result.wordpress);
+  const googleButton = document.getElementById('google-service-btn');
+  if (googleButton) {
+    googleButton.innerText = googleConnectionActive ? 'Log out of Google' : 'Sign in with Google';
+    googleButton.classList.toggle('btn-secondary', googleConnectionActive);
+  }
+  const wordpressButton = document.getElementById('wordpress-service-btn');
+  if (wordpressButton) {
+    wordpressButton.innerText = wordpressConnectionActive ? 'Disconnect WordPress.com' : 'Connect WordPress.com';
+    wordpressButton.classList.toggle('btn-secondary', wordpressConnectionActive);
+  }
+  const wordpressSitesButton = document.getElementById('wordpress-sites-btn');
+  if (wordpressSitesButton) wordpressSitesButton.hidden = !wordpressConnectionActive;
+  const driveActions = document.getElementById('google-drive-actions');
+  if (driveActions) driveActions.hidden = !googleConnectionActive;
 }
 
 const ACCOUNT_VAULT_PREFERENCE_KEYS = [
@@ -4669,6 +4685,12 @@ async function connectGoogleOAuth() {
   refreshAccountVaultStatus();
 }
 
+let googleConnectionActive = false;
+async function toggleGoogleConnection() {
+  if (googleConnectionActive) await disconnectGoogleOAuth();
+  else await connectGoogleOAuth();
+}
+
 async function disconnectGoogleOAuth() {
   if (!confirm('Disconnect Google and revoke the Nexus session?')) return;
   await window.nexus.googleOAuthDisconnect(); googleDriveFiles = []; document.getElementById('google-drive-files').innerHTML = ''; refreshOAuthServices();
@@ -4680,6 +4702,13 @@ async function connectWordPressOAuth() {
   showToast(result.ok ? 'success' : 'error', result.ok ? 'WordPress.com connected' : 'WordPress.com sign-in failed', result.error || 'Your WordPress.com sites are ready.');
   await refreshOAuthServices(); if (result.ok) loadWordPressSites();
 }
+
+let wordpressConnectionActive = false;
+async function toggleWordPressConnection() {
+  if (wordpressConnectionActive) await disconnectWordPressOAuth();
+  else await connectWordPressOAuth();
+}
+
 async function disconnectWordPressOAuth() {
   if (!confirm('Disconnect WordPress.com and remove its encrypted Nexus access token?')) return;
   await window.nexus.wordpressOAuthDisconnect(); document.getElementById('wordpress-sites').innerHTML = ''; refreshOAuthServices();

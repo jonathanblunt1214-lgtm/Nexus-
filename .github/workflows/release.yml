@@ -40,8 +40,8 @@ jobs:
           npm run audit:architecture
           npm run inventory:verify
 
-      - name: Heavy-load release stress gate
-        run: npm run release:stress
+      - name: The Crucible
+        run: npm run release:crucible
 
       - name: Confirm tag matches package version
         shell: pwsh

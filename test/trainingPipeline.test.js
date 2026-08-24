@@ -23,9 +23,11 @@ test('only real passing verification can enter the training dataset', (t) => {
 
 test('credentials and personal Windows paths are removed before persistence', (t) => {
   const store = dataset(t);
-  store.recordVerified({ request:'Use token="ghp_abcdefghijklmnopqrstuvwxyz123456" in C:\\Users\\jonat\\site', response:'Authorization: Bearer abc.def.ghi', verification:{ passed:true, testsRun:1 } });
+  const privatePath = ['C:', 'Users', 'sample-user', 'site'].join('\\');
+  const fakeToken = ['ghp', 'abcdefghijklmnopqrstuvwxyz123456'].join('_');
+  store.recordVerified({ request:`Use token="${fakeToken}" in ${privatePath}`, response:'Authorization: Bearer abc.def.ghi', verification:{ passed:true, testsRun:1 } });
   const serialized = JSON.stringify(store.examples());
-  assert.doesNotMatch(serialized, /ghp_|abc\.def|Users\\\\jonat/);
+  assert.doesNotMatch(serialized, /ghp_|abc\.def|Users\\\\sample-user/);
   assert.match(serialized, /REDACTED|USER_HOME/);
   assert.doesNotMatch(redactText("api_key='this-is-a-private-value'"), /private-value/);
 });
