@@ -1,0 +1,74 @@
+name: Nexus Commit Self-Repair
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_repairs:
+        description: Apply deterministic repairs and commit them
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches:
+      - Development-branch
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Diagnose commit against Nexus invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check what can be repaired safely
+        run: node scripts/selfRepairCommit.js
+
+  repair-development:
+    name: Repair Development-branch deterministically
+    if: github.event_name == 'push' && github.ref == 'refs/heads/Development-branch' && github.actor != 'github-actions[bot]'
+    needs: diagnose
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: Development-branch
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply deterministic repairs
+        run: node scripts/selfRepairCommit.js --apply
+      - name: Commit only generated deterministic repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .nexus-self-repair-report.json
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No deterministic repair was needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows repository-file-manifest.json
+          if git diff --cached --quiet; then
+            echo "The repair engine found only ambiguous/non-approved changes; refusing to commit them."
+            exit 1
+          fi
+          git commit -m "Automatically repair commit invariants"
+          git push origin HEAD:Development-branch
