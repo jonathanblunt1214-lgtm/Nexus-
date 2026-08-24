@@ -569,6 +569,11 @@ async function addProject(e) {
     alert('Nexus could not determine a project name. Enter a display name and try again.');
     return;
   }
+  if (result.readiness && !result.readiness.ready) {
+    const tasks = [result.readiness.needsInstall && 'install locked dependencies', result.readiness.needsBuild && 'generate missing build output'].filter(Boolean);
+    progressEl.innerText = `Download checked. On first launch Nexus will ${tasks.join(' and ')} after Workspace Trust approval.`;
+    showToast('info', 'Downloaded project checked', progressEl.innerText);
+  }
 
   if (result.sourceType === 'git' && result.detectedPort?.port && mayReplaceDefaultPort) {
     port = result.detectedPort.port;
@@ -3809,6 +3814,7 @@ async function configureWorkspaceTrust(id, event) {
   if (!project) return;
   if (!confirm(`Trust ${project.name}?\n\nThis project may contain untrusted code. Choose OK only after reviewing it. Nexus will ask which capabilities to allow next.`)) return;
   const choices = [
+    ['checker', 'Allow read-only code, dependency, compiler, and linter checks without granting general command access?'],
     ['commands', 'Run project commands, services, tests, and tools?'],
     ['dependencies', 'Install, remove, or update dependencies?'],
     ['git-write', 'Commit and push changes to GitHub?'],

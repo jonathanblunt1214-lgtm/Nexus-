@@ -40,3 +40,12 @@ test('Workspace Trust is revocable and gates execution, deploys, and Git writes'
   assert.match(renderer, /Review permissions/);
   assert.match(renderer, /Workspace Trust revoked/);
 });
+
+test('Workspace Trust can grant checker access without general command execution', () => {
+  const fs = require('node:fs');
+  const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  const renderer = fs.readFileSync(path.join(__dirname, '..', 'renderer.js'), 'utf8');
+  assert.match(main, /WORKSPACE_PERMISSIONS = new Set\(\['checker', 'commands'/);
+  assert.match(main, /allowExternal:trust\.trusted && trust\.permissions\.includes\('checker'\)/);
+  assert.match(renderer, /\['checker', 'Allow read-only code, dependency, compiler, and linter checks/);
+});

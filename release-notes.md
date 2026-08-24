@@ -4,4 +4,5 @@
 - Added support for GitHub shorthand such as `owner/repository` and `github.com/owner/repository`.
 - Fixed the installed-app startup update check so updater events are registered before the window loads.
 - Added a trusted launch preflight that installs missing locked dependencies, builds missing compiled output, verifies the expected start file, and keeps sandboxed preparation inside Docker.
+- Added a read-only dependency/readiness scan that begins while GitHub project files download, plus a separate checker-only Workspace Trust permission that grants no general command access.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

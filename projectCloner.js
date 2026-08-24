@@ -16,6 +16,7 @@ const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
 const { authenticatedGitEnvironment } = require('./githubGitAuth');
 const { isGitUrl, normalizeGitUrl, repoNameFromUrl } = require('./projectSourceInput');
+const { inspectProjectReadiness, readinessMessage } = require('./projectLaunchPreflight');
 
 // --- Detection ----------------------------------------------------------
 
@@ -57,6 +58,21 @@ function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
 
     onLog(`Cloning ${normalizedUrl} into ${destPath} …`);
 
+    // Git writes the working tree incrementally. Begin a read-only readiness
+    // scan as soon as package.json appears, while the rest of the repository
+    // is still arriving. This never executes repository code or installs
+    // anything; trusted preparation remains part of the later launch gate.
+    let lastReadinessMessage = null;
+    const reportReadiness = () => {
+      const message = readinessMessage(inspectProjectReadiness(destPath));
+      if (message !== lastReadinessMessage && message !== 'Waiting for package.json…') {
+        lastReadinessMessage = message;
+        onLog(`[Nexus dependency check] ${message}.`);
+      }
+    };
+    const readinessTimer = setInterval(reportReadiness, 250);
+    const stopReadinessScan = () => { clearInterval(readinessTimer); reportReadiness(); };
+
     const gitProcess = spawn('git', ['clone', normalizedUrl, destPath], {
       env: authenticatedGitEnvironment(normalizedUrl, githubToken),
     });
@@ -65,6 +81,7 @@ function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
     gitProcess.stderr.on('data', (data) => onLog(data.toString().trim())); // git writes progress to stderr
 
     gitProcess.on('error', (err) => {
+      stopReadinessScan();
       // ENOENT here means git itself isn't on PATH - same class of issue
       // you hit with node after install. Surface it clearly, don't mask it.
       if (err.code === 'ENOENT') {
@@ -77,6 +94,7 @@ function cloneProject(gitUrl, onLog = () => {}, { githubToken = null } = {}) {
     });
 
     gitProcess.on('close', (code) => {
+      stopReadinessScan();
       if (code === 0) {
         onLog(`Clone complete: ${destPath}`);
         saveProject({ localPath: destPath, name: folderName, sourceUrl: normalizedUrl });

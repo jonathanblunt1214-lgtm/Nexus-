@@ -31,7 +31,7 @@ const startupStartedAt = performance.now();
 crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
 const { pathToFileURL } = require('url');
 const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
-const { planProjectLaunch, verifyProjectLaunchPlan } = require('./projectLaunchPreflight');
+const { planProjectLaunch, inspectProjectReadiness, verifyProjectLaunchPlan } = require('./projectLaunchPreflight');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
 const { runPipeline, PipelineError } = require('./pipelineEngine');
@@ -133,7 +133,7 @@ function saveConfig(cfg) {
   return configWriteQueue;
 }
 
-const WORKSPACE_PERMISSIONS = new Set(['commands', 'dependencies', 'git-write', 'deploy', 'secrets']);
+const WORKSPACE_PERMISSIONS = new Set(['checker', 'commands', 'dependencies', 'git-write', 'deploy', 'secrets']);
 
 function workspaceTrustKey(folder) {
   try {
@@ -583,7 +583,7 @@ ipcMain.handle('resolve-project-path', async (_event, { input }) => {
       }
     });
     const detectedPort = sourceType === 'git' ? detectProjectPort(resolvedPath) : null;
-    return { ok: true, path: resolvedPath, sourceType, detectedPort, suggestedName: path.basename(resolvedPath) };
+    return { ok: true, path: resolvedPath, sourceType, detectedPort, suggestedName: path.basename(resolvedPath), readiness: inspectProjectReadiness(resolvedPath) };
   } catch (err) {
     return { ok: false, error: err.message };
   }
@@ -1032,13 +1032,13 @@ async function callSelectedCodingModel(prompt, meta = {}, maxTokens = 4000) {
 async function runIntegratedCodeCheck(folder, filePath, content) {
   officialLanguageServers.configureOfficialLanguageServices(loadConfig().languageServicePaths || {});
   const trust = getWorkspaceTrust(folder);
-  return checkCode({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('commands') });
+  return checkCode({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('checker') });
 }
 
 async function runIntegratedCheckerFix(folder, filePath, content) {
   officialLanguageServers.configureOfficialLanguageServices(loadConfig().languageServicePaths || {});
   const trust = getWorkspaceTrust(folder);
-  return proposeCheckerFix({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('commands') });
+  return proposeCheckerFix({ folder, filePath, content, allowExternal:trust.trusted && trust.permissions.includes('checker') });
 }
 
 ipcMain.handle('language-services:status', async () => {
@@ -1068,7 +1068,7 @@ async function checkerPromptContext(folder, filePath, content) {
   return [
     'NEXUS CODE CHECKER RESULT:',
     `Language: ${result.language}; checker: ${result.checker || 'unregistered'}; full checker available: ${result.available}.`,
-    result.restricted ? 'External compiler or linter checks are restricted until Workspace Trust permits commands.' : '',
+    result.restricted ? 'External compiler or linter checks are restricted until Workspace Trust permits checker access.' : '',
     result.install && !result.available ? `Checker setup: ${result.install}` : '',
     diagnostics.length ? diagnostics.map((item) => `- line ${item.line + 1}, column ${item.column + 1}, ${item.source || result.checker} ${item.code}: ${item.message}`).join('\n') : 'No diagnostics were reported by the available checker.',
     'Use these diagnostics as evidence. Do not claim the code is fully valid when a language checker is unavailable.',

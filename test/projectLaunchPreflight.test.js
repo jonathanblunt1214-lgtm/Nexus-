@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { npmScriptForCommand, referencedNodeEntrypoints, referencedLocalExecutables, planProjectLaunch, verifyProjectLaunchPlan } = require('../projectLaunchPreflight');
+const { npmScriptForCommand, referencedNodeEntrypoints, referencedLocalExecutables, planProjectLaunch, inspectProjectReadiness, readinessMessage, verifyProjectLaunchPlan } = require('../projectLaunchPreflight');
 
 function project(pkg, files = {}) {
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-launch-preflight-'));
@@ -28,6 +28,29 @@ test('repairs a missing local script executable even when node_modules exists', 
   assert.deepEqual(plan.missingExecutables, ['vite']);
   assert.deepEqual(plan.actions, [{ type:'install', args:['ci'] }]);
   fs.rmSync(folder, { recursive:true, force:true });
+});
+
+test('download-time readiness inspection is read-only and updates as files arrive', () => {
+  const folder = project({ scripts:{ build:'vite build', start:'node dist/server.cjs' }, dependencies:{ express:'1' }, devDependencies:{ vite:'1' } });
+  const before = inspectProjectReadiness(folder);
+  assert.equal(before.needsInstall, true);
+  assert.equal(before.needsBuild, true);
+  assert.match(readinessMessage(before), /dependencies need installation/);
+  assert.deepEqual(fs.readdirSync(folder), ['package.json']);
+  fs.mkdirSync(path.join(folder, 'node_modules', '.bin'), { recursive:true });
+  fs.writeFileSync(path.join(folder, 'node_modules', '.bin', 'vite'), '');
+  fs.mkdirSync(path.join(folder, 'dist')); fs.writeFileSync(path.join(folder, 'dist', 'server.cjs'), '');
+  const after = inspectProjectReadiness(folder);
+  assert.equal(after.ready, true);
+  assert.match(readinessMessage(after), /ready/);
+  fs.rmSync(folder, { recursive:true, force:true });
+});
+
+test('GitHub clone begins readiness polling before clone completion', () => {
+  const cloner = fs.readFileSync(path.join(__dirname, '..', 'projectCloner.js'), 'utf8');
+  assert.match(cloner, /setInterval\(reportReadiness, 250\)/);
+  assert.ok(cloner.indexOf('setInterval(reportReadiness, 250)') < cloner.indexOf("gitProcess.on('close'"));
+  assert.match(cloner, /\[Nexus dependency check\]/);
 });
 
 test('main process gates installs separately and keeps sandbox preparation inside Docker', () => {

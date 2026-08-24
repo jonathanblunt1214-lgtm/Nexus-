@@ -62,6 +62,31 @@ function planProjectLaunch(folder, command) {
   return { ok: true, packageProject: true, scriptName, script, actions, missingBefore, missingExecutables, expectedAfter };
 }
 
+function inspectProjectReadiness(folder, preferredCommand = null) {
+  const pkg = readPackage(folder);
+  if (!pkg) return null;
+  const command = preferredCommand || (pkg.scripts?.dev ? 'npm run dev' : pkg.scripts?.start ? 'npm start' : null);
+  if (!command) return { command:null, ready:true, needsInstall:false, needsBuild:false, missingEntries:[], missingExecutables:[] };
+  const plan = planProjectLaunch(folder, command);
+  return {
+    command,
+    ready: plan.actions.length === 0 && plan.missingBefore.length === 0,
+    needsInstall: plan.actions.some((action) => action.type === 'install'),
+    needsBuild: plan.actions.some((action) => action.type === 'build'),
+    missingEntries: plan.missingBefore.map((item) => item.entry),
+    missingExecutables: plan.missingExecutables,
+  };
+}
+
+function readinessMessage(readiness) {
+  if (!readiness) return 'Waiting for package.json…';
+  const work = [];
+  if (readiness.needsInstall) work.push('locked dependencies need installation');
+  if (readiness.needsBuild) work.push(`build output is missing${readiness.missingEntries.length ? ` (${readiness.missingEntries.join(', ')})` : ''}`);
+  if (readiness.missingExecutables.length) work.push(`local tools are missing (${readiness.missingExecutables.join(', ')})`);
+  return work.length ? work.join('; ') : 'project launch files are ready';
+}
+
 function verifyProjectLaunchPlan(plan) {
   const stillMissing = (plan.expectedAfter || []).filter((item) => !fs.existsSync(item.file));
   if (stillMissing.length) {
@@ -73,4 +98,4 @@ function verifyProjectLaunchPlan(plan) {
   return { ok: true };
 }
 
-module.exports = { npmScriptForCommand, referencedNodeEntrypoints, referencedLocalExecutables, planProjectLaunch, verifyProjectLaunchPlan };
+module.exports = { npmScriptForCommand, referencedNodeEntrypoints, referencedLocalExecutables, planProjectLaunch, inspectProjectReadiness, readinessMessage, verifyProjectLaunchPlan };
