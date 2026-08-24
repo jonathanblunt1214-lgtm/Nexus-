@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 179,
+  "fileCount": 183,
   "types": {
+    "[no extension]": 2,
     ".yml": 6,
-    "[no extension]": 1,
     ".md": 7,
     ".bat": 2,
-    ".js": 149,
+    ".js": 152,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -674,6 +674,11 @@
       "resolved": "providerDiscovery.js"
     },
     {
+      "source": "test/repositoryPrivacy.test.js",
+      "reference": "../package.json",
+      "resolved": "package.json"
+    },
+    {
       "source": "test/runtimeDebugger.test.js",
       "reference": "../runtimeDebugger",
       "resolved": "runtimeDebugger.js"
@@ -742,6 +747,12 @@
   "missingCrossReferences": [],
   "files": [
     {
+      "path": ".githooks/pre-push",
+      "type": "[no extension]",
+      "size": 95,
+      "sha256": "c1fb602f66c2ca2fb786780ea2cf9bd7fe74facad7d9eded65bc7dc83de3bcff"
+    },
+    {
       "path": ".github/workflows/branch-integrity.yml",
       "type": ".yml",
       "size": 928,
@@ -756,8 +767,8 @@
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 1658,
-      "sha256": "36191216002f63ae01b1d6c34fbf96d7ac5c59fe4412ea752695f7b448a62dc0"
+      "size": 1730,
+      "sha256": "23e6988b39e766af55080360e37b6b7d411524fa92c61628c2e82b918ca1e23d"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -768,8 +779,8 @@
     {
       "path": ".github/workflows/section0-stability.yml",
       "type": ".yml",
-      "size": 531,
-      "sha256": "cce75d751698853ca81f079699f46889d8d1f3d36d1d679e5343d0c1fe6f2d9a"
+      "size": 567,
+      "sha256": "d4b9ea147bf05f3dd4071383402fc1c4d5a50a43ddcfaf69c79c7d808bc52d25"
     },
     {
       "path": ".github/workflows/sync-upgrade-branch.yml",
@@ -780,8 +791,8 @@
     {
       "path": ".gitignore",
       "type": "[no extension]",
-      "size": 186,
-      "sha256": "f65df3e2be48264e7ef4749215b83c6f617531ddd74d6e387a81afbce3c37727"
+      "size": 343,
+      "sha256": "0c6937cdb5537714b571bc9d7fc6afafddaea7fe42071a5324c38d215affdf08"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1152,8 +1163,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5049,
-      "sha256": "8cad69e3c021701a153969c8f4293c81d97191d1bc8b8c5014932ba5d04a397b"
+      "size": 5164,
+      "sha256": "982add52dacbec8d317cbfb6b356afa37c4e1d3aeac4d2b83c5ac99a62be57af"
     },
     {
       "path": "pipelineEngine.js",
@@ -1296,8 +1307,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 4288,
-      "sha256": "9fef77792988bd361d5c4422828da9a23b4edd699c90ba08b451ba7011f28aef"
+      "size": 4488,
+      "sha256": "6e9b968b7ff91b38026208ee799537f95f509fcb7aba22c50245a02079cecbf1"
     },
     {
       "path": "renderer.js",
@@ -1328,6 +1339,12 @@
       "type": ".js",
       "size": 1064,
       "sha256": "cc2587f7f05f4036becfd68fcb676be19a9a4385588edf0d402e4f54885c7394"
+    },
+    {
+      "path": "scripts/installGitHooks.js",
+      "type": ".js",
+      "size": 512,
+      "sha256": "945919cabbd92996d4812b1b69fa27a1c55a83b51ae8b66367419e24fa6de16d"
     },
     {
       "path": "scripts/inventoryContent.js",
@@ -1406,6 +1423,12 @@
       "type": ".js",
       "size": 5436,
       "sha256": "e3790cbe506c684792f29e7f379b3aec82aeee627d83f55660c5cca3ca75f85a"
+    },
+    {
+      "path": "scripts/verifyRepositoryPrivacy.js",
+      "type": ".js",
+      "size": 2107,
+      "sha256": "06188425e6692fe67c7c7bd58cdf3c36eee3d3db720082acd6df95961600e460"
     },
     {
       "path": "secretScanner.js",
@@ -1690,6 +1713,12 @@
       "sha256": "c84f3083a3978cd5170f41f9a92ddcfbc40e5bd711de6ef1019cdc630c9c90d7"
     },
     {
+      "path": "test/repositoryPrivacy.test.js",
+      "type": ".js",
+      "size": 1211,
+      "sha256": "4dc5ff472bc193ca8de86ba5e3397b2f01442c13937a601f5c18a36604509ad1"
+    },
+    {
       "path": "test/runtimeDebugger.test.js",
       "type": ".js",
       "size": 2515,
@@ -1740,8 +1769,8 @@
     {
       "path": "test/trainingPipeline.test.js",
       "type": ".js",
-      "size": 5244,
-      "sha256": "d22f9a762051c8dcce6976bf308f8e860134ca7ca2489c2c901b69a6af4fb025"
+      "size": 5366,
+      "sha256": "18b3121e10b06d0e2167de81dc163a604fd4700c5086ef6eb659a6e87d4936bb"
     },
     {
       "path": "test/uiUsability.test.js",

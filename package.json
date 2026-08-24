@@ -8,6 +8,8 @@
     "test": "node --test",
     "audit:architecture": "node scripts/verifyArchitecture.js",
     "audit:release": "node scripts/releaseAudit.js",
+    "privacy:verify": "node scripts/verifyRepositoryPrivacy.js",
+    "prepare": "node scripts/installGitHooks.js",
     "inventory:update": "node scripts/verifyRepositoryInventory.js --write",
     "inventory:verify": "node scripts/verifyRepositoryInventory.js",
     "inventory:repair": "node scripts/repairRepositoryInventory.js",

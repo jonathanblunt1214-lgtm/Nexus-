@@ -4,6 +4,16 @@ dist/
 .DS_Store
 push/
 
+# Local Nexus identities, account state, credentials, and signing material.
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+account-vault*
+nexus-user-data*
+nexus-config.json
+
 # Never commit local Git repository internals or accidental duplicate exports.
 .git/
 COMMIT_EDITMSG
