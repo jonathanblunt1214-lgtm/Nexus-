@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 178,
+  "fileCount": 179,
   "types": {
     ".yml": 6,
     "[no extension]": 1,
     ".md": 7,
     ".bat": 2,
-    ".js": 148,
+    ".js": 149,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -162,6 +162,11 @@
       "source": "main.js",
       "reference": "./projectCloner",
       "resolved": "projectCloner.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./publisherConfig",
+      "resolved": "publisherConfig.js"
     },
     {
       "source": "main.js",
@@ -557,6 +562,11 @@
       "source": "test/memoryEngine.test.js",
       "reference": "../memoryEngine",
       "resolved": "memoryEngine.js"
+    },
+    {
+      "source": "test/oauthIntegrations.test.js",
+      "reference": "../publisherConfig",
+      "resolved": "publisherConfig.js"
     },
     {
       "source": "test/officialDevelopmentPlatforms.test.js",
@@ -1100,8 +1110,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 217423,
-      "sha256": "e34f971c7cedd488aa9d7b26b386fc7634b33dc96dddef9c20e712e74fe16a5c"
+      "size": 217510,
+      "sha256": "eb5c9e906b0734b86b620ce37e3279a294b69688145bd32b5e270c952b0575db"
     },
     {
       "path": "memoryEngine.js",
@@ -1142,8 +1152,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5021,
-      "sha256": "a3c8bc4bccbed3cbce6a2cfb07a5b37e2141d4d603688cfcfb4742d0cafed83f"
+      "size": 5049,
+      "sha256": "8cad69e3c021701a153969c8f4293c81d97191d1bc8b8c5014932ba5d04a397b"
     },
     {
       "path": "pipelineEngine.js",
@@ -1266,6 +1276,12 @@
       "sha256": "fcd17517cbff7c4cc41e0363853b5971e35cf238bac13fd4d4434dc8f4e58c1e"
     },
     {
+      "path": "publisherConfig.js",
+      "type": ".js",
+      "size": 283,
+      "sha256": "9983a3d336d571d3d2a9a277c7ad724a63a8478966391c59848fe03885b137a4"
+    },
+    {
       "path": "pureLogic.js",
       "type": ".js",
       "size": 3261,
@@ -1280,8 +1296,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 3615,
-      "sha256": "3200933bf5bdc68e94642ddeac50d7c79f9985869f353eb2c0da0e192057c61d"
+      "size": 3789,
+      "sha256": "1cccab806a33a797fc1f1396106d44865e243cdfc3b54915c46ef36d1e685659"
     },
     {
       "path": "renderer.js",
@@ -1568,8 +1584,8 @@
     {
       "path": "test/oauthIntegrations.test.js",
       "type": ".js",
-      "size": 3656,
-      "sha256": "5f55177b1f870e2695cb51e8f15d9e590f73586344652261a9a4e05331a3d07c"
+      "size": 4353,
+      "sha256": "7b8a85c8391f4766c6a11e9b6fd01956d86623e2a88f8d7386154c59f0c5701c"
     },
     {
       "path": "test/officialDevelopmentPlatforms.test.js",

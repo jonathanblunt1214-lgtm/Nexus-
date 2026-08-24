@@ -42,6 +42,17 @@ test('GitHub connection is a guided token-free device flow with automatic copy a
   assert.match(main, /retryable = error\.code === 'GITHUB_NETWORK'/);
 });
 
+test('every Nexus build includes the publisher GitHub OAuth client ID without a client secret', () => {
+  const publisher = require('../publisherConfig');
+  const main = fs.readFileSync(require.resolve('../main'), 'utf8');
+  const pkg = JSON.parse(fs.readFileSync(require.resolve('../package'), 'utf8'));
+  assert.equal(publisher.githubOAuthClientId, 'Ov23liPiROYsTTGcF9jA');
+  assert.ok(pkg.build.files.includes('publisherConfig.js'));
+  assert.match(main, /publisherConfig\.githubOAuthClientId/);
+  assert.equal(Object.hasOwn(publisher, 'githubOAuthClientSecret'), false);
+  assert.doesNotMatch(fs.readFileSync(require.resolve('../publisherConfig'), 'utf8'), /clientSecret|client_secret/);
+});
+
 test('WordPress.com uses authorization code OAuth with an exact loopback callback and encrypted token storage', () => {
   const oauth = fs.readFileSync(require.resolve('../oauthIntegrations'), 'utf8');
   const main = fs.readFileSync(require.resolve('../main'), 'utf8');

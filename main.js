@@ -31,6 +31,7 @@ const startupStartedAt = performance.now();
 crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
 const { pathToFileURL } = require('url');
 const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
+const publisherConfig = require('./publisherConfig');
 const { planProjectLaunch, inspectProjectReadiness, verifyProjectLaunchPlan } = require('./projectLaunchPreflight');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
@@ -3642,7 +3643,7 @@ function setEncryptedConfigValue(cfg, key, value) {
 function oauthConfiguration() {
   const cfg = loadConfig();
   return {
-    githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID || cfg.githubOAuthClientId || '',
+    githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID || cfg.githubOAuthClientId || publisherConfig.githubOAuthClientId,
     googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID || cfg.googleOAuthClientId || '',
     googleClientSecret: process.env.NEXUS_GOOGLE_CLIENT_SECRET || encryptedConfigValue(cfg, 'googleOAuthClientSecret') || '',
     wordpressClientId: process.env.NEXUS_WORDPRESS_CLIENT_ID || cfg.wordpressOAuthClientId || '',
