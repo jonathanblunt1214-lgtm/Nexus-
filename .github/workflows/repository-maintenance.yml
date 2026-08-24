@@ -52,6 +52,5 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - run: npm run repository:maintain
-      - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
-      - run: npm run release:crucible
+      - name: Skip repository code execution in privileged maintenance workflow
+        run: echo "Repository code execution is intentionally disabled here to prevent cache-poisoning paths."
