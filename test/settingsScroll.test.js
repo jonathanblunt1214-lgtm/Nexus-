@@ -31,6 +31,8 @@ test('ordinary pages scroll without permanent retro scrollbar tracks', () => {
   assert.match(css, /overflow-y:\s*auto/);
   assert.match(css, /scrollbar-width:\s*none/);
   assert.doesNotMatch(css, /scrollbar-gutter:\s*stable/);
+  assert.match(css, /\*::\-webkit-scrollbar\s*\{[^}]*display:\s*none/);
+  assert.doesNotMatch(css, /scrollbar-width:\s*thin/);
 });
 
 test('Settings and Keys is divided into focused sections instead of one scroll fest', () => {

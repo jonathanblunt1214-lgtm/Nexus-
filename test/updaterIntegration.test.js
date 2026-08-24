@@ -35,6 +35,14 @@ test('installed Nexus checks for updates every time the application opens', () =
   assert.match(main, /Startup update check failed/);
 });
 
+test('development copies expose a real manual source-update check', () => {
+  const updater = read('updater.js');
+  const renderer = read('renderer.js');
+  assert.match(updater, /state: 'development'[\s\S]*?canCheck: true[\s\S]*?sourceMode: true/);
+  assert.match(renderer, /Check source updates/);
+  assert.match(renderer, /status\.sourceMode \|\| status\.state === 'development'\)[\s\S]*?checkForUpdatesNow\(\)/);
+});
+
 test('available updates include safely rendered GitHub release notes', () => {
   const updater = read('updater.js');
   const html = read('index.html');

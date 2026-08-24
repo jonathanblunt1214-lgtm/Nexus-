@@ -3977,6 +3977,7 @@ function renderReleaseUpdateStatus(status) {
   pill.innerText = labels[status.state] || 'Updater';
   pill.classList.toggle('on', status.state === 'up-to-date' || status.state === 'ready');
   check.disabled = !status.canCheck || status.state === 'checking' || status.state === 'downloading';
+  check.innerText = status.sourceMode || status.state === 'development' ? 'Check source updates' : 'Check for updates';
   download.hidden = status.state !== 'available';
   install.hidden = status.state !== 'ready';
   progress.hidden = status.state !== 'downloading';
@@ -3997,7 +3998,11 @@ function renderReleaseUpdateStatus(status) {
 }
 
 async function checkForReleaseUpdate() {
-  try { await window.nexus.checkForUpdates(); }
+  try {
+    const status = await window.nexus.getUpdaterStatus();
+    if (status.sourceMode || status.state === 'development') { await checkForUpdatesNow(); return; }
+    await window.nexus.checkForUpdates();
+  }
   catch (error) { renderReleaseUpdateStatus({ ...(await window.nexus.getUpdaterStatus()), state: 'error', message: error.message }); }
 }
 

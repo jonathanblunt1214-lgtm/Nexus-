@@ -55,8 +55,9 @@ function initUpdater(win) {
   if (!app.isPackaged) {
     notifyRenderer('updater:status', {
       state: 'development',
-      message: 'Release updates are available in installed builds. This development copy can still pull source updates.',
-      canCheck: false,
+      message: 'This development copy checks its source branch directly. Select Check source updates to force a check now.',
+      canCheck: true,
+      sourceMode: true,
     });
     return;
   }
