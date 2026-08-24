@@ -37,15 +37,16 @@ async function remediateChangedFiles() {
 }
 
 async function main() {
+  execFileSync(process.execPath, [path.join(__dirname, 'scrubRepositoryPrivacy.js')], { cwd:root, stdio:'inherit' });
   try {
     execFileSync(process.execPath, [path.join(__dirname, 'verifyRepositoryInventory.js')], { cwd:root, stdio:'inherit' });
   } catch {
     execFileSync(process.execPath, [path.join(__dirname, 'repairRepositoryInventory.js')], { cwd:root, stdio:'inherit', env:{ ...process.env, NEXUS_REPAIR_REF:git(['rev-parse', 'HEAD']) } });
   }
   const result = await remediateChangedFiles();
-  if (result.fixed.length) execFileSync(process.execPath, [path.join(__dirname, 'verifyRepositoryInventory.js'), '--write'], { cwd:root, stdio:'inherit' });
+  if (result.fixed.length || git(['status', '--porcelain'])) execFileSync(process.execPath, [path.join(__dirname, 'verifyRepositoryInventory.js'), '--write'], { cwd:root, stdio:'inherit' });
   console.log(JSON.stringify(result));
-  if (result.unresolved.length) throw new Error('Deterministic checker could not safely rewrite every failing changed file. Upgrade was preserved for review.');
+  if (result.unresolved.length) throw new Error('Deterministic checker could not safely rewrite every failing changed file. Development-branch was preserved for review.');
 }
 
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

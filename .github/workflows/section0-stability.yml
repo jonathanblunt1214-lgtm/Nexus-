@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - upgrade/nexus-overhaul
+      - Development-branch
 
 permissions:
   contents: read

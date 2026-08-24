@@ -36,7 +36,7 @@ async function main() {
   }
   jobs.push(runProcess('Architecture audit', [path.join('scripts','verifyArchitecture.js')]));
   jobs.push(runProcess('Release audit', [path.join('scripts','releaseAudit.js')]));
-  jobs.push(runProcess('Privacy verification', [path.join('scripts','verifyRepositoryPrivacy.js')]));
+  jobs.push(runProcess('Privacy verification and scrub retry', [path.join('scripts','privacyRetryGate.js')]));
   jobs.push(runProcess('Repository inventory verification', [path.join('scripts','verifyRepositoryInventory.js')]));
   const results = await Promise.allSettled(jobs);
   const failures = results.filter(result => result.status === 'rejected');

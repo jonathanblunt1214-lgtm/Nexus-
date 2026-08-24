@@ -1,4 +1,4 @@
-name: Promote tested upgrade to main
+name: Promote tested development to main
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: upgrade/nexus-overhaul
+          ref: Development-branch
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
@@ -26,7 +26,7 @@ jobs:
           cache: npm
       - name: Install locked dependencies for deterministic remediation
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Repair, retry, and promote the exact upgrade commit
+      - name: Repair, retry, and promote the exact development commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/promoteTestedUpgrade.js
+        run: node scripts/promoteTestedDevelopment.js
