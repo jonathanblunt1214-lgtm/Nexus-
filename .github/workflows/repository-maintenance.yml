@@ -36,18 +36,14 @@ jobs:
       - run: npm run privacy:verify
 
   weekly-git-maintenance:
-    name: Weekly safe Git repack · ${{ matrix.ref }}
+    name: Weekly safe Git repack · main
     if: github.event.schedule == '47 4 * * 0' || inputs.run_weekly_maintenance == true
-    strategy:
-      fail-fast: false
-      matrix:
-        ref: [main, Development-branch]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ matrix.ref }}
+          ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
