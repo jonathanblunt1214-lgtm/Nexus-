@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const ts = require('typescript');
+const { canonicalContent } = require('./inventoryContent');
 
 const root = path.resolve(__dirname, '..');
 const manifestPath = path.join(root, 'repository-file-manifest.json');
@@ -50,7 +51,7 @@ function crossReference(files) {
 
 function inventory() {
   return trackedFiles().map((file) => {
-    const content = fs.readFileSync(path.join(root, file));
+    const content = canonicalContent(fs.readFileSync(path.join(root, file)));
     return { path:file.replace(/\\/g, '/'), type:path.extname(file).toLowerCase() || '[no extension]', size:content.length, sha256:crypto.createHash('sha256').update(content).digest('hex') };
   });
 }

@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { expectedPackageFiles, verifySourcePackageList } = require('../scripts/verifyPackagedContents');
+const { canonicalContent } = require('../scripts/inventoryContent');
+
+test('repository inventory hashes text identically on Windows and GitHub while preserving binary bytes', () => {
+  assert.deepEqual(canonicalContent(Buffer.from('one\r\ntwo\r\n')), Buffer.from('one\ntwo\n'));
+  const binary = Buffer.from([0, 13, 10, 255]);
+  assert.deepEqual(canonicalContent(binary), binary);
+});
 
 test('every file promised to an installed Nexus update exists before packaging', () => {
   const result = verifySourcePackageList();
