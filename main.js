@@ -31,6 +31,7 @@ const startupStartedAt = performance.now();
 crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
 const { pathToFileURL } = require('url');
 const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
+const { planProjectLaunch, verifyProjectLaunchPlan } = require('./projectLaunchPreflight');
 const { getProjectsRoot } = require('./projectSettings');
 const { saveProject } = require('./projectRegistry');
 const { runPipeline, PipelineError } = require('./pipelineEngine');
@@ -645,7 +646,7 @@ async function checkDockerAvailable() {
 // this is a real, meaningful boundary against a misbehaving or malicious
 // project touching the host - it is not a hardened security sandbox against
 // a determined container escape.
-function launchProjectSandboxed(id, folder, command, port, secretsEnv) {
+function launchProjectSandboxed(id, folder, command, port, secretsEnv, preflightPlan) {
   return new Promise((resolve) => {
     const containerName = `nexus-sandbox-${id}`;
     const nodeModulesVolume = `nexus-sandbox-${id}-node-modules`;
@@ -656,6 +657,11 @@ function launchProjectSandboxed(id, folder, command, port, secretsEnv) {
 
     const portArgs = port ? ['-p', `${port}:${port}`] : [];
 
+    const preparationCommands = (preflightPlan?.actions || []).map((action) => `npm ${action.args.join(' ')}`);
+    const sandboxCommand = [...preparationCommands, command].join(' && ');
+    if (preparationCommands.length) {
+      mainWindow?.webContents.send('project-log', { id, text: `\n[Nexus preflight] Preparing the downloaded project inside its sandbox…\n` });
+    }
     const args = [
       'run', '--rm', '--name', containerName,
       '-v', `${folder}:/workspace`,
@@ -664,7 +670,7 @@ function launchProjectSandboxed(id, folder, command, port, secretsEnv) {
       ...envArgs,
       ...portArgs,
       'node:20',
-      'sh', '-c', command,
+      'sh', '-c', sandboxCommand,
     ];
 
     // Best-effort cleanup of a stale container from a previous crashed run
@@ -695,9 +701,42 @@ function launchProjectSandboxed(id, folder, command, port, secretsEnv) {
         mainWindow?.webContents.send('project-closed', { id, code: -1 });
       });
 
-      resolve({ ok: true, sandboxed: true });
+      resolve({ ok: true, sandboxed: true, prepared: (preflightPlan?.actions || []).map((action) => action.type) });
     });
   });
+}
+
+function runProjectPreparationStep(id, folder, action) {
+  return new Promise((resolve) => {
+    const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const label = action.type === 'install' ? `npm ${action.args.join(' ')}` : 'npm run build';
+    mainWindow?.webContents.send('project-log', { id, text: `\n[Nexus preflight] Running ${label}…\n` });
+    let child;
+    try {
+      child = spawn(npmBin, action.args, { cwd: folder, windowsHide: true, env: process.env, shell: process.platform === 'win32' });
+    } catch (error) {
+      resolve({ ok: false, error: error.message });
+      return;
+    }
+    child.stdout.on('data', (data) => mainWindow?.webContents.send('project-log', { id, text: data.toString() }));
+    child.stderr.on('data', (data) => mainWindow?.webContents.send('project-log', { id, text: data.toString() }));
+    child.once('error', (error) => resolve({ ok: false, error: error.message }));
+    child.once('close', (code) => resolve(code === 0 ? { ok: true } : { ok: false, error: `${label} exited with code ${code}.` }));
+  });
+}
+
+async function prepareProjectForLaunch(id, folder, command, existingPlan = null) {
+  const plan = existingPlan || planProjectLaunch(folder, command);
+  for (const action of plan.actions) {
+    const result = await runProjectPreparationStep(id, folder, action);
+    if (!result.ok) return { ok: false, error: `Project preparation failed: ${result.error}` };
+  }
+  const verified = verifyProjectLaunchPlan(plan);
+  if (!verified.ok) return verified;
+  if (plan.actions.length) {
+    mainWindow?.webContents.send('project-log', { id, text: '[Nexus preflight] Project dependencies and build output are ready.\n\n' });
+  }
+  return { ok: true, prepared: plan.actions.map((action) => action.type) };
 }
 
 ipcMain.handle('launch-project', async (_event, { id, folder, command, port, projectUid, sandboxed }) => {
@@ -710,14 +749,27 @@ ipcMain.handle('launch-project', async (_event, { id, folder, command, port, pro
     return { ok: false, error: `Folder does not exist: ${folder}` };
   }
 
+  // A GitHub source download normally excludes node_modules and generated
+  // dist output. Prepare trusted projects from their lockfile/build script
+  // before launching so a missing compiled entrypoint is caught and repaired
+  // here instead of crashing later with MODULE_NOT_FOUND.
+  const preflightPlan = planProjectLaunch(folder, command);
+  if (preflightPlan.actions.some((action) => action.type === 'install')) {
+    const dependencyTrustError = requireWorkspacePermission(folder, 'dependencies');
+    if (dependencyTrustError) return dependencyTrustError;
+  }
+
   const secretsEnv = projectUid ? decryptAllProjectSecrets(projectUid) : {};
 
   if (sandboxed) {
     if (!(await checkDockerAvailable())) {
       return { ok: false, error: 'Sandboxed launch needs Docker installed and running (Docker Desktop). Uncheck "Sandboxed" to run directly instead.' };
     }
-    return launchProjectSandboxed(id, folder, command, port, secretsEnv);
+    return launchProjectSandboxed(id, folder, command, port, secretsEnv, preflightPlan);
   }
+
+  const preparation = await prepareProjectForLaunch(id, folder, command, preflightPlan);
+  if (!preparation.ok) return preparation;
 
   let child;
   try {
@@ -3686,7 +3738,7 @@ ipcMain.handle('email-account:sign-out', async () => {
   delete cfg.accountVaultAutoSyncPassphraseEnc;
   delete cfg.accountVaultAutoSyncProviders;
   await saveConfig(cfg);
-  return { ok: true };
+  return { ok: true, prepared: preparation.prepared };
 });
 
 global.nexusPluginMarketplaceApi = {

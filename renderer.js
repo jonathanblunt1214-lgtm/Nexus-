@@ -650,6 +650,11 @@ async function toggleProject(id, e) {
     document.getElementById('log-screen').innerText = '';
     setPreviewVisible(true);
     switchTab('workspace');
+    if (result.prepared?.length) {
+      showToast('success', 'Project prepared automatically', result.prepared.includes('build')
+        ? 'Nexus installed the locked dependencies and generated the missing build output before launch.'
+        : 'Nexus installed the project dependencies before launch.');
+    }
     // Give the dev server a moment to boot before we point the webview at it
     // (sandboxed launches pull the node:20 image on first run, which can
     // take a bit longer than a direct host launch).
