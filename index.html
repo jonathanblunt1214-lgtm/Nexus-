@@ -1493,6 +1493,13 @@ Type "help" for tips.
 
     <!-- CLOUD / GEMINI -->
     <div id="view-cloud" class="view-pane">
+      <div class="settings-section-nav" role="tablist" aria-label="Settings sections">
+        <button class="btn btn-secondary active" data-settings-section="account" onclick="setSettingsSection('account')">Account &amp; Sync</button>
+        <button class="btn btn-secondary" data-settings-section="github" onclick="setSettingsSection('github')">GitHub</button>
+        <button class="btn btn-secondary" data-settings-section="ai" onclick="setSettingsSection('ai')">AI &amp; API Keys</button>
+        <button class="btn btn-secondary" data-settings-section="project" onclick="setSettingsSection('project')">Project</button>
+        <button class="btn btn-secondary" data-settings-section="system" onclick="setSettingsSection('system')">System</button>
+      </div>
       <div class="card" aria-labelledby="plugin-security-title">
         <label class="label" id="plugin-security-title">Plug-ins &amp; Security Screening</label>
         <p class="muted small" style="margin-top:6px;">Upload a plug-in folder for quiet pre-install screening. Nexus never runs the uploaded code during inspection. Microsoft Defender and Nexus’s behavioral risk engine must both clear it; blocked uploads are not installed.</p>

@@ -14,4 +14,6 @@
 - Changed failed main promotions into an upgrade-branch remediation and retry cycle: restore hash-matched missing files, apply only independently rechecked deterministic checker corrections, rerun every gate, and promote only the repaired upgrade commit.
 - Fixed plug-in handler timeouts under heavy scheduler contention by starting the strict execution timer only after the isolated worker confirms that the handler began.
 - Fixed Settings & Keys vertical scrolling so profiles, connected services, vault controls, GitHub settings, and AI API keys remain reachable at every supported window height.
+- Replaced the Settings scroll-fest with Account, GitHub, AI & API Keys, Project, and System sections; fixed broken legacy GitHub-settings navigation and made diagnostic messages visible.
+- Enabled vertical scrolling on every ordinary page while preserving the specialized internal scrolling layout in Run & Preview.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

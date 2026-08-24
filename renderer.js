@@ -30,7 +30,7 @@ function showToast(type, title, message) {
   window.nexus?.diagnosticsRecord?.({ level: type === 'error' ? 'error' : 'info', component: 'ui', event: title, data: { message: messageText } }).catch(() => {});
 }
 
-async function loadDiagnostics() { const r = await window.nexus.diagnosticsGet(300); if (!r.ok) return; document.getElementById('diagnostics-telemetry').checked = r.settings.telemetry; document.getElementById('diagnostics-paths').checked = r.settings.includePaths; document.getElementById('diagnostics-log').innerHTML = r.entries.slice().reverse().map((entry) => `<p class="small mono">${escapeHtml(entry.timestamp)} · ${escapeHtml(entry.level)} · ${escapeHtml(entry.component)} · ${escapeHtml(entry.event)} · ${escapeHtml(entry.correlationId)}</p>`).join('') || '<p class="muted small">No diagnostics recorded yet.</p>'; }
+async function loadDiagnostics() { const r = await window.nexus.diagnosticsGet(300); if (!r.ok) return; document.getElementById('diagnostics-telemetry').checked = r.settings.telemetry; document.getElementById('diagnostics-paths').checked = r.settings.includePaths; document.getElementById('diagnostics-log').innerHTML = r.entries.slice().reverse().map((entry) => `<p class="small mono">${escapeHtml(entry.timestamp)} · ${escapeHtml(entry.level)} · ${escapeHtml(entry.component)} · ${escapeHtml(entry.event)} · ${escapeHtml(entry.data?.message || '')} · ${escapeHtml(entry.correlationId)}</p>`).join('') || '<p class="muted small">No diagnostics recorded yet.</p>'; }
 async function refreshLanguageServices() {
   const panel = document.getElementById('language-services-list'); if (!panel) return;
   const result = await window.nexus.languageServicesStatus();
@@ -377,10 +377,19 @@ document.addEventListener('keydown', (e) => {
 });
 
 function switchTab(tabId) {
+  const requestedSettings = tabId === 'settings';
+  if (requestedSettings) tabId = 'cloud';
+  const view = document.getElementById('view-' + tabId);
+  const button = document.getElementById('tab-btn-' + tabId);
+  if (!view || !button) {
+    showToast('error', 'Navigation unavailable', `Nexus could not open the ${tabId} section.`);
+    return;
+  }
   document.querySelectorAll('.view-pane').forEach((v) => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach((b) => b.classList.remove('active'));
-  document.getElementById('view-' + tabId).classList.add('active');
-  document.getElementById('tab-btn-' + tabId).classList.add('active');
+  view.classList.add('active');
+  button.classList.add('active');
+  if (tabId === 'cloud') setSettingsSection(requestedSettings ? 'github' : (currentSettingsSection || 'account'));
   if (tabId === 'workspace') {
     setTimeout(() => document.getElementById('term-input').focus(), 50);
     if (!currentAssistFolder) onTargetChange();
@@ -677,6 +686,25 @@ function toggleSandboxed(id, e) {
   p.sandboxed = !p.sandboxed;
   persistProjects();
   renderProjects();
+}
+
+let currentSettingsSection = 'account';
+function settingsSectionForCard(card) {
+  if (card.querySelector('#nexus-profile-title, #connected-services-title, #account-vault-passphrase, #email-account-email')) return 'account';
+  if (card.querySelector('#github-settings-title, #github-operations-summary, #github-project-pr-list') || /GitHub|Stashes & Conflicts|Portable Project Setup/.test(card.textContent)) return 'github';
+  if (card.querySelector('#coding-model-provider, #nim-key, #gemini-key, #openai-key, #gcp-project-id') || /Provider Discovery|Ask Gemini|Ask OpenAI/.test(card.textContent)) return 'ai';
+  if (card.querySelector('#config-active-name, #secret-key-name') || /Project Constitution|Services —|Detected Integrations/.test(card.textContent)) return 'project';
+  return 'system';
+}
+
+function setSettingsSection(section) {
+  const allowed = new Set(['account', 'github', 'ai', 'project', 'system']);
+  currentSettingsSection = allowed.has(section) ? section : 'account';
+  const view = document.getElementById('view-cloud');
+  if (!view) return;
+  view.querySelectorAll(':scope > .card').forEach((card) => { card.hidden = settingsSectionForCard(card) !== currentSettingsSection; });
+  view.querySelectorAll('.settings-section-nav [data-settings-section]').forEach((button) => button.classList.toggle('active', button.dataset.settingsSection === currentSettingsSection));
+  view.scrollTop = 0;
 }
 
 async function linkProjectToAccount(id, event) {

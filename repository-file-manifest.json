@@ -1034,8 +1034,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 132752,
-      "sha256": "87b017667124d3ae1aa2bcb191d5d2b96e9a2dd3175ef5fce6fcee85ed91941c"
+      "size": 133519,
+      "sha256": "be27313a579765d31379c6d118f3e4b4fc9e4fa6282613cf9c2152e2daf972ea"
     },
     {
       "path": "inventoryWorker.js",
@@ -1280,14 +1280,14 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 2583,
-      "sha256": "0330fbe90ba2f8a1c29f31d64b1c415f390fc9116c37872c14c02e735895749f"
+      "size": 2900,
+      "sha256": "947b7385db56691741cf7a7c5abda9374614538d77464080f5c80935fed46bc1"
     },
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 267584,
-      "sha256": "2a53d71f56ec60b0cce9bb0701e91676c668e32db2fb3096c8d7ae0438c9a805"
+      "size": 269433,
+      "sha256": "a18324ba22bc7e1d82c8b577a32963ddbbf4ffd18f3d4a7abf7651c2e8fe43d6"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1430,8 +1430,8 @@
     {
       "path": "styles.css",
       "type": ".css",
-      "size": 18203,
-      "sha256": "521ba3c1efbddf74e920662aba6b655f7d17e699c05dda7b5d4b9040a430d6d2"
+      "size": 18737,
+      "sha256": "01bee9ac574edb9feafd10da156104966055a6502cadf26ee0f7e2906d064dad"
     },
     {
       "path": "test/accountVault.test.js",
@@ -1712,8 +1712,8 @@
     {
       "path": "test/settingsScroll.test.js",
       "type": ".js",
-      "size": 850,
-      "sha256": "f4f97af3215891e57f051a711c1b09e94ca32dd39bef842500ef609b81a4a9ac"
+      "size": 2645,
+      "sha256": "240dec40dc0664ccd1734b352531fcebfe15b67c5adaf272db58504e5476eb3a"
     },
     {
       "path": "test/toolRegistry.test.js",
