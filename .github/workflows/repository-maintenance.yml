@@ -18,15 +18,11 @@ permissions:
 jobs:
   daily-clutter-audit:
     name: Daily clutter audit · main
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
           ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          ref: main
       - run: npm run repository:clutter
       - run: npm run inventory:verify
       - run: npm run privacy:verify
