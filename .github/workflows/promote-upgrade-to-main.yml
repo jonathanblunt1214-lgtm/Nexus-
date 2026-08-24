@@ -1,0 +1,63 @@
+name: Promote tested upgrade to main
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  checks: read
+
+concurrency:
+  group: nexus-main-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: upgrade/nexus-overhaul
+          fetch-depth: 0
+      - name: Require the exact tested upgrade commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main upgrade/nexus-overhaul
+          main_sha="$(git rev-parse origin/main)"
+          upgrade_sha="$(git rev-parse origin/upgrade/nexus-overhaul)"
+          if ! git merge-base --is-ancestor "$main_sha" "$upgrade_sha"; then
+            echo "::error::main and upgrade diverged. Promotion refuses to merge, rebase, or force-push."
+            exit 1
+          fi
+          required=(
+            "verify"
+            "dependency-and-release-audit"
+            "windows-package-smoke"
+            "Tests ubuntu-latest / Node 20"
+            "Tests ubuntu-latest / Node 22"
+            "Tests ubuntu-latest / Node 24"
+            "Tests windows-latest / Node 20"
+            "Tests windows-latest / Node 22"
+            "Tests windows-latest / Node 24"
+            "Tests macos-latest / Node 20"
+            "Tests macos-latest / Node 22"
+            "Tests macos-latest / Node 24"
+          )
+          checks="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/commits/${upgrade_sha}/check-runs?per_page=100" --jq '.check_runs[] | [.name, .conclusion] | @tsv')"
+          for name in "${required[@]}"; do
+            if ! grep -Fqx "$name"$'\t''success' <<< "$checks"; then
+              echo "::error::Required upgrade check is not successful: $name"
+              exit 1
+            fi
+          done
+          current_upgrade="$(git ls-remote origin refs/heads/upgrade/nexus-overhaul | cut -f1)"
+          if [ "$current_upgrade" != "$upgrade_sha" ]; then
+            echo "::error::upgrade moved during validation. Run promotion again for the new commit."
+            exit 1
+          fi
+          git push origin "$upgrade_sha:refs/heads/main"
+          echo "Promoted exact validated commit $upgrade_sha to main."
+

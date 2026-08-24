@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 170,
+  "fileCount": 173,
   "types": {
-    ".yml": 4,
+    ".yml": 6,
     "[no extension]": 1,
     ".md": 7,
     ".bat": 2,
-    ".js": 142,
+    ".js": 143,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -717,6 +717,18 @@
   "missingCrossReferences": [],
   "files": [
     {
+      "path": ".github/workflows/branch-integrity.yml",
+      "type": ".yml",
+      "size": 928,
+      "sha256": "eabaa2430de06172ea8faf8fda6ed4bc698c1dc400516a1cb598c9397c7ccef6"
+    },
+    {
+      "path": ".github/workflows/promote-upgrade-to-main.yml",
+      "type": ".yml",
+      "size": 2265,
+      "sha256": "90b52773867a1f6d4fee81de3afd85b88c93606933d6b5e9db18190afd43c2b2"
+    },
+    {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
       "size": 1658,
@@ -1247,8 +1259,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 1513,
-      "sha256": "1463e39534c0be998101d9d06df394df8dec8db559473c0005f4a5b4b895e034"
+      "size": 1731,
+      "sha256": "6178bf28475f8506959f0c68e20957b03c667e2ee2fe52c341889cee452b7932"
     },
     {
       "path": "renderer.js",
@@ -1405,6 +1417,12 @@
       "type": ".js",
       "size": 1938,
       "sha256": "85ce470db5190e641b0d156daa740db6724b8e9a0055fff320428b49cbe913a1"
+    },
+    {
+      "path": "test/branchPromotionProtocol.test.js",
+      "type": ".js",
+      "size": 1236,
+      "sha256": "9f6f87ace6a6f99dc63f549370c3a9e2938fb4fc80234b619f2a1d39b3bbff54"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",

@@ -1,0 +1,34 @@
+name: Nexus Branch Integrity
+
+on:
+  push:
+    branches:
+      - main
+      - upgrade/nexus-overhaul
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  branch-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Enforce upgrade-first branch flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main upgrade/nexus-overhaul
+          main_sha="$(git rev-parse origin/main)"
+          upgrade_sha="$(git rev-parse origin/upgrade/nexus-overhaul)"
+          if ! git merge-base --is-ancestor "$main_sha" "$upgrade_sha"; then
+            echo "::error::main contains work that was not promoted from upgrade/nexus-overhaul, or the branches diverged."
+            exit 1
+          fi
+          echo "Branch flow is valid: main is the same as, or behind, upgrade/nexus-overhaul."
+

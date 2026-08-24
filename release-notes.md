@@ -9,4 +9,5 @@
 - Added package-content verification so signed and GitHub update builds fail before publication when any required Nexus file is missing from the application archive.
 - Added hash-verified recovery for missing Nexus release-staging files: retrieve only the missing path from GitHub, retry twice, restore atomically only when it matches the offline baseline, then rerun verification. Changed files are never overwritten automatically.
 - Made the four-workload heavy-load stress gate mandatory before every release, including direct publish commands.
+- Added an upgrade-first promotion protocol: main accepts the exact validated upgrade commit only after all cross-platform, package, inventory, and stress checks succeed; divergence and main-only changes are rejected.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.
