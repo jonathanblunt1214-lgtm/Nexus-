@@ -1,0 +1,65 @@
+name: Refresh self-repair inventory once
+
+on:
+  push:
+    branches:
+      - codex/add-the-crucible
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: codex/add-the-crucible
+          fetch-depth: 0
+      - name: Rebuild inventory without executing repository code
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/refresh-self-repair-inventory.yml
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const crypto = require('crypto');
+          const { execFileSync } = require('child_process');
+          const manifestPath = 'repository-file-manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const previous = new Map((manifest.files || []).map((item) => [item.path, item]));
+          const files = execFileSync('git', ['ls-files'], { encoding:'utf8' })
+            .split(/\r?\n/).filter(Boolean)
+            .filter((file) => file !== manifestPath && file !== '.github/workflows/refresh-self-repair-inventory.yml')
+            .sort();
+          function record(file) {
+            let content = fs.readFileSync(file);
+            if (!content.includes(0)) {
+              const text = content.toString('utf8');
+              if (Buffer.from(text, 'utf8').equals(content)) content = Buffer.from(text.replace(/\r\n/g, '\n'), 'utf8');
+            }
+            return { path:file, type:path.extname(file).toLowerCase() || '[no extension]', size:content.length, sha256:crypto.createHash('sha256').update(content).digest('hex') };
+          }
+          const records = files.map(record);
+          for (const item of records.filter((item) => /\.(?:c|m)?js$/i.test(item.path))) {
+            const before = previous.get(item.path);
+            if (before && before.sha256 !== item.sha256 && item.path !== 'scripts/selfRepairCommit.js') {
+              throw new Error(`Unexpected JavaScript inventory change while bootstrapping self-repair: ${item.path}`);
+            }
+          }
+          const repairSource = fs.readFileSync('scripts/selfRepairCommit.js', 'utf8');
+          if (/\b(?:require\s*\(|from\s+|import\s*\()\s*['"]\.\.?\//.test(repairSource)) throw new Error('selfRepairCommit.js unexpectedly contains relative executable imports.');
+          const types = {};
+          for (const item of records) types[item.type] = (types[item.type] || 0) + 1;
+          manifest.fileCount = records.length;
+          manifest.types = types;
+          manifest.files = records;
+          fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add repository-file-manifest.json .github/workflows/refresh-self-repair-inventory.yml
+          git commit -m "Record commit self-repair system in inventory"
+          git push origin HEAD:codex/add-the-crucible
