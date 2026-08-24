@@ -7,13 +7,33 @@ const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
 test('main promotion requires the exact successful cross-platform upgrade checks', () => {
   const workflow = read('.github/workflows/promote-upgrade-to-main.yml');
-  for (const check of ['verify', 'dependency-and-release-audit', 'windows-package-smoke', 'Tests ubuntu-latest / Node 24', 'Tests windows-latest / Node 20', 'Tests macos-latest / Node 22']) {
-    assert.match(workflow, new RegExp(check.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const promotion = read('scripts/promoteTestedUpgrade.js');
+  for (const check of ['verify', 'dependency-and-release-audit', 'windows-package-smoke']) {
+    assert.match(promotion, new RegExp(check.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
-  assert.match(workflow, /grep -Fqx .*success/);
-  assert.match(workflow, /current_upgrade.*!=.*upgrade_sha/s);
-  assert.match(workflow, /git push origin "\$upgrade_sha:refs\/heads\/main"/);
-  assert.doesNotMatch(workflow, /--force|-f\b/);
+  assert.match(promotion, /\['ubuntu-latest','windows-latest','macos-latest'\]/);
+  assert.match(promotion, /\[20,22,24\]/);
+  assert.match(promotion, /`Tests \$\{os\} \/ Node \$\{node\}`/);
+  assert.match(workflow, /node scripts\/promoteTestedUpgrade\.js/);
+  assert.match(promotion, /currentUpgrade !== upgradeSha/);
+  assert.match(promotion, /upgradeSha}:refs\/heads\/main/);
+  assert.doesNotMatch(`${workflow}\n${promotion}`, /--force|-f\b/);
+});
+
+test('failed promotion remediates only on upgrade and retries all gates', () => {
+  const workflow = read('.github/workflows/promote-upgrade-to-main.yml');
+  const promotion = read('scripts/promoteTestedUpgrade.js');
+  const remediation = read('scripts/remediateUpgradeForPromotion.js');
+  assert.match(workflow, /actions: write/);
+  assert.match(promotion, /remediateUpgradeForPromotion\.js/);
+  assert.match(promotion, /Apply deterministic promotion repairs/);
+  assert.match(promotion, /HEAD:upgrade\/nexus-overhaul/);
+  assert.match(promotion, /dispatch\('section0-stability\.yml'\)/);
+  assert.match(promotion, /dispatch\('release-audit\.yml'\)/);
+  assert.match(promotion, /waitForChecks\(upgradeSha\)/);
+  assert.match(remediation, /proposeCheckerFix/);
+  assert.match(remediation, /proposal\.after.*diagnostics/);
+  assert.match(remediation, /NEXUS_REPAIR_REF/);
 });
 
 test('branch integrity rejects main-only commits and divergence', () => {

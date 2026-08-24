@@ -111,6 +111,7 @@ parentPort.on('message', (message) => {
     return;
   }
   if (message.type === 'command') {
+    parentPort.postMessage({ type: 'commandStarted', requestId: message.requestId });
     Promise.resolve()
       .then(() => runCommand(message.command, message.payload || {}))
       .then((value) => parentPort.postMessage({ type: 'result', requestId: message.requestId, ok: true, value: cloneJson(value) }))

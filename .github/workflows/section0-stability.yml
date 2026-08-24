@@ -1,6 +1,7 @@
 name: Nexus Stability Gate
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:

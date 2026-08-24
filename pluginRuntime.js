@@ -66,6 +66,13 @@ class PluginRuntime {
       instance.readyReject = null;
       return;
     }
+    if (message.type === 'commandStarted') {
+      const pending = instance.pending.get(message.requestId);
+      if (!pending) return;
+      clearTimeout(pending.timer);
+      pending.timer = this._commandTimer(instance, message.requestId, pending.command, pending.audit, this.timeoutMs);
+      return;
+    }
     if (message.type === 'result') {
       const pending = instance.pending.get(message.requestId);
       if (!pending) return;
@@ -74,6 +81,17 @@ class PluginRuntime {
       if (message.ok) pending.resolve(cloneJson(message.value));
       else pending.reject(new Error(message.error || 'Plugin command failed'));
     }
+  }
+
+  _commandTimer(instance, requestId, command, audit, timeoutMs) {
+    return setTimeout(() => {
+      const pending = instance.pending.get(requestId);
+      instance.pending.delete(requestId);
+      const error = new Error(`Plugin ${command} timed out after ${timeoutMs}ms`);
+      audit?.('PLUGIN_TIMEOUT', { command, timeoutMs });
+      this._terminate(instance, error);
+      pending?.reject(error);
+    }, timeoutMs);
   }
 
   async load({ manifest, pluginRoot, audit }) {
@@ -127,14 +145,14 @@ class PluginRuntime {
     if (!instance || instance.terminated) return Promise.reject(new Error('Plugin worker is not available'));
     const requestId = this.nextRequestId++;
     return new Promise((resolve, reject) => {
+      const dispatchTimeoutMs = Math.max(5000, this.timeoutMs + 250);
       const timer = setTimeout(() => {
         instance.pending.delete(requestId);
-        const error = new Error(`Plugin ${command} timed out after ${this.timeoutMs}ms`);
-        audit?.('PLUGIN_TIMEOUT', { command, timeoutMs: this.timeoutMs });
+        const error = new Error(`Plugin ${command} dispatch timed out after ${dispatchTimeoutMs}ms`);
         this._terminate(instance, error);
         reject(error);
-      }, this.timeoutMs);
-      instance.pending.set(requestId, { resolve, reject, timer });
+      }, dispatchTimeoutMs);
+      instance.pending.set(requestId, { resolve, reject, timer, command, audit });
       instance.worker.postMessage({ type: 'command', requestId, command, payload: cloneJson(payload) });
     });
   }

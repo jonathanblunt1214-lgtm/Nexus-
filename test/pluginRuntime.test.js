@@ -60,5 +60,7 @@ test('worker startup allowance remains separate from strict handler execution li
   assert.match(source, /workerData: \{ manifest:[^\n]*startupTimeoutMs \}/);
   const worker = fs.readFileSync(path.join(__dirname, '..', 'pluginWorker.js'), 'utf8');
   assert.match(worker, /runInContext\(context, \{ timeout: startupTimeoutMs \}\)/);
-  assert.match(source, /Plugin \$\{command\} timed out after \$\{this\.timeoutMs\}ms/);
+  assert.match(worker, /commandStarted/);
+  assert.match(source, /_commandTimer\(instance, message\.requestId, pending\.command, pending\.audit, this\.timeoutMs\)/);
+  assert.match(source, /dispatchTimeoutMs = Math\.max\(5000, this\.timeoutMs \+ 250\)/);
 });

@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 175,
+  "fileCount": 177,
   "types": {
     ".yml": 6,
     "[no extension]": 1,
     ".md": 7,
     ".bat": 2,
-    ".js": 145,
+    ".js": 147,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -434,6 +434,11 @@
       "resolved": "scripts/verifyPackagedContents.js"
     },
     {
+      "source": "scripts/remediateUpgradeForPromotion.js",
+      "reference": "../codeChecker",
+      "resolved": "codeChecker.js"
+    },
+    {
       "source": "scripts/verifyRepositoryInventory.js",
       "reference": "./inventoryContent",
       "resolved": "scripts/inventoryContent.js"
@@ -735,8 +740,8 @@
     {
       "path": ".github/workflows/promote-upgrade-to-main.yml",
       "type": ".yml",
-      "size": 2265,
-      "sha256": "90b52773867a1f6d4fee81de3afd85b88c93606933d6b5e9db18190afd43c2b2"
+      "size": 765,
+      "sha256": "34aa61455f2dc758dca45ac0d69d3c68bb94ef15afcfcba853b25e1ecb3efcd5"
     },
     {
       "path": ".github/workflows/release-audit.yml",
@@ -753,8 +758,8 @@
     {
       "path": ".github/workflows/section0-stability.yml",
       "type": ".yml",
-      "size": 510,
-      "sha256": "5227bd8b2e7f00344450e3460ec23b7cf839143f782a8f88a6ce505eb2ee443b"
+      "size": 531,
+      "sha256": "cce75d751698853ca81f079699f46889d8d1f3d36d1d679e5343d0c1fe6f2d9a"
     },
     {
       "path": ".github/workflows/sync-upgrade-branch.yml",
@@ -1173,8 +1178,8 @@
     {
       "path": "pluginRuntime.js",
       "type": ".js",
-      "size": 7476,
-      "sha256": "ecf24a541526a9ab6056fe1e5920c301dfabeeaa0461d7b4a2a32d9bf386f454"
+      "size": 8239,
+      "sha256": "21b36316fb1c9a316bee8f056d7114abdad5e4fcffb5978d954475243a345844"
     },
     {
       "path": "pluginSecurityScanner.js",
@@ -1185,8 +1190,8 @@
     {
       "path": "pluginWorker.js",
       "type": ".js",
-      "size": 5363,
-      "sha256": "28dafc7322a41f3122e7b21cd3055aec6994cd7de20fa7d2f75d60cfaf5c4e3c"
+      "size": 5449,
+      "sha256": "ae4f22aa77e47fa720236319a72ba6338425b89287cbebaad9001fe04c6b21b6"
     },
     {
       "path": "portableProjectConfig.js",
@@ -1275,8 +1280,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 1983,
-      "sha256": "bac80d8deeaeeffee115e6a5e816ec52ba4021b51b7f11418e4360297fe2cb77"
+      "size": 2407,
+      "sha256": "ee0d132197b3f06f79d5259d477d3ede8b07a86e31e8f4dc22f5dde62951d453"
     },
     {
       "path": "renderer.js",
@@ -1315,6 +1320,12 @@
       "sha256": "68af54120c745ae94ad82fe6b1dd38dae25a08e870fa83949465767e1b40f26f"
     },
     {
+      "path": "scripts/promoteTestedUpgrade.js",
+      "type": ".js",
+      "size": 4242,
+      "sha256": "0661b93da864cab2e6613ff2e604dbb68b5c3ee0f37b2cd09c9ab51f8c787088"
+    },
+    {
       "path": "scripts/releaseAudit.js",
       "type": ".js",
       "size": 5514,
@@ -1325,6 +1336,12 @@
       "type": ".js",
       "size": 1625,
       "sha256": "e8ddd4067ffcf953cbf5c4fcd77a83b55bee7e13a9d7796ff10454d524b99d5c"
+    },
+    {
+      "path": "scripts/remediateUpgradeForPromotion.js",
+      "type": ".js",
+      "size": 2792,
+      "sha256": "1805d371560ad3c5c5b54a71b690e8a5945db939b325202363270acd010b7f05"
     },
     {
       "path": "scripts/renew-local-signing.ps1",
@@ -1437,8 +1454,8 @@
     {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
-      "size": 1236,
-      "sha256": "9f6f87ace6a6f99dc63f549370c3a9e2938fb4fc80234b619f2a1d39b3bbff54"
+      "size": 2282,
+      "sha256": "50b85868b8f09a0681943b05f5d1b2429144c58a596e46a18970679cabccb7f1"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",
@@ -1599,8 +1616,8 @@
     {
       "path": "test/pluginRuntime.test.js",
       "type": ".js",
-      "size": 3519,
-      "sha256": "755a82a8687b5ffc1798538cd5802f1cdf5b7f8134575381f6768a85c6c9ad9b"
+      "size": 3686,
+      "sha256": "dd20c71fb9eeac37904f03ba81cd504be5cb848fe22b63b9d7b3c2ad558ff2b5"
     },
     {
       "path": "test/pluginSecurityScanner.test.js",
