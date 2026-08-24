@@ -1172,8 +1172,8 @@
     {
       "path": "officialLanguageServers.js",
       "type": ".js",
-      "size": 11075,
-      "sha256": "911fac21bdb864c0bf8e3c20f4c371b2b0f39b658f879475d8cace7c5e10d089"
+      "size": 11170,
+      "sha256": "ae3ec79634e3b03dd3870a8f9ff583dde11225f746d775ef9acba5113d0c782c"
     },
     {
       "path": "operationalDiagnostics.js",
@@ -1454,8 +1454,8 @@
     {
       "path": "scripts/verifyRepositoryInventory.js",
       "type": ".js",
-      "size": 5436,
-      "sha256": "e3790cbe506c684792f29e7f379b3aec82aeee627d83f55660c5cca3ca75f85a"
+      "size": 5577,
+      "sha256": "778f033e3e41dc61feee33e4e997a578f25dd42531e1357b3bcb58efcdcde535"
     },
     {
       "path": "scripts/verifyRepositoryPrivacy.js",
@@ -1658,8 +1658,8 @@
     {
       "path": "test/officialLanguageServers.test.js",
       "type": ".js",
-      "size": 2858,
-      "sha256": "754b8378b831a665fe2181816690e13acac993d263c04cf1b04b62779ccabb04"
+      "size": 3193,
+      "sha256": "e1f35b2abe66bf4174cd13cadeaec513f19b25055f66fb2a4a0fa47b5de3c8e4"
     },
     {
       "path": "test/operationalDiagnostics.test.js",
@@ -1670,8 +1670,8 @@
     {
       "path": "test/packageInventory.test.js",
       "type": ".js",
-      "size": 4395,
-      "sha256": "c2477ea90e34e0e89bc2b670480cb3468bde868629f0b6f2e43b0a61bcf01448"
+      "size": 4692,
+      "sha256": "cbba9c383d4476ccdd18703d00437c06f99b9e850e0211e7781b20ae8d1d4ed0"
     },
     {
       "path": "test/pluginManager.test.js",
