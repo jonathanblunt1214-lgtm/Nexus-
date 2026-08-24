@@ -29,6 +29,14 @@ test('every release is blocked until the concurrent heavy-load stress gate passe
   const publish = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'buildAndPublishVerified.js'), 'utf8');
   const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release.yml'), 'utf8');
   assert.equal(pkg.scripts['release:stress'], 'node scripts/releaseStressGate.js');
+  const stress = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'releaseStressGate.js'), 'utf8');
+  const workload = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'heavyWorkloadWorker.js'), 'utf8');
+  for (const marker of ['NEXUS_HEAVY_FILES','NEXUS_HEAVY_SAVES','NEXUS_HEAVY_CHECKS','NEXUS_HEAVY_BUILDS']) assert.match(stress, new RegExp(marker));
+  assert.match(workload, /writeJsonAtomic/);
+  assert.match(workload, /indexWorkspace/);
+  assert.match(workload, /checkCode/);
+  assert.match(workload, /Parallel builds produced different artifacts/);
+  assert.match(stress, /could not spawn/);
   assert.ok(publish.indexOf('releaseStressGate.js') < publish.indexOf("'--publish', 'always'"));
   assert.match(workflow, /Heavy-load release stress gate[\s\S]*npm run release:stress/);
 });

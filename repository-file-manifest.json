@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 183,
+  "fileCount": 184,
   "types": {
     "[no extension]": 2,
     ".yml": 6,
     ".md": 7,
     ".bat": 2,
-    ".js": 152,
+    ".js": 153,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -437,6 +437,21 @@
       "source": "scripts/buildLocalSigned.js",
       "reference": "./verifyPackagedContents",
       "resolved": "scripts/verifyPackagedContents.js"
+    },
+    {
+      "source": "scripts/heavyWorkloadWorker.js",
+      "reference": "../atomicWrite",
+      "resolved": "atomicWrite.js"
+    },
+    {
+      "source": "scripts/heavyWorkloadWorker.js",
+      "reference": "../workspaceIndexer",
+      "resolved": "workspaceIndexer.js"
+    },
+    {
+      "source": "scripts/heavyWorkloadWorker.js",
+      "reference": "../codeChecker",
+      "resolved": "codeChecker.js"
     },
     {
       "source": "scripts/remediateUpgradeForPromotion.js",
@@ -1307,8 +1322,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 4488,
-      "sha256": "6e9b968b7ff91b38026208ee799537f95f509fcb7aba22c50245a02079cecbf1"
+      "size": 4732,
+      "sha256": "39d81ef1397f92018384aac6ad50f750933993fd1bba33af798768e48fd14ea7"
     },
     {
       "path": "renderer.js",
@@ -1341,6 +1356,12 @@
       "sha256": "cc2587f7f05f4036becfd68fcb676be19a9a4385588edf0d402e4f54885c7394"
     },
     {
+      "path": "scripts/heavyWorkloadWorker.js",
+      "type": ".js",
+      "size": 6052,
+      "sha256": "ff15d2b23c717049f44b3d86d6180f32a2cb8da7445d716ed83573c98f112930"
+    },
+    {
       "path": "scripts/installGitHooks.js",
       "type": ".js",
       "size": 512,
@@ -1367,8 +1388,8 @@
     {
       "path": "scripts/releaseStressGate.js",
       "type": ".js",
-      "size": 1625,
-      "sha256": "e8ddd4067ffcf953cbf5c4fcd77a83b55bee7e13a9d7796ff10454d524b99d5c"
+      "size": 2656,
+      "sha256": "912f48611c4d7bc3846cd499cf8863ad5b850bd36e24ab4481d8b89dd64441d1"
     },
     {
       "path": "scripts/remediateUpgradeForPromotion.js",
@@ -1631,8 +1652,8 @@
     {
       "path": "test/packageInventory.test.js",
       "type": ".js",
-      "size": 3206,
-      "sha256": "4998d5e9f2d832f58f668fba491c036945060404630f516ee4fc6e53022b71ca"
+      "size": 3815,
+      "sha256": "bc92f7f4b645d2b09c341af27b769263421172c1e9253bfa20ba3653aa2be95c"
     },
     {
       "path": "test/pluginManager.test.js",
