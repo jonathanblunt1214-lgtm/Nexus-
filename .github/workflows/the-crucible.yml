@@ -1,0 +1,23 @@
+name: The Crucible
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'
+    - cron: '47 4 * * 0'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  crucible:
+    name: The Crucible
+    uses: jonathanblunt1214-lgtm/The-Crucible/.github/workflows/the-crucible.yml@0759b67985766f974bc5c3d0ded0dc7f87f2b9a0
+    with:
+      core_ref: 0759b67985766f974bc5c3d0ded0dc7f87f2b9a0
+      config_path: .thecrucible.json
+      run_workload: ${{ github.event_name != 'schedule' || github.event.schedule == '47 4 * * 0' }}
+      weekly_maintenance: ${{ github.event.schedule == '47 4 * * 0' }}

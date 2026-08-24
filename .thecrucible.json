@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jonathanblunt1214-lgtm/The-Crucible/0759b67985766f974bc5c3d0ded0dc7f87f2b9a0/.thecrucible.schema.json",
+  "schemaVersion": 1,
+  "project": {
+    "name": "Nexus",
+    "projectId": "nexus"
+  },
+  "commands": {
+    "prepare": [
+      { "name": "Install locked dependencies", "run": "npm", "args": ["ci", "--ignore-scripts", "--no-audit", "--no-fund"] }
+    ],
+    "verify": [
+      { "name": "Nexus release gate", "run": "npm", "args": ["run", "release:crucible"] },
+      { "name": "Repository inventory", "run": "npm", "args": ["run", "inventory:verify"] }
+    ]
+  },
+  "artifacts": ["package.json", "repository-file-manifest.json"],
+  "clutter": {
+    "allow": [],
+    "allowDuplicateContent": false,
+    "blockTrackedIgnored": false
+  },
+  "privacy": {
+    "githubIdentity": "jonathanblunt1214-lgtm",
+    "scanContactInformation": false,
+    "allow": []
+  },
+  "security": {
+    "enabled": true,
+    "allow": [],
+    "allowBinaries": [],
+    "dependencyAudit": [
+      { "name": "High-severity production dependency audit", "run": "npm", "args": ["audit", "--audit-level=high", "--omit=dev"] }
+    ]
+  },
+  "authenticity": {
+    "claims": [
+      { "name": "Repository inventory is complete and current", "run": "npm", "args": ["run", "inventory:verify"] }
+    ]
+  },
+  "workload": {
+    "workers": 1,
+    "cycles": 1,
+    "timeoutMinutes": 30
+  }
+}

@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 184,
+  "fileCount": 187,
   "types": {
     "[no extension]": 2,
-    ".yml": 6,
+    ".yml": 7,
+    ".json": 3,
     ".md": 7,
     ".bat": 2,
-    ".js": 153,
+    ".js": 154,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
-    ".json": 2,
     ".ps1": 2,
     ".py": 1,
     ".css": 1
@@ -804,10 +804,22 @@
       "sha256": "e88b76dfd7068b160d72a8c94947c6ab335ddf8f90a62c61e3be3232bf6a9443"
     },
     {
+      "path": ".github/workflows/the-crucible.yml",
+      "type": ".yml",
+      "size": 623,
+      "sha256": "345074588b7084d9f18da51718c30eb69eb03e822a257c36a77b65941d821c58"
+    },
+    {
       "path": ".gitignore",
       "type": "[no extension]",
       "size": 343,
       "sha256": "0c6937cdb5537714b571bc9d7fc6afafddaea7fe42071a5324c38d215affdf08"
+    },
+    {
+      "path": ".thecrucible.json",
+      "type": ".json",
+      "size": 1401,
+      "sha256": "5e049a9badcba9004b056eb2f9037fab98fe659b71d587ca25c290d11303df34"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1136,8 +1148,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 217510,
-      "sha256": "eb5c9e906b0734b86b620ce37e3279a294b69688145bd32b5e270c952b0575db"
+      "size": 217672,
+      "sha256": "764417d390ed1d1be699f6a7b6ab3576078b5d07df85b93b195582bb9af21ddb"
     },
     {
       "path": "memoryEngine.js",
@@ -1430,8 +1442,8 @@
     {
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
-      "size": 9454,
-      "sha256": "ab50e8493d22895184fa26e0c1b27b8c95769d3f7f376a82417a014a946d8614"
+      "size": 10189,
+      "sha256": "900ddfc069f29b3a374a2bd38cc43e881ed9f487960f2d719d86700f27ddc1bf"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
@@ -1546,6 +1558,12 @@
       "type": ".js",
       "size": 1429,
       "sha256": "c0e565abf5ef8a0c39113fc34b87d3f334880f570c3029b5b17d762e2725475a"
+    },
+    {
+      "path": "test/crucibleIntegration.test.js",
+      "type": ".js",
+      "size": 1947,
+      "sha256": "2d6fcfaff741e1c64f3e788dbebe226233be505807f2760c911ef025ac3564b8"
     },
     {
       "path": "test/debugAdapter.test.js",
