@@ -27,7 +27,7 @@ function runProcess(label, args, env = {}) {
 }
 
 async function main() {
-  console.log(`[Crucible] Running every release check together for up to four minutes: ${workerCount} complete test suites, ${workerCount} adaptive project workloads, architecture, release, privacy, and inventory verification.`);
+  console.log(`[Crucible] Running every release check together for up to four minutes: ${workerCount} complete test suites, ${workerCount} adaptive project workloads, architecture, release, privacy, inventory, and clutter verification.`);
   console.log(`[Crucible] Each workload processes ${Number(process.env.NEXUS_HEAVY_FILES) || 5000} files and repeats verified save, checker, index, and build cycles for as long as the time box allows.`);
   const jobs = [];
   for (let index = 1; index <= workerCount; index += 1) {
@@ -38,6 +38,7 @@ async function main() {
   jobs.push(runProcess('Release audit', [path.join('scripts','releaseAudit.js')]));
   jobs.push(runProcess('Privacy verification and scrub retry', [path.join('scripts','privacyRetryGate.js')]));
   jobs.push(runProcess('Repository inventory verification', [path.join('scripts','verifyRepositoryInventory.js')]));
+  jobs.push(runProcess('Repository clutter verification', [path.join('scripts','repositoryClutterAudit.js')]));
   const results = await Promise.allSettled(jobs);
   const failures = results.filter(result => result.status === 'rejected');
   if (failures.length) {
@@ -47,7 +48,7 @@ async function main() {
   const summaries = results.filter((_, index) => index < workerCount * 2 && index % 2 === 1).map((result) => JSON.parse(result.value.split(/\r?\n/).at(-1)));
   const totals = summaries.reduce((sum, item) => ({ cycles:sum.cycles + item.cycles, files:sum.files + item.files, saves:sum.saves + item.saves, checks:sum.checks + item.checks, builds:sum.builds + item.builds }), { cycles:0, files:0, saves:0, checks:0, builds:0 });
   console.log(`[Crucible] Completed ${totals.cycles} workload cycles across ${totals.files} files, ${totals.saves} atomic saves, ${totals.checks} checker calls, and ${totals.builds} verified builds.`);
-  console.log(`[Crucible] PASS: all tests, adaptive workloads, audits, privacy checks, and inventory checks completed without corruption, incomplete builds, or hidden failures.`);
+  console.log(`[Crucible] PASS: all tests, adaptive workloads, audits, privacy, inventory, and clutter checks completed without corruption, incomplete builds, or hidden failures.`);
 }
 
 main().catch(error => {

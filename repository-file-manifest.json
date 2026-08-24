@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 187,
+  "fileCount": 191,
   "types": {
     "[no extension]": 3,
-    ".yml": 6,
+    ".yml": 7,
     ".md": 7,
     ".bat": 2,
-    ".js": 155,
+    ".js": 158,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -699,6 +699,16 @@
       "resolved": "providerDiscovery.js"
     },
     {
+      "source": "test/repositoryMaintenance.test.js",
+      "reference": "../scripts/repositoryClutterAudit",
+      "resolved": "scripts/repositoryClutterAudit.js"
+    },
+    {
+      "source": "test/repositoryMaintenance.test.js",
+      "reference": "../scripts/repositoryMaintenance",
+      "resolved": "scripts/repositoryMaintenance.js"
+    },
+    {
       "source": "test/repositoryPrivacy.test.js",
       "reference": "../package.json",
       "resolved": "package.json"
@@ -811,6 +821,12 @@
       "type": ".yml",
       "size": 1417,
       "sha256": "f324ede5513fb7ea3ca7f0d20620434e80b68e3db794c46e8c3aa209430b3c3b"
+    },
+    {
+      "path": ".github/workflows/repository-maintenance.yml",
+      "type": ".yml",
+      "size": 1507,
+      "sha256": "1293217f7ff63ac9932fa406b36afa10726a8cc515b916c0081e97ad1f448841"
     },
     {
       "path": ".github/workflows/section0-stability.yml",
@@ -1199,8 +1215,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5336,
-      "sha256": "f93ae061ef66960bcd8696758044469854e99521eea91d85de14a17e0afd97e4"
+      "size": 5472,
+      "sha256": "857c55ee7de16f16c41a6c96ba127f7124aa5ea4832a2c6bb7eb16da19ecb615"
     },
     {
       "path": "pipelineEngine.js",
@@ -1343,8 +1359,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 5920,
-      "sha256": "9fc55353214d388edb3852f753db47c90ae4e659c766f31b95173fb3b0954bd9"
+      "size": 6145,
+      "sha256": "68f660585adf8b3116b9759e5ce01b2e9c7ca28cf0aeda76f0e063a59b925f3b"
     },
     {
       "path": "renderer.js",
@@ -1415,8 +1431,8 @@
     {
       "path": "scripts/releaseStressGate.js",
       "type": ".js",
-      "size": 3651,
-      "sha256": "96d1e71f1198d5599194a43d31413e102bf7a58167dd000f013e6e029314cbba"
+      "size": 3774,
+      "sha256": "1c569b48ad701e33f1828c7a25c29a222dc17bb77b6e079ec55b6a33b818bf26"
     },
     {
       "path": "scripts/remediateDevelopmentForPromotion.js",
@@ -1435,6 +1451,18 @@
       "type": ".js",
       "size": 4414,
       "sha256": "8a46f008bf3ef7b398bd1cf6a3bcd4df4c6f68d53f4e2963137ac5062db8536e"
+    },
+    {
+      "path": "scripts/repositoryClutterAudit.js",
+      "type": ".js",
+      "size": 2418,
+      "sha256": "88f7c2129b00f5a5183e56fc30cbbb738ef2e20327f4a20c06feaf7afd245886"
+    },
+    {
+      "path": "scripts/repositoryMaintenance.js",
+      "type": ".js",
+      "size": 1711,
+      "sha256": "d7f400de32964a6e8fedb17237e8f5dffd10189044043e38272eb9f096f54055"
     },
     {
       "path": "scripts/restore-local-signing.ps1",
@@ -1685,8 +1713,8 @@
     {
       "path": "test/packageInventory.test.js",
       "type": ".js",
-      "size": 4388,
-      "sha256": "adba4fd354462f12f54b02547c2007553602c83449963545242b494436c0bea6"
+      "size": 4418,
+      "sha256": "cae2679ef61b95afc8e48ae324f02544e16d1ca6a498f0bcd0c997b046b70212"
     },
     {
       "path": "test/pluginManager.test.js",
@@ -1765,6 +1793,12 @@
       "type": ".js",
       "size": 1325,
       "sha256": "c84f3083a3978cd5170f41f9a92ddcfbc40e5bd711de6ef1019cdc630c9c90d7"
+    },
+    {
+      "path": "test/repositoryMaintenance.test.js",
+      "type": ".js",
+      "size": 2546,
+      "sha256": "8d1f69680a0c3b284573c6c2be391432a080704aed2e97c4ca458cbfdd93c855"
     },
     {
       "path": "test/repositoryPrivacy.test.js",

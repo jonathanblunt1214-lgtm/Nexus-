@@ -15,6 +15,8 @@
     "inventory:update": "node scripts/verifyRepositoryInventory.js --write",
     "inventory:verify": "node scripts/verifyRepositoryInventory.js",
     "inventory:repair": "node scripts/repairRepositoryInventory.js",
+    "repository:clutter": "node scripts/repositoryClutterAudit.js",
+    "repository:maintain": "node scripts/repositoryMaintenance.js",
     "release:crucible": "node scripts/releaseStressGate.js",
     "release:stress": "npm run release:crucible",
     "dist": "electron-builder --win nsis",
