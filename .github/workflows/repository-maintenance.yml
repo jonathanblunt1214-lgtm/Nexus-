@@ -17,16 +17,12 @@ permissions:
 
 jobs:
   daily-clutter-audit:
-    name: Daily clutter audit · ${{ matrix.ref }}
-    strategy:
-      fail-fast: false
-      matrix:
-        ref: [main, Development-branch]
+    name: Daily clutter audit · main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ matrix.ref }}
+          ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
@@ -38,16 +34,12 @@ jobs:
   weekly-git-maintenance:
     name: Weekly safe Git repack · main
     if: github.event.schedule == '47 4 * * 0' || inputs.run_weekly_maintenance == true
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          ref: main
       - run: npm run repository:maintain
       - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
       - run: npm run release:crucible
