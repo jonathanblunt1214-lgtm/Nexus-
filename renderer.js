@@ -4235,6 +4235,40 @@ function applyNexusPreferences() {
   for (const [id, key] of [['nexus-preference-word-wrap','nexus_editor_word_wrap'],['nexus-preference-format-save','nexus_format_on_save'],['nexus-preference-reduced-motion','nexus_reduced_motion']]) { const element = document.getElementById(id); if (element) element.checked = nexusPreferenceValue(key, 'false') === 'true'; }
   const editorFormat = document.getElementById('ce-format-on-save'); if (editorFormat) editorFormat.checked = nexusPreferenceValue('nexus_format_on_save', 'false') === 'true';
 }
+
+function renderExportProtection(result) {
+  const pill = document.getElementById('export-protection-pill');
+  const details = document.getElementById('export-protection-result');
+  if (!pill || !details) return;
+  const errors = result?.checker?.errors?.length || 0;
+  const missing = result?.missingReferences?.length || 0;
+  const unavailable = result?.checker?.unavailable?.length || 0;
+  pill.innerText = result?.ok ? 'EXPORT: VERIFIED' : 'EXPORT: BLOCKED';
+  pill.className = `pill ${result?.ok ? 'pill-success' : 'pill-danger'}`;
+  details.innerText = result?.ok
+    ? `${result.manifest.fileCount} files verified (${formatBytes(result.manifest.totalBytes)}); ${result.checker.recognized} checker-supported text files passed.${unavailable ? ` ${unavailable} optional external checker(s) were unavailable.` : ''}${result.path ? ` Exported to ${result.path}` : ''}`
+    : `${result?.error || 'Export failed.'} Checker errors: ${errors}. Missing local references: ${missing}.`;
+}
+
+async function preflightProtectedExport() {
+  const project = projects.find(item => item.id === activeProjectId);
+  if (!project) { alert('No active project.'); return; }
+  const pill = document.getElementById('export-protection-pill');
+  if (pill) pill.innerText = 'EXPORT: CHECKING…';
+  const result = await window.nexus.projectExportPreflight(project.folder);
+  renderExportProtection(result);
+}
+
+async function runProtectedExport() {
+  const project = projects.find(item => item.id === activeProjectId);
+  if (!project) { alert('No active project.'); return; }
+  const pill = document.getElementById('export-protection-pill');
+  if (pill) pill.innerText = 'EXPORT: VERIFYING…';
+  const result = await window.nexus.exportProtectedProject(project.folder);
+  if (result.canceled) { if (pill) pill.innerText = 'EXPORT: CANCELED'; return; }
+  renderExportProtection(result);
+  if (result.ok) showToast('success', 'Protected export completed and reverified');
+}
 function saveNexusPreferences() {
   const pairs = { nexus_ui_density:document.getElementById('nexus-preference-density').value, nexus_editor_font_size:document.getElementById('nexus-preference-font-size').value, nexus_editor_tab_size:document.getElementById('nexus-preference-tab-size').value, nexus_editor_word_wrap:String(document.getElementById('nexus-preference-word-wrap').checked), nexus_format_on_save:String(document.getElementById('nexus-preference-format-save').checked), nexus_reduced_motion:String(document.getElementById('nexus-preference-reduced-motion').checked) };
   for (const [key, value] of Object.entries(pairs)) localStorage.setItem(key, value); applyNexusPreferences();

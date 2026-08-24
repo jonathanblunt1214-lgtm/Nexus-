@@ -1413,6 +1413,17 @@ Type "help" for tips.
       </div>
 
       <div class="card" style="flex-shrink:0;">
+        <label class="label">Protected Project Export</label>
+        <p class="muted small" style="margin-top:6px;">Before an app, website, or API leaves staging, Nexus runs the linked deterministic code checker, validates relative code references, hashes every exported file, and verifies the copied result against its SHA-256 manifest.</p>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="btn btn-secondary" onclick="preflightProtectedExport()">Check Export</button>
+          <button class="btn" onclick="runProtectedExport()">Export Verified Project</button>
+          <span class="pill" id="export-protection-pill">EXPORT: NOT CHECKED</span>
+        </div>
+        <div id="export-protection-result" class="muted small" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card" style="flex-shrink:0;">
         <label class="label">Project Capabilities — Firebase / mobile (Capacitor) scripts this project actually defines</label>
         <p class="muted small" style="margin-top:4px;">Nexus has no dedicated Firebase ops panel or Capacitor emulator/device preview - this only detects what's real in this project and runs its own scripts through Deploy, it doesn't add any tooling of its own for either.</p>
         <button class="btn btn-secondary" onclick="scanProjectCapabilities()">Scan Project</button>

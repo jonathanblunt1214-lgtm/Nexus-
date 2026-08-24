@@ -67,6 +67,7 @@ const fullStackSupport = require('./fullStackSupport');
 const languageBreakdown = require('./languageBreakdown');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
 const { checkCode, proposeCheckerFix, checkerCatalog } = require('./codeChecker');
+const { createExportPreflight, exportVerifiedProject } = require('./projectExportProtection');
 const officialLanguageServers = require('./officialLanguageServers');
 const gitWorkflow = require('./gitWorkflow');
 const portableProjectConfig = require('./portableProjectConfig');
@@ -2260,6 +2261,20 @@ ipcMain.handle('project-account-reference', async (_event, { folder }) => {
   return { ok: true, provider: 'github', repositoryUrl: `https://github.com/${coordinates.owner}/${coordinates.repo}.git` };
 });
 ipcMain.handle('code-checker:catalog', () => ({ ok:true, adapters:checkerCatalog() }));
+ipcMain.handle('project-export:preflight', async (_event, { folder }) => {
+  const denied = requireWorkspacePermission(folder, 'checker');
+  if (denied) return denied;
+  try { return await createExportPreflight({ folder, runCodeCheck:runIntegratedCodeCheck }); }
+  catch (error) { return { ok:false, error:error.message }; }
+});
+ipcMain.handle('project-export:run', async (_event, { folder }) => {
+  const denied = requireWorkspacePermission(folder, 'checker');
+  if (denied) return denied;
+  const selected = await dialog.showOpenDialog(mainWindow, { title:'Choose protected project export destination', properties:['openDirectory', 'createDirectory'] });
+  if (selected.canceled || !selected.filePaths[0]) return { ok:false, canceled:true };
+  try { return await exportVerifiedProject({ folder, destinationParent:selected.filePaths[0], runCodeCheck:runIntegratedCodeCheck }); }
+  catch (error) { return { ok:false, error:error.message }; }
+});
 
 ipcMain.handle('portable-config:inspect', (_event, { folder }) => portableProjectConfig.inspect(folder));
 ipcMain.handle('portable-config:save', (_event, { folder, config, local }) => {

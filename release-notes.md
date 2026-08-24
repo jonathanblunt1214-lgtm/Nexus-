@@ -10,4 +10,5 @@
 - Added hash-verified recovery for missing Nexus release-staging files: retrieve only the missing path from GitHub, retry twice, restore atomically only when it matches the offline baseline, then rerun verification. Changed files are never overwritten automatically.
 - Made the four-workload heavy-load stress gate mandatory before every release, including direct publish commands.
 - Added an upgrade-first promotion protocol: main accepts the exact validated upgrade commit only after all cross-platform, package, inventory, and stress checks succeed; divergence and main-only changes are rejected.
+- Added protected project export for apps, websites, and APIs: the existing deterministic checker API, local-reference validation, and a complete SHA-256 file manifest must pass in staging before Nexus copies and reverifies the export outside staging.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

@@ -130,6 +130,7 @@
       "trainingDataset.js",
       "fineTuneTrainer.js",
       "codeChecker.js",
+      "projectExportProtection.js",
       "webLanguageServices.js",
       "officialLanguageServers.js",
       "officialDevelopmentPlatforms.js",

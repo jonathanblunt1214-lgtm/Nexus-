@@ -115,6 +115,8 @@ contextBridge.exposeInMainWorld('nexus', {
   readFile: (filePath) => ipcRenderer.invoke('read-file', { filePath }),
   languageIntelligence: (payload) => ipcRenderer.invoke('language-intelligence', payload),
   codeCheckerCatalog: () => ipcRenderer.invoke('code-checker:catalog'),
+  projectExportPreflight: (folder) => ipcRenderer.invoke('project-export:preflight', { folder }),
+  exportProtectedProject: (folder) => ipcRenderer.invoke('project-export:run', { folder }),
   languageServicesStatus: () => ipcRenderer.invoke('language-services:status'),
   chooseLanguageService: (provider) => ipcRenderer.invoke('language-services:choose', { provider }),
   clearLanguageService: (provider) => ipcRenderer.invoke('language-services:clear', { provider }),
