@@ -7,7 +7,8 @@ test('Settings and Keys always scrolls to profiles, connected services, and API 
   const css = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   assert.match(css, /\.view-pane:not\(#view-workspace\)\s*\{[^}]*overflow-y:\s*auto/);
-  assert.match(css, /\.view-pane:not\(#view-workspace\)\s*\{[^}]*scrollbar-gutter:\s*stable/);
+  assert.match(css, /\.view-pane:not\(#view-workspace\)\s*\{[^}]*scrollbar-width:\s*none/);
+  assert.match(css, /\.view-pane:not\(#view-workspace\)::\-webkit-scrollbar\s*\{[^}]*display:\s*none/);
   const profile = html.indexOf('id="nexus-profile-title"');
   const services = html.indexOf('id="connected-services-title"');
   const keys = html.indexOf('id="coding-model-provider"');
@@ -23,6 +24,13 @@ test('every ordinary page scrolls while the workspace retains its internal pane 
   assert.deepEqual(views.sort(), ['view-cloud', 'view-projects', 'view-workspace']);
   assert.match(css, /\.view-pane:not\(#view-workspace\)/);
   assert.match(css, /\.view-pane\s*\{[^}]*overflow:\s*hidden/);
+});
+
+test('ordinary pages scroll without permanent retro scrollbar tracks', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
+  assert.match(css, /overflow-y:\s*auto/);
+  assert.match(css, /scrollbar-width:\s*none/);
+  assert.doesNotMatch(css, /scrollbar-gutter:\s*stable/);
 });
 
 test('Settings and Keys is divided into focused sections instead of one scroll fest', () => {

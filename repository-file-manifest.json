@@ -1280,8 +1280,8 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 2900,
-      "sha256": "947b7385db56691741cf7a7c5abda9374614538d77464080f5c80935fed46bc1"
+      "size": 3036,
+      "sha256": "f14f2430afcd3fdcbf611b0bd63b54724547ffd82be7ec224709037789cbdb28"
     },
     {
       "path": "renderer.js",
@@ -1430,8 +1430,8 @@
     {
       "path": "styles.css",
       "type": ".css",
-      "size": 18737,
-      "sha256": "01bee9ac574edb9feafd10da156104966055a6502cadf26ee0f7e2906d064dad"
+      "size": 18851,
+      "sha256": "a694a06ee66c147b08ae95e8642e9c09522a5e0c603759360ba7428362a9a139"
     },
     {
       "path": "test/accountVault.test.js",
@@ -1712,8 +1712,8 @@
     {
       "path": "test/settingsScroll.test.js",
       "type": ".js",
-      "size": 2645,
-      "sha256": "240dec40dc0664ccd1734b352531fcebfe15b67c5adaf272db58504e5476eb3a"
+      "size": 3060,
+      "sha256": "bf81eda3b333ffa6ad6136eadbca79003daeb2924c4c1509242b409c9c6e9e33"
     },
     {
       "path": "test/toolRegistry.test.js",

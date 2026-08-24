@@ -16,4 +16,5 @@
 - Fixed Settings & Keys vertical scrolling so profiles, connected services, vault controls, GitHub settings, and AI API keys remain reachable at every supported window height.
 - Replaced the Settings scroll-fest with Account, GitHub, AI & API Keys, Project, and System sections; fixed broken legacy GitHub-settings navigation and made diagnostic messages visible.
 - Enabled vertical scrolling on every ordinary page while preserving the specialized internal scrolling layout in Run & Preview.
+- Kept ordinary-page scrolling available through mouse, touchpad, touch, and keyboard without showing permanent retro scrollbar tracks.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

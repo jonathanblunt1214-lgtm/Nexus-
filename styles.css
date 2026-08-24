@@ -148,7 +148,8 @@ header .btn[title="Command Palette"]::after { content: "Search  Ctrl+K"; font-si
 
 .view-pane { flex: 1; display: none; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .view-pane.active { display: flex; }
-.view-pane:not(#view-workspace) { overflow-x: hidden; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.view-pane:not(#view-workspace) { overflow-x: hidden; overflow-y: auto; padding-right: 4px; overscroll-behavior: contain; scrollbar-width: none; -ms-overflow-style: none; }
+.view-pane:not(#view-workspace)::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .settings-section-nav { position: sticky; top: 0; z-index: 8; display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; padding: 10px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--border); border-radius: var(--radius); backdrop-filter: blur(10px); }
 .settings-section-nav .btn { flex: 1 1 auto; }
 .settings-section-nav .btn.active { color: #08111f; background: var(--accent); border-color: var(--accent); }
