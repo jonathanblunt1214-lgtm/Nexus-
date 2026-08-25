@@ -1,5 +1,8 @@
 # Nexus 1.0.2
 
+- Added deterministic clutter auditing to The Crucible, scheduled that audit for both branches every 24 hours, and added weekly history-preserving Git integrity verification and object repacking followed by The Crucible.
+- Set the dedicated approved-build sequence to propose `0.0.03` next, then increment it predictably within the pre-launch line; `1.0.0` is explicitly reserved for the real public launch and is never reached by automatic build-number rollover.
+
 - Fixed Add a Project so Nexus automatically derives the display name from a selected folder or GitHub repository.
 - Added support for GitHub shorthand such as `owner/repository` and `github.com/owner/repository`.
 - Fixed the installed-app startup update check so updater events are registered before the window loads.
@@ -9,9 +12,9 @@
 - Added package-content verification so signed and GitHub update builds fail before publication when any required Nexus file is missing from the application archive.
 - Added hash-verified recovery for missing Nexus release-staging files: retrieve only the missing path from GitHub, retry twice, restore atomically only when it matches the offline baseline, then rerun verification. Changed files are never overwritten automatically.
 - Made the four-workload heavy-load stress gate mandatory before every release, including direct publish commands.
-- Added an upgrade-first promotion protocol: main accepts the exact validated upgrade commit only after all cross-platform, package, inventory, and stress checks succeed; divergence and main-only changes are rejected.
+- Added a development-first promotion protocol: main accepts the exact validated development commit only after all cross-platform, package, inventory, and stress checks succeed; divergence and main-only changes are rejected.
 - Added protected project export for apps, websites, and APIs: the existing deterministic checker API, local-reference validation, and a complete SHA-256 file manifest must pass in staging before Nexus copies and reverifies the export outside staging.
-- Changed failed main promotions into an upgrade-branch remediation and retry cycle: restore hash-matched missing files, apply only independently rechecked deterministic checker corrections, rerun every gate, and promote only the repaired upgrade commit.
+- Changed failed main promotions into a Development-branch remediation and retry cycle: restore hash-matched missing files, apply only independently rechecked deterministic checker corrections, rerun every gate, and promote only the repaired development commit.
 - Fixed plug-in handler timeouts under heavy scheduler contention by starting the strict execution timer only after the isolated worker confirms that the handler began.
 - Fixed Settings & Keys vertical scrolling so profiles, connected services, vault controls, GitHub settings, and AI API keys remain reachable at every supported window height.
 - Replaced the Settings scroll-fest with Account, GitHub, AI & API Keys, Project, and System sections; fixed broken legacy GitHub-settings navigation and made diagnostic messages visible.
@@ -27,6 +30,8 @@
 - Added a local pre-push privacy gate and matching GitHub checks that block credentials, personal paths, personal email addresses, signing keys, and Nexus account-state files from repository uploads.
 - Replaced the four-suite concurrency check with a true release workload gate that simultaneously exercises 20,000 project files, 4,000 atomic saves, 6,000 checker calls, 32 independent builds, repeated indexing, and four complete test suites.
 - Folded architecture, release, privacy, and repository-inventory verification into that same concurrent heavy gate so one result covers the complete release check.
-- Made the explicitly named Unified heavy release gate mandatory for the exact upgrade commit before promotion to main, while retaining cross-platform and Windows-package safeguards.
+- Made the explicitly named Unified heavy release gate mandatory for the exact development commit before promotion to main, while retaining cross-platform and Windows-package safeguards.
 - Named the mandatory promotion barrier The Crucible and made its workload adaptive: it completes as many fully verified cycles as possible inside a four-minute time box instead of dying midway through a fixed workload.
+- Added deterministic privacy scrub-and-retry behavior: detected personal data is sanitized and rechecked automatically, while pushes remain blocked until the cleaned files are committed so secrets cannot survive in Git history.
+- Renamed the sole development branch from upgrade/nexus-overhaul to Development-branch; main remains the only promotion target.
 - Includes the language-service stability and heavy-workload plug-in fixes tested across Windows, macOS, and Linux.

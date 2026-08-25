@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jonathanblunt1214-lgtm/The-Crucible/main/.thecrucible.schema.json",
+  "schemaVersion": 1,
+  "project": {
+    "name": "Nexus",
+    "projectId": "nexus"
+  },
+  "commands": {
+    "prepare": [
+      { "name": "Install locked dependencies", "run": "npm", "args": ["ci", "--ignore-scripts", "--no-audit", "--no-fund"] }
+    ],
+    "verify": [
+      { "name": "Nexus release Crucible", "run": "npm", "args": ["run", "release:crucible"] },
+      { "name": "Repository inventory", "run": "npm", "args": ["run", "inventory:verify"] }
+    ]
+  },
+  "artifacts": ["package.json", "repository-file-manifest.json"],
+  "clutter": {
+    "allow": [],
+    "allowDuplicateContent": false
+  },
+  "privacy": {
+    "githubIdentity": "jonathanblunt1214-lgtm"
+  },
+  "security": {
+    "allow": [
+      { "path": "main.js", "reason": "Nexus exposes an owner-operated local terminal; shell execution is the reviewed purpose of this handler.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-24", "rules": ["dynamic code execution", "shell-enabled child process"] },
+      { "path": "codeChecker.js", "reason": "The reviewed YAML checker parses editor input with the bundled safe loader.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-24", "rules": ["unsafe deserialization"] }
+    ],
+    "allowBinaries": [],
+    "dependencyAudit": [
+      { "name": "High-severity npm dependency audit", "run": "npm", "args": ["audit", "--audit-level=high", "--omit=dev"] }
+    ]
+  },
+  "authenticity": {
+    "requireArtifacts": true,
+    "claims": [
+      { "name": "Repository inventory is complete and current", "run": "npm", "args": ["run", "inventory:verify"], "evidence": ["repository-file-manifest.json"] }
+    ]
+  },
+  "governance": { "requireExceptionMetadata": true, "failOnDisabledSecurity": true },
+  "workload": {
+    "workers": 1,
+    "cycles": 1,
+    "timeoutMinutes": 30,
+    "maxOutputBytes": 1048576,
+    "execution": { "network": "allow", "denyBackground": true }
+  }
+}

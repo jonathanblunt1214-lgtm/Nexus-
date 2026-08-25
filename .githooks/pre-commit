@@ -1,0 +1,2 @@
+#!/bin/sh
+node scripts/privacyRetryGate.js --allow-repaired || exit 1

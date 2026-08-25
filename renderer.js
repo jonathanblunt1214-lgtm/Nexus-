@@ -403,7 +403,20 @@ function switchTab(tabId) {
 // ---------- Projects ----------
 async function browseFolder() {
   const folder = await window.nexus.pickFolder();
-  if (folder) document.getElementById('project-path').value = folder;
+  if (folder) {
+    document.getElementById('project-path').value = folder;
+    await detectAndFillProjectPort(folder);
+  }
+}
+
+async function detectAndFillProjectPort(folder = document.getElementById('project-path').value.trim()) {
+  const portInput = document.getElementById('project-port');
+  if (!folder || !portInput || portInput.value.trim()) return null;
+  const result = await window.nexus.detectProjectPort(folder);
+  if (!result?.ok || !result.detectedPort?.port) return null;
+  portInput.value = result.detectedPort.port;
+  showToast('info', `Detected port ${result.detectedPort.port}`, `Filled from ${result.detectedPort.source}. You can change it before saving.`);
+  return result.detectedPort;
 }
 
 window.nexus.onProjectCloneLog(({ line }) => {
@@ -513,9 +526,14 @@ async function addProject(e) {
   const rawInput = document.getElementById('project-path').value.trim();
   const command = document.getElementById('project-command').value.trim() || 'npm run dev';
   const portInput = document.getElementById('project-port');
-  let port = portInput.value.trim() || '3000';
-  const mayReplaceDefaultPort = portInput.value.trim() === '' || portInput.value.trim() === '3000';
+  let port = portInput.value.trim();
+  const mayReplaceDefaultPort = port === '';
   const progressEl = document.getElementById('clone-progress');
+
+  if (port && (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535)) {
+    alert('Enter a port from 1 through 65535, or leave it blank for automatic detection.');
+    return;
+  }
 
   if (!rawInput) {
     alert('Pick a project folder, choose a GitHub repository, or paste its GitHub URL. Nexus will fill in the project name automatically.');
@@ -584,11 +602,12 @@ async function addProject(e) {
     showToast('info', 'Downloaded project checked', progressEl.innerText);
   }
 
-  if (result.sourceType === 'git' && result.detectedPort?.port && mayReplaceDefaultPort) {
+  if (result.detectedPort?.port && mayReplaceDefaultPort) {
     port = result.detectedPort.port;
     portInput.value = port;
     showToast('info', `Detected port ${port}`, `Found from ${result.detectedPort.source}.`);
   }
+  port ||= '3000';
 
   const project = { id: Date.now(), name, folder, command, port, running: false };
   projects.push(project);
@@ -4150,12 +4169,12 @@ function renderApprovedBuildNumber(buildInfo) {
   current.innerText = buildInfo.buildNumber
     ? `Current approved build: ${buildInfo.buildNumber}${buildInfo.approvedAt ? ` · approved ${new Date(buildInfo.approvedAt).toLocaleString()}` : ''}`
     : 'No build number has been approved yet.';
-  next.innerText = `Next build awaiting approval: ${buildInfo.nextBuildNumber || '0.0.01'}`;
+  next.innerText = `Next build awaiting approval: ${buildInfo.nextBuildNumber || '0.0.03'} · 1.0.0 is reserved for public launch.`;
 }
 
 async function approveBuildNumber() {
   const preview = await window.nexus.getBuildInfo();
-  const next = preview.nextBuildNumber || '0.0.01';
+  const next = preview.nextBuildNumber || '0.0.03';
   if (!confirm(`Approve Nexus build ${next}?\n\nThis permanently records the next build number for this Nexus installation. It will not run or publish the installer by itself.`)) return;
   const button = document.getElementById('approve-build-number-btn');
   button.disabled = true;

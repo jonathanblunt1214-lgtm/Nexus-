@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 184,
+  "fileCount": 197,
   "types": {
-    "[no extension]": 2,
-    ".yml": 6,
+    "[no extension]": 3,
+    ".yml": 10,
+    ".json": 3,
     ".md": 7,
     ".bat": 2,
-    ".js": 153,
+    ".js": 160,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
-    ".json": 2,
     ".ps1": 2,
     ".py": 1,
     ".css": 1
@@ -454,9 +454,19 @@
       "resolved": "codeChecker.js"
     },
     {
-      "source": "scripts/remediateUpgradeForPromotion.js",
+      "source": "scripts/privacyRetryGate.js",
+      "reference": "./scrubRepositoryPrivacy",
+      "resolved": "scripts/scrubRepositoryPrivacy.js"
+    },
+    {
+      "source": "scripts/remediateDevelopmentForPromotion.js",
       "reference": "../codeChecker",
       "resolved": "codeChecker.js"
+    },
+    {
+      "source": "scripts/scrubRepositoryPrivacy.js",
+      "reference": "./verifyRepositoryPrivacy",
+      "resolved": "scripts/verifyRepositoryPrivacy.js"
     },
     {
       "source": "scripts/verifyRepositoryInventory.js",
@@ -689,9 +699,24 @@
       "resolved": "providerDiscovery.js"
     },
     {
+      "source": "test/repositoryMaintenance.test.js",
+      "reference": "../scripts/repositoryClutterAudit",
+      "resolved": "scripts/repositoryClutterAudit.js"
+    },
+    {
+      "source": "test/repositoryMaintenance.test.js",
+      "reference": "../scripts/repositoryMaintenance",
+      "resolved": "scripts/repositoryMaintenance.js"
+    },
+    {
       "source": "test/repositoryPrivacy.test.js",
       "reference": "../package.json",
       "resolved": "package.json"
+    },
+    {
+      "source": "test/repositoryPrivacy.test.js",
+      "reference": "../scripts/scrubRepositoryPrivacy",
+      "resolved": "scripts/scrubRepositoryPrivacy.js"
     },
     {
       "source": "test/runtimeDebugger.test.js",
@@ -762,28 +787,46 @@
   "missingCrossReferences": [],
   "files": [
     {
+      "path": ".githooks/pre-commit",
+      "type": "[no extension]",
+      "size": 70,
+      "sha256": "1e1e7f33f48986e00142a31bea1f9b212dc942383fb24e244dce1f97bc97a3db"
+    },
+    {
       "path": ".githooks/pre-push",
       "type": "[no extension]",
-      "size": 95,
-      "sha256": "c1fb602f66c2ca2fb786780ea2cf9bd7fe74facad7d9eded65bc7dc83de3bcff"
+      "size": 88,
+      "sha256": "1e11c91967881c366f3d91c960e3305df9da09bf31b5fed09b7199804e04a627"
     },
     {
       "path": ".github/workflows/branch-integrity.yml",
       "type": ".yml",
-      "size": 928,
-      "sha256": "eabaa2430de06172ea8faf8fda6ed4bc698c1dc400516a1cb598c9397c7ccef6"
+      "size": 919,
+      "sha256": "932d1ff8388517f1fb1d78be8fb3f8d7bf830628056a21363e39c498fef912e0"
     },
     {
-      "path": ".github/workflows/promote-upgrade-to-main.yml",
+      "path": ".github/workflows/commit-self-repair-apply.yml",
       "type": ".yml",
-      "size": 765,
-      "sha256": "34aa61455f2dc758dca45ac0d69d3c68bb94ef15afcfcba853b25e1ecb3efcd5"
+      "size": 1974,
+      "sha256": "45575a6d7f81ef2bcef62d26261b880e00cfb45ff211ebea574d5fe6f6e26c90"
+    },
+    {
+      "path": ".github/workflows/commit-self-repair.yml",
+      "type": ".yml",
+      "size": 664,
+      "sha256": "59e4493048b2f24fcb6c1717f0aecd1afa3cb958c16a5f82ba3c7d4241674c1b"
+    },
+    {
+      "path": ".github/workflows/promote-development-to-main.yml",
+      "type": ".yml",
+      "size": 773,
+      "sha256": "689d96fa03673ca75ef9d893af6640212cd11801d75e221ada8a04816ce350b2"
     },
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 1730,
-      "sha256": "23e6988b39e766af55080360e37b6b7d411524fa92c61628c2e82b918ca1e23d"
+      "size": 1724,
+      "sha256": "3a68b0049d5f1b904e8e7f07eed83b470ba71e4bda50e96f5d9af43c365be6d3"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -792,22 +835,40 @@
       "sha256": "f324ede5513fb7ea3ca7f0d20620434e80b68e3db794c46e8c3aa209430b3c3b"
     },
     {
-      "path": ".github/workflows/section0-stability.yml",
+      "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 493,
-      "sha256": "8c4b211ab10a9a4ae83a09e1b4f015485cdc4032cd3ff841f2b10c6d1405fb37"
+      "size": 1659,
+      "sha256": "790a1d77751281128913a5892b12530c76b8ab913825bf54d852d79103b0de2d"
     },
     {
-      "path": ".github/workflows/sync-upgrade-branch.yml",
+      "path": ".github/workflows/section0-stability.yml",
       "type": ".yml",
-      "size": 4588,
-      "sha256": "e88b76dfd7068b160d72a8c94947c6ab335ddf8f90a62c61e3be3232bf6a9443"
+      "size": 487,
+      "sha256": "baa3261180f266b3a0e33a97b013b567c6d49725d05d860aee6cf1f974aeb173"
+    },
+    {
+      "path": ".github/workflows/sync-development-branch.yml",
+      "type": ".yml",
+      "size": 4612,
+      "sha256": "d7b966aac8f8b319b2ae765b600a034ae021a76462d2552cbdd54622bd557978"
+    },
+    {
+      "path": ".github/workflows/the-crucible.yml",
+      "type": ".yml",
+      "size": 653,
+      "sha256": "c141031f4e61a845d03d3a2dced6815ed6ef12977a0088b96683bc8bca3a67b8"
     },
     {
       "path": ".gitignore",
       "type": "[no extension]",
       "size": 343,
       "sha256": "0c6937cdb5537714b571bc9d7fc6afafddaea7fe42071a5324c38d215affdf08"
+    },
+    {
+      "path": ".thecrucible.json",
+      "type": ".json",
+      "size": 2013,
+      "sha256": "9292349163e9c1cef63f45d7b1183e5e7c30d0a4596cbb5a81d1c83e058d6331"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -950,8 +1011,8 @@
     {
       "path": "buildNumber.js",
       "type": ".js",
-      "size": 1392,
-      "sha256": "617417a07d96d6924c02543035bb6c7bf8eedb5317de5cb6f26c96190eab7235"
+      "size": 1726,
+      "sha256": "8a9f16cb6efb7b2332ab8347698adf3c2e31356fb77ff430444f7a2e84dff3ed"
     },
     {
       "path": "changelogGenerator.js",
@@ -1070,8 +1131,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 134385,
-      "sha256": "100f9dfcb646d3a5b7c882a7af1f0fb2aa0f646a9bb37fd818b5ae959f9163d2"
+      "size": 134614,
+      "sha256": "2d6873c9185faeaed72762037dd4f9cf1d1895a3741fca62b756dc00ab90ce22"
     },
     {
       "path": "inventoryWorker.js",
@@ -1136,8 +1197,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 217510,
-      "sha256": "eb5c9e906b0734b86b620ce37e3279a294b69688145bd32b5e270c952b0575db"
+      "size": 218150,
+      "sha256": "c7e3d344396e878d69e16ac78aa82f323598c501bd1e4e4b5d4dca17fed5f9e4"
     },
     {
       "path": "memoryEngine.js",
@@ -1178,8 +1239,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5216,
-      "sha256": "3769b15b49fedcf98caa2fa41e651c7ed1e441dad8d5c35e0b28bb410efa540d"
+      "size": 5472,
+      "sha256": "857c55ee7de16f16c41a6c96ba127f7124aa5ea4832a2c6bb7eb16da19ecb615"
     },
     {
       "path": "pipelineEngine.js",
@@ -1238,8 +1299,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28815,
-      "sha256": "e266375322ebdb7bf133b8ed1b149faf213e5a3a653dd8823d4b3e736aece799"
+      "size": 28903,
+      "sha256": "64da5a346eb15932955ad43145684ffb093d2f867d2add91b04645c90cf0330b"
     },
     {
       "path": "projectCloner.js",
@@ -1322,14 +1383,14 @@
     {
       "path": "release-notes.md",
       "type": ".md",
-      "size": 5300,
-      "sha256": "afa12fec79f496e13461185b5d8d8609564f60d7cf0f3b881452ef6087ffc767"
+      "size": 6141,
+      "sha256": "855ac0975c690c5a028b992ef3e8fe8bd2f097f3db10e3778fa23935c0b1c5d9"
     },
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 272583,
-      "sha256": "942c2fc02d1efdefdbeec7253b8ed7021c8fe424628df33b45ab2fd3447d5e9c"
+      "size": 273379,
+      "sha256": "11721b99904a3bef032c0d5092cea479a6c879d3e8533d9d7c5b6415a042a994"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1374,10 +1435,16 @@
       "sha256": "68af54120c745ae94ad82fe6b1dd38dae25a08e870fa83949465767e1b40f26f"
     },
     {
-      "path": "scripts/promoteTestedUpgrade.js",
+      "path": "scripts/privacyRetryGate.js",
       "type": ".js",
-      "size": 4057,
-      "sha256": "6a8b5227612a8062b909c620f53f099a9fdbc31d99508a08ce59a617f1be4d68"
+      "size": 838,
+      "sha256": "c91c7f0b1946ae810a352fca7d9e8cafa291b47200df43ed816944458dbfce60"
+    },
+    {
+      "path": "scripts/promoteTestedDevelopment.js",
+      "type": ".js",
+      "size": 4118,
+      "sha256": "89eda503a8c8c8154c4a90c87734978bd3480c4ef884a2d0f0ed619712b97afa"
     },
     {
       "path": "scripts/releaseAudit.js",
@@ -1388,14 +1455,14 @@
     {
       "path": "scripts/releaseStressGate.js",
       "type": ".js",
-      "size": 3642,
-      "sha256": "d628ecda10835ab486dd7bb57e9976151eff86e733617d15144e32cffab3fc7e"
+      "size": 3774,
+      "sha256": "1c569b48ad701e33f1828c7a25c29a222dc17bb77b6e079ec55b6a33b818bf26"
     },
     {
-      "path": "scripts/remediateUpgradeForPromotion.js",
+      "path": "scripts/remediateDevelopmentForPromotion.js",
       "type": ".js",
-      "size": 2792,
-      "sha256": "1805d371560ad3c5c5b54a71b690e8a5945db939b325202363270acd010b7f05"
+      "size": 2955,
+      "sha256": "00612e0af47567f993cb3fda7cbb9dbb53ea3be53ec9aba6a75c30045314f494"
     },
     {
       "path": "scripts/renew-local-signing.ps1",
@@ -1410,10 +1477,34 @@
       "sha256": "8a46f008bf3ef7b398bd1cf6a3bcd4df4c6f68d53f4e2963137ac5062db8536e"
     },
     {
+      "path": "scripts/repositoryClutterAudit.js",
+      "type": ".js",
+      "size": 2418,
+      "sha256": "88f7c2129b00f5a5183e56fc30cbbb738ef2e20327f4a20c06feaf7afd245886"
+    },
+    {
+      "path": "scripts/repositoryMaintenance.js",
+      "type": ".js",
+      "size": 1711,
+      "sha256": "d7f400de32964a6e8fedb17237e8f5dffd10189044043e38272eb9f096f54055"
+    },
+    {
       "path": "scripts/restore-local-signing.ps1",
       "type": ".ps1",
       "size": 1495,
       "sha256": "8923e3f5eb54d93f24d90e1363c1270d74903a3ac6bbecc8aa6ec7b66909f723"
+    },
+    {
+      "path": "scripts/scrubRepositoryPrivacy.js",
+      "type": ".js",
+      "size": 2992,
+      "sha256": "7f389c4f682fc8489e7999b41b1573a5bce6f42f4ed1ab0c7d54f0fea0e9f972"
+    },
+    {
+      "path": "scripts/selfRepairCommit.js",
+      "type": ".js",
+      "size": 7047,
+      "sha256": "e11ebda08d0ba5873def33f42e6c2edc17438fbfcd6af76792db5cb75c27f7bb"
     },
     {
       "path": "scripts/signLocalWindows.js",
@@ -1448,8 +1539,8 @@
     {
       "path": "scripts/verifyRepositoryPrivacy.js",
       "type": ".js",
-      "size": 2107,
-      "sha256": "06188425e6692fe67c7c7bd58cdf3c36eee3d3db720082acd6df95961600e460"
+      "size": 2377,
+      "sha256": "0b9da5353354d4074161aac665d7abc56f62df262698bfba68286aa451958dac"
     },
     {
       "path": "secretScanner.js",
@@ -1514,20 +1605,20 @@
     {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
-      "size": 2595,
-      "sha256": "830af51179dc4e0adc1aa47314629a2371237bf724684dd020ea9dd6dcd61d19"
+      "size": 2759,
+      "sha256": "59cc89f6b2458314766128bcca75c8be88a8ac4eb995c83a4189d7fcc2394f2a"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",
       "type": ".js",
-      "size": 2894,
-      "sha256": "8fb16d85ec02a8b493227255b04ce4d7976730592a398c2aa9c09db29f5112df"
+      "size": 2917,
+      "sha256": "db3ec046ff3a54f40b5309e9ee7c395c40ef795d4620efb8c7b45750bb6d459b"
     },
     {
       "path": "test/buildNumber.test.js",
       "type": ".js",
-      "size": 1762,
-      "sha256": "99babca80ca27aa06f4316e3152c8f42415bf6e6947a8fc4cf95a4387d496bc2"
+      "size": 2393,
+      "sha256": "1dfb87b417fc9f19eefb04ec0511e1a13b87ed2ef213738bdbc8e1e31883e9b1"
     },
     {
       "path": "test/codeChecker.test.js",
@@ -1652,8 +1743,8 @@
     {
       "path": "test/packageInventory.test.js",
       "type": ".js",
-      "size": 4395,
-      "sha256": "c2477ea90e34e0e89bc2b670480cb3468bde868629f0b6f2e43b0a61bcf01448"
+      "size": 4418,
+      "sha256": "cae2679ef61b95afc8e48ae324f02544e16d1ca6a498f0bcd0c997b046b70212"
     },
     {
       "path": "test/pluginManager.test.js",
@@ -1722,6 +1813,12 @@
       "sha256": "89aff90e0b2fbc0279d645eced1b0e687c263dfaf8a5f61883e32d60d395fa0b"
     },
     {
+      "path": "test/projectPortForm.test.js",
+      "type": ".js",
+      "size": 1048,
+      "sha256": "f821b362cb24766daf0923feb5ec7f46845f4611bc4268142d720ed3cb8d6967"
+    },
+    {
       "path": "test/projectTemplates.test.js",
       "type": ".js",
       "size": 1245,
@@ -1734,10 +1831,16 @@
       "sha256": "c84f3083a3978cd5170f41f9a92ddcfbc40e5bd711de6ef1019cdc630c9c90d7"
     },
     {
+      "path": "test/repositoryMaintenance.test.js",
+      "type": ".js",
+      "size": 2546,
+      "sha256": "8d1f69680a0c3b284573c6c2be391432a080704aed2e97c4ca458cbfdd93c855"
+    },
+    {
       "path": "test/repositoryPrivacy.test.js",
       "type": ".js",
-      "size": 1367,
-      "sha256": "1c4ea487cc460c4020de2339f8b12a819cbb7df98a819ae0252bc0b011990778"
+      "size": 2627,
+      "sha256": "937b17350e3c7c27e71631589d69af53e2261af83b27714509579b098cea9fa0"
     },
     {
       "path": "test/runtimeDebugger.test.js",

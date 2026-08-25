@@ -1,0 +1,29 @@
+name: Nexus Commit Self-Repair
+
+on:
+  push:
+    branches:
+      - Development-branch
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Diagnose commit against Nexus invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check deterministic repair state
+        run: node scripts/selfRepairCommit.js
