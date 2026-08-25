@@ -3661,7 +3661,7 @@ function oauthConfiguration() {
   const cfg = loadConfig();
   return {
     githubClientId: process.env.NEXUS_GITHUB_CLIENT_ID || cfg.githubOAuthClientId || publisherConfig.githubOAuthClientId,
-    googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID || cfg.googleOAuthClientId || '',
+    googleClientId: process.env.NEXUS_GOOGLE_CLIENT_ID || cfg.googleOAuthClientId || publisherConfig.googleOAuthClientId,
     googleClientSecret: process.env.NEXUS_GOOGLE_CLIENT_SECRET || encryptedConfigValue(cfg, 'googleOAuthClientSecret') || '',
     wordpressClientId: process.env.NEXUS_WORDPRESS_CLIENT_ID || cfg.wordpressOAuthClientId || '',
     wordpressClientSecret: process.env.NEXUS_WORDPRESS_CLIENT_SECRET || encryptedConfigValue(cfg, 'wordpressOAuthClientSecret') || '',
