@@ -1,16 +1,10 @@
 name: Nexus Repository Maintenance
 
 on:
-  workflow_dispatch:
-    inputs:
-      run_weekly_maintenance:
-        description: Run safe Git object repacking and The Crucible
-        required: false
-        type: boolean
-        default: false
-  schedule:
-    - cron: '17 3 * * *'
-    - cron: '47 4 * * 0'
+  pull_request:
+    branches:
+      - main
+      - Development-branch
 
 permissions:
   contents: read
@@ -37,7 +31,6 @@ jobs:
 
   weekly-git-maintenance:
     name: Weekly safe Git repack · ${{ matrix.ref }}
-    if: github.event.schedule == '47 4 * * 0' || inputs.run_weekly_maintenance == true
     strategy:
       fail-fast: false
       matrix:
