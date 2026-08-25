@@ -76,50 +76,37 @@
     .workspace-resizer-v { cursor: col-resize; }
     .workspace-resizer-h { cursor: row-resize; }
 
-    /* Sliding trays: Code Editor, API Tester, Docker, Package Manager,
-       Recent Changes, Object Pipeline, AI Tools, Activity. No dimmed
-       backdrop, and the overlay never captures clicks (pointer-events:
-       none at all times) - the rest of the page stays fully visible AND
-       usable while a tray is open, like a floating tool palette. Only the
-       panel itself (re-enabled via pointer-events:auto) is interactive;
-       it closes via its own close button or Escape, never a click-away. */
+    /* Docked trays: Code Editor, API Tester, Docker, Package Manager,
+       Recent Changes, Object Pipeline, AI Tools, Activity. Each tray is a
+       real flex sibling of #sidebar and #main-container (not a floating
+       overlay) - opening one grows it from 0 to its working width and
+       #main-container's own flex:1/min-width:0 makes it genuinely reflow
+       into whatever space remains, VS Code sidebar-style. Only one tray
+       docks at a time (see openTray() in renderer.js); it closes via its
+       own close button or Escape, never a click-away. */
     .tray-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 500;
-      background: transparent;
-      visibility: hidden;
-      pointer-events: none;
-      transition: visibility 0s linear .25s;
-    }
-    .tray-overlay.open {
-      visibility: visible;
-      transition: visibility 0s linear 0s;
-    }
-    .tray-panel {
-      position: absolute;
-      top: 14px; bottom: 14px; left: 14px;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 16px;
+      order: 1;
+      flex: 0 0 auto;
+      width: 0;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-      pointer-events: auto;
-      transform: translateX(calc(-100% - 28px));
-      transition: transform .32s cubic-bezier(.16,1,.3,1);
+      transition: width .32s cubic-bezier(.16,1,.3,1);
     }
-    .tray-overlay.open .tray-panel { transform: translateX(0); }
-    .tray-panel--right {
-      left: auto; right: 14px;
-      transform: translateX(calc(100% + 28px));
+    #main-container { order: 2; }
+    .tray-panel {
+      position: relative;
+      height: 100%;
+      background: #0d1117;
+      border-right: 1px solid #30363d;
+      overflow: hidden;
     }
-    .tray-overlay.open .tray-panel--right { transform: translateX(0); }
 
     /* Code Editor - styled after GitHub's dark code view: near-black
        background, muted gray file tree, blue accent for the selected file,
        monospace throughout. */
+    #code-editor-overlay.open { width: clamp(420px, 44vw, 760px); }
     #code-editor-panel {
-      width: clamp(420px, 44vw, 760px);
+      width: 100%;
+      height: 100%;
       display: flex;
     }
     #code-editor-filetree-col {
@@ -344,8 +331,10 @@
     .tr-failure-message.open { display: block; }
 
     /* API Tester */
+    #api-tester-overlay.open { width: clamp(420px, 44vw, 760px); }
     #api-tester-panel {
-      width: clamp(420px, 44vw, 760px);
+      width: 100%;
+      height: 100%;
       display: flex;
     }
     #api-tester-saved-col {
@@ -410,8 +399,10 @@
     #api-response-status.status-err { color: #ffa198; }
 
     /* Docker */
+    #docker-overlay.open { width: clamp(320px, 32vw, 520px); }
     #docker-panel {
-      width: clamp(320px, 32vw, 520px);
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -439,8 +430,10 @@
     .dk-container-status.running { color: var(--emerald); }
 
     /* Package Manager */
+    #pkgmgr-overlay.open { width: clamp(320px, 32vw, 520px); }
     #pkgmgr-panel {
-      width: clamp(320px, 32vw, 520px);
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -477,8 +470,10 @@
     .pm-missing { color: var(--danger); font-size: 11px; }
 
     /* Recent Changes */
+    #recentchanges-overlay.open { width: clamp(320px, 32vw, 520px); }
     #recentchanges-panel {
-      width: clamp(320px, 32vw, 520px);
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -514,8 +509,10 @@
       background: var(--emerald);
       box-shadow: 0 0 4px var(--emerald);
     }
+    #activity-overlay.open { width: clamp(300px, 28vw, 440px); }
     #activity-panel {
-      width: clamp(300px, 28vw, 440px);
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -543,8 +540,10 @@
     .act-meta { color: var(--text-muted); font-size: 11px; }
 
     /* Object Pipeline */
+    #pipeline-overlay.open { width: clamp(320px, 32vw, 520px); }
     #pipeline-panel {
-      width: clamp(320px, 32vw, 520px);
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -574,8 +573,10 @@
     /* AI Tools panel: inventory, metrics, guardrails, upgrades, prompt
        testing, dependency auditing, compliance, changelog, knowledge base,
        experiments - one collapsible section per capability. */
+    #aitools-overlay.open { width: clamp(340px, 36vw, 620px); }
     #aitools-panel {
-      width: clamp(340px, 36vw, 620px);
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -1033,6 +1034,20 @@
       justify-content: center;
       color: #6e7681;
       font-size: 13px;
+    }
+
+    /* Below 860px #sidebar already stacks on top of #main-container
+       (body switches to flex-direction: column - see styles.css), so a
+       side dock stops making sense. Trays fall back to a full-width panel
+       that pushes #main-container down instead of over from the side. */
+    @media (max-width: 860px) {
+      .tray-overlay { width: auto; max-height: 0; overflow: hidden; transition: max-height .32s cubic-bezier(.16,1,.3,1); }
+      #code-editor-overlay.open, #api-tester-overlay.open, #docker-overlay.open,
+      #pkgmgr-overlay.open, #recentchanges-overlay.open, #activity-overlay.open,
+      #pipeline-overlay.open, #aitools-overlay.open { width: auto; max-height: min(70vh, 520px); }
+      .tray-panel, #code-editor-panel, #api-tester-panel, #docker-panel,
+      #pkgmgr-panel, #recentchanges-panel, #activity-panel, #pipeline-panel,
+      #aitools-panel { width: 100%; height: 100%; border-right: 0; border-bottom: 1px solid #30363d; }
     }
   </style>
   <!-- Each tag below is pinned with Subresource Integrity (SRI): the browser
@@ -1791,7 +1806,7 @@ Measure-Object</pre>
        complianceMonitor.js, changelogGenerator.js, knowledgeBase.js, and
        experimentationFramework.js for what each section actually does. -->
   <div id="aitools-overlay" class="tray-overlay" role="dialog" aria-modal="false">
-    <div id="aitools-panel" class="tray-panel tray-panel--right">
+    <div id="aitools-panel" class="tray-panel">
       <div class="code-editor-header">
         <strong>🧠 AI Tools</strong>
         <button onclick="closeAIToolsPanel()" aria-label="Close panel" title="Close">✕</button>
