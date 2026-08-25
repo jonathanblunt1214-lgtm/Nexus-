@@ -25,6 +25,7 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
+          cache: ''
       - run: npm run repository:clutter
       - run: npm run inventory:verify
       - run: npm run privacy:verify
@@ -45,6 +46,7 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
+          cache: ''
       - run: npm run repository:maintain
       - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
       - run: npm run release:crucible
