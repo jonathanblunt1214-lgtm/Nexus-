@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('nexus', {
   exportNexusSetup: (projects) => ipcRenderer.invoke('export-nexus-setup', { projects }),
   importNexusSetup: () => ipcRenderer.invoke('import-nexus-setup'),
   resolveProjectPath: (input) => ipcRenderer.invoke('resolve-project-path', { input }),
+  detectProjectPort: (folder) => ipcRenderer.invoke('detect-project-port', { folder }),
   detectGameProject: (folder) => ipcRenderer.invoke('detect-game-project', { folder }),
   searchCodeLibrary: (folder, filters) => ipcRenderer.invoke('code-library:search', { folder, filters }),
   getWorkspaceTrust: (folder) => ipcRenderer.invoke('workspace-trust:get', { folder }),

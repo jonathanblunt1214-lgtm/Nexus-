@@ -1168,7 +1168,7 @@
             <input type="text" id="project-name" placeholder="Display name (e.g. my-web-app)">
           </div>
           <div class="form-row">
-            <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it">
+            <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it" onblur="detectAndFillProjectPort()">
             <button class="btn btn-secondary" onclick="browseFolder()">Browse…</button>
             <button class="btn btn-secondary" onclick="showGitHubRepositoryPicker()">Choose from GitHub</button>
           </div>
@@ -1176,7 +1176,7 @@
           <div class="muted small" id="clone-progress" style="min-height:16px;"></div>
           <div class="form-row">
             <input type="text" id="project-command" placeholder="Start command" value="npm run dev">
-            <input type="text" id="project-port" placeholder="Auto-detect port" style="max-width:140px;">
+            <input type="number" id="project-port" min="1" max="65535" step="1" inputmode="numeric" aria-label="Project port" placeholder="Port (auto)" title="Enter a port from 1 to 65535, or leave blank to auto-detect" style="max-width:160px; min-width:130px;">
             <button class="btn" onclick="addProject(event)">Save Project</button>
             <button class="btn btn-secondary" onclick="cancelEdit()" title="Clear the form / cancel editing">✕</button>
           </div>
