@@ -1137,8 +1137,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 133597,
-      "sha256": "3cad8859ebfb5a4e066254ed9fe06567eecca8398a827e3dd8a30328b316a8a1"
+      "size": 133063,
+      "sha256": "525aa576d777f36d16cbd08d2a1bd7d48a06bd00b8567f2626586a6d0b486292"
     },
     {
       "path": "inventoryWorker.js",
@@ -1587,8 +1587,8 @@
     {
       "path": "styles.css",
       "type": ".css",
-      "size": 19354,
-      "sha256": "e005e56cbf73f78541b9acab85ab614a984bd1584aa23b07a583c12375d7afb9"
+      "size": 18856,
+      "sha256": "1206b1d44d7608ec9e3a7bccb2292032be7163f02c96ec4af95e9b02237289fb"
     },
     {
       "path": "test/accountVault.test.js",
