@@ -193,7 +193,7 @@ input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:f
 .section-title { margin: 2px 0 10px; color: var(--text); font-size: 15px; font-weight: 680; text-transform: none; }
 .section-title::after { content: ""; }
 
-.project-grid { flex: 1; min-height: 0; padding: 1px 3px 10px 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-content: start; }
+.project-grid { padding: 1px 3px 10px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-content: start; }
 .project-card { padding: 15px; display: flex; flex-direction: column; justify-content: space-between; gap: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
 .project-card:hover { border-color: var(--border-strong); }
 .project-card.running { border-color: rgba(88, 199, 144, .5); box-shadow: var(--shadow-sm); }
@@ -232,8 +232,6 @@ webview { width: 100%; flex: 3; background: #fff; }
 .suggestion-item strong { color: var(--text); font-size: 12px; }
 .suggestion-item p { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
 
-#code-editor-overlay, #api-tester-overlay, #docker-overlay, #package-overlay, #recentchanges-overlay, #activity-overlay, #pipeline-overlay, #aitools-overlay { background: rgba(4, 7, 12, .58) !important; backdrop-filter: blur(5px); }
-#code-editor-panel, #api-tester-panel, #docker-panel, #package-panel, #recentchanges-panel, #activity-panel, #pipeline-panel, #aitools-panel { background: var(--surface) !important; border-color: var(--border) !important; box-shadow: var(--shadow-md) !important; }
 .code-editor-header, #api-request-bar, #api-request-detail, .code-editor-statusbar { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text) !important; font-family: inherit !important; }
 .aitools-section { background: var(--surface-2) !important; border-color: var(--border) !important; }
 .aitools-section > summary { color: var(--text) !important; }
