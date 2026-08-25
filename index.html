@@ -1495,9 +1495,7 @@ Type "help" for tips.
     <div id="view-cloud" class="view-pane">
       <div class="settings-section-nav" role="tablist" aria-label="Settings sections">
         <button class="btn btn-secondary active" data-settings-section="account" onclick="setSettingsSection('account')">Account &amp; Sync</button>
-        <button class="btn btn-secondary" data-settings-section="github" onclick="setSettingsSection('github')">GitHub</button>
-        <button class="btn btn-secondary" data-settings-section="ai" onclick="setSettingsSection('ai')">AI &amp; API Keys</button>
-        <button class="btn btn-secondary" data-settings-section="project" onclick="setSettingsSection('project')">Project</button>
+        <button class="btn btn-secondary" data-settings-section="github" onclick="setSettingsSection('github')">GitHub &amp; Projects</button>
         <button class="btn btn-secondary" data-settings-section="system" onclick="setSettingsSection('system')">System</button>
       </div>
       <div class="card" aria-labelledby="plugin-security-title">
@@ -1527,7 +1525,7 @@ Type "help" for tips.
         <p class="muted small" style="margin-top:6px;">Licenses and publishers are recorded in THIRD_PARTY_NOTICES.md. External services run only after Workspace Trust permits commands.</p>
       </div>
       <div class="card" aria-labelledby="connected-services-title">
-        <label class="label" id="nexus-profile-title">Nexus Profile</label>
+        <label class="label" id="nexus-profile-title">Nexus Account</label>
         <p class="muted small" style="margin-top:6px;">Your profile and preferences save locally immediately and are included in your passphrase-encrypted account vault when you sync.</p>
         <div class="form-row" style="margin-top:8px;"><input id="nexus-profile-display-name" maxlength="80" placeholder="Display name"><input id="nexus-profile-handle" maxlength="40" placeholder="Handle"><input id="nexus-profile-role" maxlength="80" placeholder="Role or specialty"><input type="email" id="nexus-profile-email" placeholder="Account email" readonly aria-label="Nexus profile email"></div>
         <div class="form-row" style="margin-top:8px;"><input id="nexus-profile-bio" maxlength="300" placeholder="Short profile description" style="min-width:280px; flex:1"><button class="btn" onclick="saveNexusProfile()">Save profile</button></div>

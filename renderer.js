@@ -710,14 +710,12 @@ function toggleSandboxed(id, e) {
 let currentSettingsSection = 'account';
 function settingsSectionForCard(card) {
   if (card.querySelector('#nexus-profile-title, #connected-services-title, #account-vault-passphrase, #email-account-email')) return 'account';
-  if (card.querySelector('#github-settings-title, #github-operations-summary, #github-project-pr-list') || /GitHub|Stashes & Conflicts|Portable Project Setup/.test(card.textContent)) return 'github';
-  if (card.querySelector('#coding-model-provider, #nim-key, #gemini-key, #openai-key, #gcp-project-id') || /Provider Discovery|Ask Gemini|Ask OpenAI/.test(card.textContent)) return 'ai';
-  if (card.querySelector('#config-active-name, #secret-key-name') || /Project Constitution|Services —|Detected Integrations/.test(card.textContent)) return 'project';
+  if (card.querySelector('#github-settings-title, #github-operations-summary, #github-project-pr-list, #config-active-name, #secret-key-name') || /GitHub|Stashes & Conflicts|Portable Project Setup|Project Constitution|Services —|Detected Integrations/.test(card.textContent)) return 'github';
   return 'system';
 }
 
 function setSettingsSection(section) {
-  const allowed = new Set(['account', 'github', 'ai', 'project', 'system']);
+  const allowed = new Set(['account', 'github', 'system']);
   currentSettingsSection = allowed.has(section) ? section : 'account';
   const view = document.getElementById('view-cloud');
   if (!view) return;

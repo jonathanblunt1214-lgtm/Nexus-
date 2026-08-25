@@ -39,7 +39,7 @@ test('Settings and Keys is divided into focused sections instead of one scroll f
   const css = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const renderer = fs.readFileSync(path.join(__dirname, '..', 'renderer.js'), 'utf8');
-  for (const section of ['account', 'github', 'ai', 'project', 'system']) assert.match(html, new RegExp(`data-settings-section="${section}"`));
+  for (const section of ['account', 'github', 'system']) assert.match(html, new RegExp(`data-settings-section="${section}"`));
   assert.match(renderer, /function setSettingsSection\(section\)/);
   assert.match(renderer, /card\.hidden = settingsSectionForCard\(card\) !== currentSettingsSection/);
   assert.match(css, /\.settings-section-nav\s*\{[^}]*position:\s*sticky/);
