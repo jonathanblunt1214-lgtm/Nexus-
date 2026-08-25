@@ -837,8 +837,8 @@
     {
       "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 1633,
-      "sha256": "2bdc6787814da108f79c7849bf25a2588c5a360b020e227bd4dbca3eaa21cde7"
+      "size": 1691,
+      "sha256": "da36740c6c2c9fe06650391cd44fb27d7d4a277a62b2c3a6d572a1917813871a"
     },
     {
       "path": ".github/workflows/section0-stability.yml",
@@ -1833,8 +1833,8 @@
     {
       "path": "test/repositoryMaintenance.test.js",
       "type": ".js",
-      "size": 2546,
-      "sha256": "8d1f69680a0c3b284573c6c2be391432a080704aed2e97c4ca458cbfdd93c855"
+      "size": 2961,
+      "sha256": "901a072dec6ffdb4726b5b001d20fc4a438020b65412560263d006881aa54b17"
     },
     {
       "path": "test/repositoryPrivacy.test.js",

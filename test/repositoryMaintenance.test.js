@@ -37,13 +37,17 @@ test('weekly maintenance verifies and repacks without changing branch history', 
   assert.equal(git(root, ['status', '--porcelain']), '');
 });
 
-test('scheduled maintenance checks both branches daily and runs The Crucible weekly', () => {
+test('scheduled maintenance only ever checks out main and runs The Crucible weekly', () => {
   const root = path.resolve(__dirname, '..');
   const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'repository-maintenance.yml'), 'utf8');
   const crucible = fs.readFileSync(path.join(root, 'scripts', 'releaseStressGate.js'), 'utf8');
   assert.match(workflow, /cron: '17 3 \* \* \*'/);
   assert.match(workflow, /cron: '47 4 \* \* 0'/);
-  assert.match(workflow, /ref: \[main, Development-branch\]/);
+  // The daily/weekly jobs must never check out an untrusted ref (e.g. Development-branch) under a
+  // privileged trigger (schedule/workflow_dispatch) — that was the CodeQL cache-poisoning finding.
+  assert.doesNotMatch(workflow, /ref: \[main, Development-branch\]/);
+  assert.doesNotMatch(workflow, /ref:\s*\$\{\{\s*matrix\.ref\s*\}\}/);
+  assert.match(workflow, /ref: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| 'main' \}\}/);
   assert.match(workflow, /npm run repository:maintain[\s\S]*npm run release:crucible/);
   assert.match(crucible, /repositoryClutterAudit\.js/);
 });
