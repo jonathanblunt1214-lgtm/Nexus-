@@ -62,7 +62,7 @@ test('Nexus profiles and creative-app preferences are saved and included in the 
   assert.match(preload, /userProfileSave/);
   for (const preference of ['nexus_ui_density','nexus_reduced_motion','nexus_editor_font_size','nexus_editor_tab_size','nexus_editor_word_wrap','nexus_format_on_save']) assert.ok(main.includes(preference) && renderer.includes(preference));
   assert.match(renderer, /codeEditorCM\.setOption\('lineWrapping'/);
-  assert.match(html, /Nexus Profile/);
+  assert.match(html, /id="nexus-profile-title">Nexus Account</);
   const builder = main.match(/function buildAccountVaultPayload[\s\S]*?\n}/)?.[0] || '';
   assert.doesNotMatch(builder, /nexus_projects|projectPath/);
   const serializedReturn = builder.split('\n').find((line) => line.includes('return { schemaVersion')) || '';
