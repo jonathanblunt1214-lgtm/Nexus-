@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 197,
+  "fileCount": 198,
   "types": {
     "[no extension]": 3,
-    ".yml": 10,
+    ".yml": 11,
     ".json": 3,
     ".md": 7,
     ".bat": 2,
@@ -797,6 +797,12 @@
       "type": "[no extension]",
       "size": 88,
       "sha256": "1e11c91967881c366f3d91c960e3305df9da09bf31b5fed09b7199804e04a627"
+    },
+    {
+      "path": ".github/workflows/auto-merge-development-branch.yml",
+      "type": ".yml",
+      "size": 617,
+      "sha256": "c527d4a6e04fa3ae45a363b3035ca7b3b9a7b8d51096d98c6a48c4c84e0a4e71"
     },
     {
       "path": ".github/workflows/branch-integrity.yml",
