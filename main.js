@@ -584,10 +584,21 @@ ipcMain.handle('resolve-project-path', async (_event, { input }) => {
         mainWindow.webContents.send('project-clone-log', { line });
       }
     });
-    const detectedPort = sourceType === 'git' ? detectProjectPort(resolvedPath) : null;
+    const detectedPort = detectProjectPort(resolvedPath);
     return { ok: true, path: resolvedPath, sourceType, detectedPort, suggestedName: path.basename(resolvedPath), readiness: inspectProjectReadiness(resolvedPath) };
   } catch (err) {
     return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('detect-project-port', (_event, { folder }) => {
+  try {
+    if (!folder || isGitUrl(folder)) return { ok:false, error:'Choose or enter a local project folder first.' };
+    const resolved = path.resolve(folder);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) return { ok:false, error:'The project folder does not exist.' };
+    return { ok:true, detectedPort:detectProjectPort(resolved) };
+  } catch (error) {
+    return { ok:false, error:error.message };
   }
 });
 

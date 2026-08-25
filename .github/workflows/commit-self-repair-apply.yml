@@ -1,0 +1,61 @@
+name: Nexus Commit Self-Repair Apply
+
+on:
+  workflow_run:
+    workflows:
+      - Nexus Commit Self-Repair
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  repair-development:
+    name: Apply trusted deterministic repairs
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'Development-branch' &&
+      github.event.workflow_run.actor.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out trusted repair engine from main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: trusted
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check out fixed repair target
+        uses: actions/checkout@v6
+        with:
+          ref: Development-branch
+          path: target
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Apply only static repairs with trusted code
+        env:
+          NEXUS_REPAIR_ROOT: ${{ github.workspace }}/target
+        run: node trusted/scripts/selfRepairCommit.js --apply --trusted-static --no-report
+      - name: Commit approved deterministic repairs
+        working-directory: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "Commit already satisfies deterministic Nexus invariants."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows repository-file-manifest.json
+          if git diff --cached --quiet; then
+            echo "No approved repair files changed."
+            exit 0
+          fi
+          git commit -m "Automatically repair commit invariants"
+          git push origin HEAD:Development-branch

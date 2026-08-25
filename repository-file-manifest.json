@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 193,
+  "fileCount": 197,
   "types": {
     "[no extension]": 3,
-    ".yml": 8,
+    ".yml": 10,
     ".json": 3,
     ".md": 7,
     ".bat": 2,
-    ".js": 158,
+    ".js": 160,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -805,6 +805,18 @@
       "sha256": "938a9ed9a7dd39699a74b863df589dac4909ac4be8bbfcbc009a8d7bfeec7d14"
     },
     {
+      "path": ".github/workflows/commit-self-repair-apply.yml",
+      "type": ".yml",
+      "size": 1974,
+      "sha256": "45575a6d7f81ef2bcef62d26261b880e00cfb45ff211ebea574d5fe6f6e26c90"
+    },
+    {
+      "path": ".github/workflows/commit-self-repair.yml",
+      "type": ".yml",
+      "size": 664,
+      "sha256": "59e4493048b2f24fcb6c1717f0aecd1afa3cb958c16a5f82ba3c7d4241674c1b"
+    },
+    {
       "path": ".github/workflows/promote-development-to-main.yml",
       "type": ".yml",
       "size": 859,
@@ -825,8 +837,8 @@
     {
       "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 1679,
-      "sha256": "302a4fc521c595fd1cad52cecf9c8de3f87732a77e3215dc832a2b3e3944dd40"
+      "size": 1633,
+      "sha256": "2bdc6787814da108f79c7849bf25a2588c5a360b020e227bd4dbca3eaa21cde7"
     },
     {
       "path": ".github/workflows/section0-stability.yml",
@@ -843,8 +855,8 @@
     {
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
-      "size": 623,
-      "sha256": "345074588b7084d9f18da51718c30eb69eb03e822a257c36a77b65941d821c58"
+      "size": 653,
+      "sha256": "c141031f4e61a845d03d3a2dced6815ed6ef12977a0088b96683bc8bca3a67b8"
     },
     {
       "path": ".gitignore",
@@ -855,8 +867,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 1253,
-      "sha256": "50c6e31b5c6c6e771a6dcab5b56bee36c8b2fa77b6fa7324d2fbbd74680d69ec"
+      "size": 2174,
+      "sha256": "176f5975ae01ae5195d028ea785b727b954665d3641f1f4845d7a3901a61b3e9"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1119,8 +1131,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 134421,
-      "sha256": "6ea5822863e9286e0e04bf38ce54a5ca0ec5eeebbdf04e5bb834419036d7777e"
+      "size": 134614,
+      "sha256": "2d6873c9185faeaed72762037dd4f9cf1d1895a3741fca62b756dc00ab90ce22"
     },
     {
       "path": "inventoryWorker.js",
@@ -1185,8 +1197,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 217672,
-      "sha256": "764417d390ed1d1be699f6a7b6ab3576078b5d07df85b93b195582bb9af21ddb"
+      "size": 218150,
+      "sha256": "c7e3d344396e878d69e16ac78aa82f323598c501bd1e4e4b5d4dca17fed5f9e4"
     },
     {
       "path": "memoryEngine.js",
@@ -1287,8 +1299,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28815,
-      "sha256": "e266375322ebdb7bf133b8ed1b149faf213e5a3a653dd8823d4b3e736aece799"
+      "size": 28903,
+      "sha256": "64da5a346eb15932955ad43145684ffb093d2f867d2add91b04645c90cf0330b"
     },
     {
       "path": "projectCloner.js",
@@ -1377,8 +1389,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 272623,
-      "sha256": "873dae1e05091f79e1421a46c05e33f33d17a12ece207aa3f6bb9e5c39c92e45"
+      "size": 273379,
+      "sha256": "11721b99904a3bef032c0d5092cea479a6c879d3e8533d9d7c5b6415a042a994"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1487,6 +1499,12 @@
       "type": ".js",
       "size": 2992,
       "sha256": "7f389c4f682fc8489e7999b41b1573a5bce6f42f4ed1ab0c7d54f0fea0e9f972"
+    },
+    {
+      "path": "scripts/selfRepairCommit.js",
+      "type": ".js",
+      "size": 7047,
+      "sha256": "e11ebda08d0ba5873def33f42e6c2edc17438fbfcd6af76792db5cb75c27f7bb"
     },
     {
       "path": "scripts/signLocalWindows.js",
@@ -1793,6 +1811,12 @@
       "type": ".js",
       "size": 2092,
       "sha256": "89aff90e0b2fbc0279d645eced1b0e687c263dfaf8a5f61883e32d60d395fa0b"
+    },
+    {
+      "path": "test/projectPortForm.test.js",
+      "type": ".js",
+      "size": 1048,
+      "sha256": "f821b362cb24766daf0923feb5ec7f46845f4611bc4268142d720ed3cb8d6967"
     },
     {
       "path": "test/projectTemplates.test.js",
