@@ -193,7 +193,7 @@ input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:f
 .section-title { margin: 2px 0 10px; color: var(--text); font-size: 15px; font-weight: 680; text-transform: none; }
 .section-title::after { content: ""; }
 
-.project-grid { flex: 1; min-height: 0; padding: 1px 3px 10px 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-content: start; }
+.project-grid { padding: 1px 3px 10px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-content: start; }
 .project-card { padding: 15px; display: flex; flex-direction: column; justify-content: space-between; gap: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
 .project-card:hover { border-color: var(--border-strong); }
 .project-card.running { border-color: rgba(88, 199, 144, .5); box-shadow: var(--shadow-sm); }
