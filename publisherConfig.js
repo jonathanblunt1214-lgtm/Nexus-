@@ -11,12 +11,11 @@ module.exports = Object.freeze({
   // per-machine "Account provider configuration for development builds"
   // panel just to use Google sign-in.
   googleOAuthClientId: '',
-  // Fill in once you create the Firebase project (Email/Password Auth,
-  // Firestore, and Cloud Storage enabled - see the "Account provider
-  // configuration for development builds" panel for the full checklist)
-  // - then Nexus Account sign-up/sign-in works for every install with no
-  // per-machine setup, the same way GitHub sign-in already does.
-  firebaseWebApiKey: '',
-  firebaseProjectId: '',
-  firebaseStorageBucket: '',
+  // Requires Email/Password Auth, Firestore, and Cloud Storage enabled on
+  // the project (see the "Account provider configuration for development
+  // builds" panel for the full checklist) before sign-up/sign-in actually
+  // works - the values below just mean nobody has to enter them per machine.
+  firebaseWebApiKey: 'AIzaSyBjsAPCT-lmUKlHvG6Z5MZanjJDo5dGkxQ',
+  firebaseProjectId: 'nexus-2020b',
+  firebaseStorageBucket: 'nexus-2020b.firebasestorage.app',
 });
