@@ -1203,8 +1203,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 218183,
-      "sha256": "3c537199df0c4d33c5dc168cb3d53890cc8609ca8793f8c6260471a8f4be059d"
+      "size": 218280,
+      "sha256": "198965576e2456992e2bfdf1d4fd7920556e623eed99d4329837f082e1d02550"
     },
     {
       "path": "memoryEngine.js",
@@ -1371,8 +1371,8 @@
     {
       "path": "publisherConfig.js",
       "type": ".js",
-      "size": 640,
-      "sha256": "14b7dd1250bbe0fd9a2c5961fb94dbb19cf4f0f3d37467c6ed035eeed0b3e269"
+      "size": 1214,
+      "sha256": "db5d91dbccd4f12a91144e2b17a39caf6a13d511c890d623b302cf94fd3e02e3"
     },
     {
       "path": "pureLogic.js",

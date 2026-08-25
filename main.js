@@ -3671,9 +3671,9 @@ function oauthConfiguration() {
 function firebaseAccountConfiguration() {
   const cfg = loadConfig();
   return {
-    apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY || cfg.firebaseWebApiKey || '',
-    projectId: process.env.NEXUS_FIREBASE_PROJECT_ID || cfg.firebaseProjectId || '',
-    storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET || cfg.firebaseStorageBucket || '',
+    apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY || cfg.firebaseWebApiKey || publisherConfig.firebaseWebApiKey,
+    projectId: process.env.NEXUS_FIREBASE_PROJECT_ID || cfg.firebaseProjectId || publisherConfig.firebaseProjectId,
+    storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET || cfg.firebaseStorageBucket || publisherConfig.firebaseStorageBucket,
   };
 }
 
