@@ -1137,8 +1137,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 133989,
-      "sha256": "1d699005385a241eff3b2a02cddf5f2d46cb84a7221007d4af9dd9bf83979a93"
+      "size": 133855,
+      "sha256": "082164e19408be1ebacca269d2a9993146abf5990b980fa5057f3a1a550a0b56"
     },
     {
       "path": "inventoryWorker.js",
@@ -1203,8 +1203,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 218150,
-      "sha256": "c7e3d344396e878d69e16ac78aa82f323598c501bd1e4e4b5d4dca17fed5f9e4"
+      "size": 218280,
+      "sha256": "198965576e2456992e2bfdf1d4fd7920556e623eed99d4329837f082e1d02550"
     },
     {
       "path": "memoryEngine.js",
@@ -1371,8 +1371,8 @@
     {
       "path": "publisherConfig.js",
       "type": ".js",
-      "size": 283,
-      "sha256": "9983a3d336d571d3d2a9a277c7ad724a63a8478966391c59848fe03885b137a4"
+      "size": 1242,
+      "sha256": "ed696714d227b051d0e28c0d44180695c7cfcbd04cd6bf29c1429b147468aa63"
     },
     {
       "path": "pureLogic.js",
