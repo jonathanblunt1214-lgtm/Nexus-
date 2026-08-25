@@ -35,6 +35,7 @@
   "authenticity": {
     "requireArtifacts": true,
     "claims": [
+      { "name": "Install locked dependencies", "run": "npm", "args": ["ci", "--ignore-scripts", "--no-audit", "--no-fund"], "evidence": ["package-lock.json"] },
       { "name": "Repository inventory is complete and current", "run": "npm", "args": ["run", "inventory:verify"], "evidence": ["repository-file-manifest.json"] }
     ]
   },

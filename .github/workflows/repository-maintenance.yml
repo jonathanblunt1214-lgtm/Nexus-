@@ -1,6 +1,10 @@
 name: Nexus Repository Maintenance
 
 on:
+  pull_request:
+    branches:
+      - main
+      - Development-branch
   workflow_dispatch:
     inputs:
       run_weekly_maintenance:
@@ -17,45 +21,36 @@ permissions:
 
 jobs:
   daily-clutter-audit:
-    name: Daily clutter audit · ${{ matrix.ref }}
+    name: Daily clutter audit
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        ref: [main, Development-branch]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ matrix.ref }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-          package-manager-cache: false
+          cache: ''
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run repository:clutter
       - run: npm run inventory:verify
       - run: npm run privacy:verify
 
   weekly-git-maintenance:
-    name: Weekly safe Git repack · ${{ matrix.ref }}
+    name: Weekly safe Git repack · main
     if: github.event.schedule == '47 4 * * 0' || inputs.run_weekly_maintenance == true
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    strategy:
-      fail-fast: false
-      matrix:
-        ref: [main, Development-branch]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ matrix.ref }}
+          ref: main
           fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-          package-manager-cache: false
+          cache: ''
       - run: npm run repository:maintain
       - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
       - run: npm run release:crucible
