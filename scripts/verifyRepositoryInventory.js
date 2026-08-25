@@ -10,7 +10,14 @@ const manifestPath = path.join(root, 'repository-file-manifest.json');
 const manifestRelative = 'repository-file-manifest.json';
 
 function trackedFiles() {
-  return execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd:root, encoding:'utf8' }).split('\0').filter(Boolean).filter((file) => file !== manifestRelative).sort();
+  return execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd:root, encoding:'utf8' })
+    .split('\0')
+    .filter(Boolean)
+    .filter((file) => file !== manifestRelative)
+    .filter((file) => {
+      try { return fs.statSync(path.join(root, file)).isFile(); } catch { return false; }
+    })
+    .sort();
 }
 
 const sourceExtensions = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs']);

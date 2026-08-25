@@ -75,13 +75,14 @@ async function runLanguageServer({ folder, filePath, content, fix = false }) {
     child.stdout.on('data', (chunk) => { buffer = Buffer.concat([buffer, chunk]); while (true) { const marker = buffer.indexOf('\r\n\r\n'); if (marker < 0) break; const header = buffer.slice(0, marker).toString(); const length = Number(header.match(/Content-Length:\s*(\d+)/i)?.[1]); if (!Number.isFinite(length) || buffer.length < marker + 4 + length) break; const body = buffer.slice(marker + 4, marker + 4 + length); buffer = buffer.slice(marker + 4 + length); try { processMessage(JSON.parse(body.toString())); } catch {} } });
     child.on('error', (error) => finish({ ok:true, available:false, provider, reason:error.code === 'ENOENT' ? `${provider.name} is not installed or its path is not configured.` : error.message }));
     child.on('exit', (code) => { if (!settled) finish({ ok:true, available:false, provider, reason:`${provider.name} exited before completing (code ${code}).` }); });
-    const overall = setTimeout(() => finish({ ok:true, available:false, provider, reason:`${provider.name} did not respond within 20 seconds.` }), 20000);
+    const overall = setTimeout(() => finish({ ok:true, available:false, provider, reason:`${provider.name} did not respond within 30 seconds.` }), 30000);
     (async () => {
       try {
         const uri = fileUri(filePath); const rootUri = fileUri(folder);
         await request('initialize', { processId:process.pid, rootUri, capabilities:{ workspace:{ configuration:true }, textDocument:{ publishDiagnostics:{}, codeAction:{ codeActionLiteralSupport:{ codeActionKind:{ valueSet:['quickfix','source.fixAll'] } } } } }, workspaceFolders:[{ uri:rootUri, name:path.basename(folder) }] });
         send({ method:'initialized', params:{} }); send({ method:'textDocument/didOpen', params:{ textDocument:{ uri, languageId:provider.languageId, version:1, text:content } } });
-        await waitForDiagnostics(provider.id === 'jdtls' ? 20000 : 10000);
+        const diagnosticsTimeoutMs = provider.id === 'jdtls' ? 30000 : provider.id === 'pyright' ? 20000 : 10000;
+        await waitForDiagnostics(diagnosticsTimeoutMs);
         if (!fix) return finish({ ok:true, available:true, provider, diagnostics:normalizedDiagnostics(diagnostics, provider) });
         const endLines = content.split(/\r?\n/); const range = { start:{ line:0, character:0 }, end:{ line:endLines.length - 1, character:endLines.at(-1).length } };
         const actions = await request('textDocument/codeAction', { textDocument:{ uri }, range, context:{ diagnostics, only:['quickfix','source.fixAll'] } });

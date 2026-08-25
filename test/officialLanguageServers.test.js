@@ -21,6 +21,12 @@ test('bundled Pyright returns real Microsoft diagnostics for in-memory Python', 
   assert.ok(result.diagnostics.some((item) => item.severity === 'error' && item.source === 'Microsoft Pyright'));
 });
 
+test('bundled Pyright has a bounded cold-start allowance for slower Windows runners', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'officialLanguageServers.js'), 'utf8');
+  assert.match(source, /provider\.id === 'pyright' \? 20000/);
+  assert.match(source, /did not respond within 30 seconds[\s\S]*30000/);
+});
+
 test('language-server edits are applied deterministically without executing code', () => {
   const content = 'alpha beta';
   const updated = applyTextEdits(content, [{ range:{ start:{ line:0, character:6 }, end:{ line:0, character:10 } }, newText:'gamma' }]);
