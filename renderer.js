@@ -368,12 +368,14 @@ document.addEventListener('keydown', (e) => {
   if (document.getElementById('cmdp-overlay').classList.contains('open')) { closeCommandPalette(); return; }
   if (document.getElementById('ce-file-picker-overlay').style.display === 'block') { closeCeFilePicker(); return; }
   if (document.getElementById('code-editor-diff-overlay').style.display === 'flex') { rejectEditorPrompt(); return; }
-  if (document.getElementById('activity-overlay').style.display === 'block') { closeActivityView(); return; }
-  if (document.getElementById('recentchanges-overlay').style.display === 'block') { closeRecentChanges(); return; }
-  if (document.getElementById('pkgmgr-overlay').style.display === 'block') { closePackageManager(); return; }
-  if (document.getElementById('docker-overlay').style.display === 'block') { closeDockerPanel(); return; }
-  if (document.getElementById('api-tester-overlay').style.display === 'block') { closeApiTester(); return; }
-  if (document.getElementById('code-editor-overlay').style.display === 'block') { closeCodeEditor(); return; }
+  if (document.getElementById('aitools-overlay').classList.contains('open')) { closeAIToolsPanel(); return; }
+  if (document.getElementById('pipeline-overlay').classList.contains('open')) { closePipelinePanel(); return; }
+  if (document.getElementById('activity-overlay').classList.contains('open')) { closeActivityView(); return; }
+  if (document.getElementById('recentchanges-overlay').classList.contains('open')) { closeRecentChanges(); return; }
+  if (document.getElementById('pkgmgr-overlay').classList.contains('open')) { closePackageManager(); return; }
+  if (document.getElementById('docker-overlay').classList.contains('open')) { closeDockerPanel(); return; }
+  if (document.getElementById('api-tester-overlay').classList.contains('open')) { closeApiTester(); return; }
+  if (document.getElementById('code-editor-overlay').classList.contains('open')) { closeCodeEditor(); return; }
 });
 
 function switchTab(tabId) {
@@ -1015,14 +1017,14 @@ let pkgmgrActiveOpId = null;
 // by the interpreter itself.
 async function togglePipelinePanel() {
   const overlay = document.getElementById('pipeline-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closePipelinePanel(); return; }
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
   setTimeout(() => document.getElementById('pipeline-input').focus(), 30);
 }
 
 function closePipelinePanel() {
-  document.getElementById('pipeline-overlay').style.display = 'none';
+  document.getElementById('pipeline-overlay').classList.remove('open');
 }
 
 async function gatherPipelineContext() {
@@ -1103,14 +1105,14 @@ function renderPipelineOutput(data) {
 
 async function toggleActivityView() {
   const overlay = document.getElementById('activity-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeActivityView(); return; }
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
   await refreshActivityView();
 }
 
 function closeActivityView() {
-  document.getElementById('activity-overlay').style.display = 'none';
+  document.getElementById('activity-overlay').classList.remove('open');
 }
 
 async function refreshActivityView() {
@@ -1168,14 +1170,14 @@ setInterval(updateActivityDot, 3000);
 
 async function toggleRecentChanges() {
   const overlay = document.getElementById('recentchanges-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeRecentChanges(); return; }
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
   await refreshRecentChanges();
 }
 
 function closeRecentChanges() {
-  document.getElementById('recentchanges-overlay').style.display = 'none';
+  document.getElementById('recentchanges-overlay').classList.remove('open');
 }
 
 function formatRelativeTime(timestamp) {
@@ -1243,7 +1245,7 @@ async function revertRecentChange(index, filePath, backupPath) {
 
 async function togglePackageManager() {
   const overlay = document.getElementById('pkgmgr-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closePackageManager(); return; }
 
   const folder = activeProjectFolder();
@@ -1255,13 +1257,13 @@ async function togglePackageManager() {
     return;
   }
 
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
   pkgmgrOutdated = {};
   await refreshPackageList();
 }
 
 function closePackageManager() {
-  document.getElementById('pkgmgr-overlay').style.display = 'none';
+  document.getElementById('pkgmgr-overlay').classList.remove('open');
 }
 
 async function refreshPackageList() {
@@ -1363,10 +1365,10 @@ async function updatePackage(name) {
 
 async function toggleDockerPanel() {
   const overlay = document.getElementById('docker-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeDockerPanel(); return; }
 
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
 
   const statusLabel = document.getElementById('docker-status-label');
   statusLabel.innerText = 'checking…';
@@ -1395,7 +1397,7 @@ async function toggleDockerPanel() {
 }
 
 function closeDockerPanel() {
-  document.getElementById('docker-overlay').style.display = 'none';
+  document.getElementById('docker-overlay').classList.remove('open');
 }
 
 async function startDockerBuild() {
@@ -1476,11 +1478,11 @@ async function viewDockerLogs(name) {
 
 async function toggleApiTester() {
   const overlay = document.getElementById('api-tester-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeApiTester(); return; }
 
   apiCurrentFolder = activeProjectFolder();
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
 
   if (apiCurrentFolder) {
     const result = await window.nexus.apiLoadCollection(apiCurrentFolder);
@@ -1493,7 +1495,7 @@ async function toggleApiTester() {
 }
 
 function closeApiTester() {
-  document.getElementById('api-tester-overlay').style.display = 'none';
+  document.getElementById('api-tester-overlay').classList.remove('open');
 }
 
 function renderApiSavedList() {
@@ -1586,7 +1588,7 @@ async function sendApiRequest() {
 
 async function toggleCodeEditor() {
   const overlay = document.getElementById('code-editor-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeCodeEditor(); return; }
 
   codeEditorFolder = activeProjectFolder();
@@ -1598,7 +1600,7 @@ async function toggleCodeEditor() {
     return;
   }
 
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
 
   if (!codeEditorCM) {
     codeEditorCM = CodeMirror(document.getElementById('code-editor-cm-container'), {
@@ -1648,7 +1650,7 @@ function closeCodeEditor() {
   if (dirtyCount > 0 && !confirm(`${dirtyCount} file(s) have unsaved changes. Close anyway? (Nothing is lost - just close this panel and reopen to continue editing, or Save first.)`)) {
     return;
   }
-  document.getElementById('code-editor-overlay').style.display = 'none';
+  document.getElementById('code-editor-overlay').classList.remove('open');
   closeCodeLibraryPreview();
   closeDiagnosticLesson();
 }
@@ -4791,15 +4793,15 @@ async function refreshGitHubStatus() {
 
 function toggleAIToolsPanel() {
   const overlay = document.getElementById('aitools-overlay');
-  const isOpen = overlay.style.display === 'block';
+  const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeAIToolsPanel(); return; }
-  overlay.style.display = 'block';
+  overlay.classList.add('open');
   const p = projects.find((x) => x.id === activeProjectId);
   document.getElementById('aitools-active-project').innerText = p ? p.name : 'none';
 }
 
 function closeAIToolsPanel() {
-  document.getElementById('aitools-overlay').style.display = 'none';
+  document.getElementById('aitools-overlay').classList.remove('open');
 }
 
 function aiToolsRequireFolder() {
