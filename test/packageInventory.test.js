@@ -48,6 +48,11 @@ test('every release is blocked until the concurrent heavy-load stress gate passe
   assert.match(workflow, /name: The Crucible[\s\S]*npm run release:crucible/);
 });
 
+test('repository inventory ignores nested runtime directories and reads files only', () => {
+  const inventory = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'verifyRepositoryInventory.js'), 'utf8');
+  assert.match(inventory, /fs\.statSync\(path\.join\(root, file\)\)\.isFile\(\)/);
+});
+
 test('verified release staging can redownload only missing hash-matched Nexus files and retry', () => {
   const repair = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'repairRepositoryInventory.js'), 'utf8');
   const publish = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'buildAndPublishVerified.js'), 'utf8');

@@ -36,6 +36,8 @@ for (const check of checks) {
 }
 
 const requiredFiles = [
+  ['.thecrucible.json', 'external repository verification configuration'],
+  ['.github/workflows/the-crucible.yml', 'pinned read-only Crucible status gate'],
   ['inventoryWorker.js', 'background inventory scanning'],
   ['atomicWrite.js', 'crash-safe registry persistence'],
   ['astEngine.js', 'Tree-sitter structural parsing'],
@@ -179,6 +181,15 @@ for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','plugi
   if ((pkg.build?.files || []).includes(requiredPackageFile)) continue;
   failures += 1;
   console.error(`[FAIL] package.json must package ${requiredPackageFile}.`);
+}
+
+const crucibleWorkflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'the-crucible.yml'), 'utf8');
+const crucibleRef = 'beda014701d292ac1794cf7f6f3dce90b8608275';
+if (!crucibleWorkflow.includes(`The-Crucible/.github/workflows/the-crucible.yml@${crucibleRef}`) ||
+    !crucibleWorkflow.includes(`core_ref: ${crucibleRef}`) ||
+    /contents: write|pull-requests: write|secrets:\s*inherit/.test(crucibleWorkflow)) {
+  failures += 1;
+  console.error('[FAIL] The Crucible integration must remain commit-pinned, read-only, and free of inherited secrets.');
 }
 
 if (failures > 0) {
