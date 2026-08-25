@@ -3,6 +3,20 @@
 // which forwards to main.js. localStorage here is only used to remember
 // your project list between launches — it is not standing in for real work.
 
+// ---------- Docked tool trays ----------
+// Code Editor, API Tester, Docker, Package Manager, Recent Changes, Object
+// Pipeline, AI Tools, and Activity all dock in the same single slot next to
+// the sidebar (see .tray-overlay in index.html) - #main-container reflows
+// to fill whatever space is left. Only one can be docked at a time, so
+// opening one closes whichever other tray was already open.
+const TRAY_OVERLAY_IDS = ['pipeline-overlay', 'aitools-overlay', 'activity-overlay', 'recentchanges-overlay', 'pkgmgr-overlay', 'docker-overlay', 'api-tester-overlay', 'code-editor-overlay'];
+function dockTray(overlayId) {
+  for (const id of TRAY_OVERLAY_IDS) {
+    if (id !== overlayId) document.getElementById(id).classList.remove('open');
+  }
+  document.getElementById(overlayId).classList.add('open');
+}
+
 // ---------- Global toast notifications ----------
 // Started as error-only surfacing (see below), now generalized to a real
 // success/info/error toast system, so routine feedback ("Committed and
@@ -1019,7 +1033,7 @@ async function togglePipelinePanel() {
   const overlay = document.getElementById('pipeline-overlay');
   const isOpen = overlay.classList.contains('open');
   if (isOpen) { closePipelinePanel(); return; }
-  overlay.classList.add('open');
+  dockTray('pipeline-overlay');
   setTimeout(() => document.getElementById('pipeline-input').focus(), 30);
 }
 
@@ -1107,7 +1121,7 @@ async function toggleActivityView() {
   const overlay = document.getElementById('activity-overlay');
   const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeActivityView(); return; }
-  overlay.classList.add('open');
+  dockTray('activity-overlay');
   await refreshActivityView();
 }
 
@@ -1172,7 +1186,7 @@ async function toggleRecentChanges() {
   const overlay = document.getElementById('recentchanges-overlay');
   const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeRecentChanges(); return; }
-  overlay.classList.add('open');
+  dockTray('recentchanges-overlay');
   await refreshRecentChanges();
 }
 
@@ -1257,7 +1271,7 @@ async function togglePackageManager() {
     return;
   }
 
-  overlay.classList.add('open');
+  dockTray('pkgmgr-overlay');
   pkgmgrOutdated = {};
   await refreshPackageList();
 }
@@ -1368,7 +1382,7 @@ async function toggleDockerPanel() {
   const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeDockerPanel(); return; }
 
-  overlay.classList.add('open');
+  dockTray('docker-overlay');
 
   const statusLabel = document.getElementById('docker-status-label');
   statusLabel.innerText = 'checking…';
@@ -1482,7 +1496,7 @@ async function toggleApiTester() {
   if (isOpen) { closeApiTester(); return; }
 
   apiCurrentFolder = activeProjectFolder();
-  overlay.classList.add('open');
+  dockTray('api-tester-overlay');
 
   if (apiCurrentFolder) {
     const result = await window.nexus.apiLoadCollection(apiCurrentFolder);
@@ -1600,7 +1614,7 @@ async function toggleCodeEditor() {
     return;
   }
 
-  overlay.classList.add('open');
+  dockTray('code-editor-overlay');
 
   if (!codeEditorCM) {
     codeEditorCM = CodeMirror(document.getElementById('code-editor-cm-container'), {
@@ -1632,6 +1646,10 @@ async function toggleCodeEditor() {
     });
     applyNexusPreferences();
   }
+  // The dock's width animates in over .32s (see .tray-overlay in
+  // index.html), so CodeMirror must re-measure once that settles - it
+  // sizes itself off the container's width at refresh time, not live.
+  setTimeout(() => codeEditorCM.refresh(), 340);
 
   await refreshCodeEditorTree();
 
@@ -4795,7 +4813,7 @@ function toggleAIToolsPanel() {
   const overlay = document.getElementById('aitools-overlay');
   const isOpen = overlay.classList.contains('open');
   if (isOpen) { closeAIToolsPanel(); return; }
-  overlay.classList.add('open');
+  dockTray('aitools-overlay');
   const p = projects.find((x) => x.id === activeProjectId);
   document.getElementById('aitools-active-project').innerText = p ? p.name : 'none';
 }
