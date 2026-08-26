@@ -15,10 +15,9 @@ test('main promotion requires the exact successful cross-platform development ch
   assert.match(promotion, /\[20,22,24\]/);
   assert.match(promotion, /`Tests \$\{os\} \/ Node \$\{node\}`/);
   assert.match(workflow, /node scripts\/promoteTestedDevelopment\.js/);
-  const crucibleWorkflow = read('.github/workflows/section0-stability.yml');
+  const crucibleWorkflow = read('.github/workflows/the-crucible.yml');
   assert.match(crucibleWorkflow, /^name: The Crucible/);
-  assert.match(crucibleWorkflow, /name: The Crucible[\s\S]*npm run release:crucible/);
-  assert.match(read('.github/workflows/section0-stability.yml'), /timeout-minutes: 5/);
+  assert.match(crucibleWorkflow, /jonathanblunt1214-lgtm\/The-Crucible\/\.github\/workflows\/the-crucible\.yml@/);
   assert.match(promotion, /execFileSync\(process\.execPath, \['scripts\/releaseStressGate\.js'\]/);
   assert.match(promotion, /currentDevelopment !== developmentSha/);
   assert.match(promotion, /developmentSha}:refs\/heads\/main/);
@@ -33,7 +32,7 @@ test('failed promotion remediates only on development and retries all gates', ()
   assert.match(promotion, /remediateDevelopmentForPromotion\.js/);
   assert.match(promotion, /Apply deterministic promotion repairs/);
   assert.match(promotion, /HEAD:Development-branch/);
-  assert.match(promotion, /dispatch\('section0-stability\.yml'\)/);
+  assert.match(promotion, /dispatch\('the-crucible\.yml'\)/);
   assert.match(promotion, /dispatch\('release-audit\.yml'\)/);
   assert.match(promotion, /waitForChecks\(developmentSha\)/);
   assert.match(remediation, /proposeCheckerFix/);

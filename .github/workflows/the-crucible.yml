@@ -3,22 +3,42 @@ name: The Crucible
 on:
   workflow_dispatch:
   push:
-  pull_request:
   schedule:
     - cron: '17 3 * * *'
     - cron: '47 4 * * 0'
 
 permissions:
   contents: read
+  issues: write
   pull-requests: read
 
 jobs:
   crucible:
     name: The Crucible
-    uses: jonathanblunt1214-lgtm/The-Crucible/.github/workflows/the-crucible.yml@beda014701d292ac1794cf7f6f3dce90b8608275
+    uses: jonathanblunt1214-lgtm/The-Crucible/.github/workflows/the-crucible.yml@2937265c232f103963f4d5decf126e839a00bcaa
     with:
-      core_ref: beda014701d292ac1794cf7f6f3dce90b8608275
+      core_ref: 2937265c232f103963f4d5decf126e839a00bcaa
       config_path: .thecrucible.json
       run_workload: ${{ github.event_name != 'schedule' || github.event.schedule == '47 4 * * 0' }}
       weekly_maintenance: ${{ github.event.schedule == '47 4 * * 0' }}
-      dependency_review: true
+      # dependency_review only ever runs when github.event_name == 'pull_request',
+      # which this workflow no longer triggers on (see the "on:" block above).
+      # Left false rather than true to not claim coverage that can't fire.
+      dependency_review: false
+
+  # main's branch protection requires a status check literally named
+  # "The Crucible". A job that calls a reusable workflow (like "crucible"
+  # above) instead posts "<this job's name> / <called job's name>" - a
+  # GitHub Actions naming rule, not something the caller can override. This
+  # job carries no logic of its own: it only reflects the crucible job's
+  # real result under the exact name branch protection expects.
+  report:
+    name: The Crucible
+    needs: crucible
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reflect the Crucible engine result
+        run: |
+          echo "Crucible engine job result: ${{ needs.crucible.result }}"
+          test "${{ needs.crucible.result }}" = "success"

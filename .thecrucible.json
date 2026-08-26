@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/jonathanblunt1214-lgtm/The-Crucible/beda014701d292ac1794cf7f6f3dce90b8608275/.thecrucible.schema.json",
+  "$schema": "https://raw.githubusercontent.com/jonathanblunt1214-lgtm/The-Crucible/2937265c232f103963f4d5decf126e839a00bcaa/.thecrucible.schema.json",
   "schemaVersion": 1,
   "project": {
     "name": "Nexus",
@@ -21,6 +21,9 @@
   },
   "privacy": {
     "githubIdentity": "jonathanblunt1214-lgtm"
+  },
+  "githubSecurity": {
+    "enabled": false
   },
   "security": {
     "allow": [

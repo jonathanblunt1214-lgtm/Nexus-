@@ -6,7 +6,7 @@ test('every push is locally gated against private Nexus account data', () => {
   const pkg = require('../package.json');
   const hook = fs.readFileSync(require.resolve('../.githooks/pre-push'), 'utf8');
   const commitHook = fs.readFileSync(require.resolve('../.githooks/pre-commit'), 'utf8');
-  const workflow = fs.readFileSync(require.resolve('../.github/workflows/section0-stability.yml'), 'utf8');
+  const workflow = fs.readFileSync(require.resolve('../.github/workflows/repository-maintenance.yml'), 'utf8');
   const stressGate = fs.readFileSync(require.resolve('../scripts/releaseStressGate'), 'utf8');
   assert.equal(pkg.scripts['privacy:verify'], 'node scripts/verifyRepositoryPrivacy.js');
   assert.equal(pkg.scripts.prepare, 'node scripts/installGitHooks.js');
