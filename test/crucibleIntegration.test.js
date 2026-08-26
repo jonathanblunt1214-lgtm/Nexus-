@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const root = path.resolve(__dirname, '..');
-const PINNED_CRUCIBLE_REF = 'beda014701d292ac1794cf7f6f3dce90b8608275';
+const PINNED_CRUCIBLE_REF = '2937265c232f103963f4d5decf126e839a00bcaa';
 
 test('Crucible integration is external, immutable, and least privilege', () => {
   const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'the-crucible.yml'), 'utf8');
@@ -12,8 +12,8 @@ test('Crucible integration is external, immutable, and least privilege', () => {
     .map((match) => match[1] || match[2]);
 
   assert.deepEqual(references, [PINNED_CRUCIBLE_REF, PINNED_CRUCIBLE_REF]);
-  assert.match(workflow, /permissions:\s*\n\s*contents: read\s*\n\s*pull-requests: read\s*\n\s*administration: read/);
-  assert.doesNotMatch(workflow, /contents: write|pull-requests: write|administration: write|secrets:\s*inherit/);
+  assert.match(workflow, /permissions:\s*\n\s*contents: read\s*\n\s*issues: write\s*\n\s*pull-requests: read/);
+  assert.doesNotMatch(workflow, /contents: write|pull-requests: write|secrets:\s*inherit/);
   assert.match(workflow, /name: The Crucible[\s\S]*config_path: \.thecrucible\.json/);
 });
 

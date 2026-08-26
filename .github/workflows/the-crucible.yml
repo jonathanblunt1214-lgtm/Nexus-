@@ -10,15 +10,15 @@ on:
 
 permissions:
   contents: read
+  issues: write
   pull-requests: read
-  administration: read
 
 jobs:
   crucible:
     name: The Crucible
-    uses: jonathanblunt1214-lgtm/The-Crucible/.github/workflows/the-crucible.yml@beda014701d292ac1794cf7f6f3dce90b8608275
+    uses: jonathanblunt1214-lgtm/The-Crucible/.github/workflows/the-crucible.yml@2937265c232f103963f4d5decf126e839a00bcaa
     with:
-      core_ref: beda014701d292ac1794cf7f6f3dce90b8608275
+      core_ref: 2937265c232f103963f4d5decf126e839a00bcaa
       config_path: .thecrucible.json
       run_workload: ${{ github.event_name != 'schedule' || github.event.schedule == '47 4 * * 0' }}
       weekly_maintenance: ${{ github.event.schedule == '47 4 * * 0' }}

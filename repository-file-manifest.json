@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 199,
+  "fileCount": 200,
   "types": {
     "[no extension]": 3,
     ".yml": 11,
     ".json": 3,
     ".md": 7,
     ".bat": 2,
-    ".js": 161,
+    ".js": 162,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -861,8 +861,8 @@
     {
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
-      "size": 676,
-      "sha256": "50bbacc04bb07abfb9a520f9ce460042cff05d7b2887ea467a0892ed3aece5a5"
+      "size": 669,
+      "sha256": "bb6305693be2fe807d66af8df8f2954d0b3365927fa8788a7cf7eb114a6be4d6"
     },
     {
       "path": ".gitignore",
@@ -874,7 +874,7 @@
       "path": ".thecrucible.json",
       "type": ".json",
       "size": 2400,
-      "sha256": "97e2d29d04a780a98710563cf3c4c6bea85c5b38c2b691367a2156521653a618"
+      "sha256": "10928d762438282059ab0034b2b03b2fdb5ac0bfcafc6a7f0fc85777291df17e"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1528,7 +1528,7 @@
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
       "size": 10189,
-      "sha256": "81112de490585c1df530bffdc7888973992f242482a5d5557e2f8ff3c0119345"
+      "sha256": "1f58d2107fd4108165b78f2aa61d8690f9ce67b57f7736e8af02cb6416623562"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
@@ -1647,8 +1647,8 @@
     {
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
-      "size": 2282,
-      "sha256": "917077b2a69aefd0322e381d538be396c1e471db7c6791f64997c71db8e87dc3"
+      "size": 2253,
+      "sha256": "926431d45f07cad54c7ba90d16b4ac645b7794d427c44e767e1f19e408aa206f"
     },
     {
       "path": "test/debugAdapter.test.js",
@@ -1931,6 +1931,12 @@
       "type": ".js",
       "size": 2645,
       "sha256": "3ddfb9c743aef35fc801cfd22c9c6581fee6d2d50171b19d605ddea6474cce8e"
+    },
+    {
+      "path": "test/workflowPermissions.test.js",
+      "type": ".js",
+      "size": 1659,
+      "sha256": "35cecbc9a526c5bac9c334074af8414207dfea63c0d5f75eab5231acd9bf7b35"
     },
     {
       "path": "toolRegistry.js",

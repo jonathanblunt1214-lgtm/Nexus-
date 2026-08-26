@@ -184,7 +184,7 @@ for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','plugi
 }
 
 const crucibleWorkflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'the-crucible.yml'), 'utf8');
-const crucibleRef = 'beda014701d292ac1794cf7f6f3dce90b8608275';
+const crucibleRef = '2937265c232f103963f4d5decf126e839a00bcaa';
 if (!crucibleWorkflow.includes(`The-Crucible/.github/workflows/the-crucible.yml@${crucibleRef}`) ||
     !crucibleWorkflow.includes(`core_ref: ${crucibleRef}`) ||
     /contents: write|pull-requests: write|secrets:\s*inherit/.test(crucibleWorkflow)) {
