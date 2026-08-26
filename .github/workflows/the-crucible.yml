@@ -25,3 +25,20 @@ jobs:
       # which this workflow no longer triggers on (see the "on:" block above).
       # Left false rather than true to not claim coverage that can't fire.
       dependency_review: false
+
+  # main's branch protection requires a status check literally named
+  # "The Crucible". A job that calls a reusable workflow (like "crucible"
+  # above) instead posts "<this job's name> / <called job's name>" - a
+  # GitHub Actions naming rule, not something the caller can override. This
+  # job carries no logic of its own: it only reflects the crucible job's
+  # real result under the exact name branch protection expects.
+  report:
+    name: The Crucible
+    needs: crucible
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reflect the Crucible engine result
+        run: |
+          echo "Crucible engine job result: ${{ needs.crucible.result }}"
+          test "${{ needs.crucible.result }}" = "success"
