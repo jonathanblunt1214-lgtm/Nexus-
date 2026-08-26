@@ -21,3 +21,8 @@ FETCH_HEAD
 ORIG_HEAD
 packed-refs
 *[[]1[]]*
+
+# The Crucible CI run artifacts: regenerated every run, never committed.
+/.the-crucible-report.json
+/.the-crucible-quarantine/
+/.the-crucible-runtime/
