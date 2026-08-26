@@ -831,8 +831,8 @@
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 2025,
-      "sha256": "05f23c2557a7c40d5f4c80ff22459a269a5cb72f3c02f4afd9fa9b9614bbefb8"
+      "size": 2311,
+      "sha256": "877da2a54e5e9538ecd2e7ceaed88a02747db72d4b10fa8a8cf0fa1117561caa"
     },
     {
       "path": ".github/workflows/release.yml",
