@@ -5,11 +5,11 @@
   "fileCount": 200,
   "types": {
     "[no extension]": 3,
-    ".yml": 12,
+    ".yml": 11,
     ".json": 3,
     ".md": 7,
     ".bat": 2,
-    ".js": 161,
+    ".js": 162,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -861,8 +861,8 @@
     {
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
-      "size": 676,
-      "sha256": "50bbacc04bb07abfb9a520f9ce460042cff05d7b2887ea467a0892ed3aece5a5"
+      "size": 653,
+      "sha256": "c141031f4e61a845d03d3a2dced6815ed6ef12977a0088b96683bc8bca3a67b8"
     },
     {
       "path": ".gitignore",
@@ -1647,8 +1647,8 @@
     {
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
-      "size": 2282,
-      "sha256": "917077b2a69aefd0322e381d538be396c1e471db7c6791f64997c71db8e87dc3"
+      "size": 2232,
+      "sha256": "67adc20509bf1a54af3b594f3a7ccda5ead5a8f69513657b66b5562b20cd5764"
     },
     {
       "path": "test/debugAdapter.test.js",
@@ -1931,6 +1931,12 @@
       "type": ".js",
       "size": 2645,
       "sha256": "3ddfb9c743aef35fc801cfd22c9c6581fee6d2d50171b19d605ddea6474cce8e"
+    },
+    {
+      "path": "test/workflowPermissions.test.js",
+      "type": ".js",
+      "size": 1659,
+      "sha256": "35cecbc9a526c5bac9c334074af8414207dfea63c0d5f75eab5231acd9bf7b35"
     },
     {
       "path": "toolRegistry.js",
