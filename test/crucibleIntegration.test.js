@@ -12,7 +12,7 @@ test('Crucible integration is external, immutable, and least privilege', () => {
     .map((match) => match[1] || match[2]);
 
   assert.deepEqual(references, [PINNED_CRUCIBLE_REF, PINNED_CRUCIBLE_REF]);
-  assert.match(workflow, /permissions:\s*\n\s*contents: read\s*\n\s*pull-requests: read/);
+  assert.match(workflow, /permissions:\s*\n\s*contents: read\s*\n\s*issues: write\s*\n\s*pull-requests: read/);
   assert.doesNotMatch(workflow, /contents: write|pull-requests: write|secrets:\s*inherit/);
   assert.match(workflow, /name: The Crucible[\s\S]*config_path: \.thecrucible\.json/);
 });
