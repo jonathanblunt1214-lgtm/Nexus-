@@ -862,7 +862,7 @@
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
       "size": 653,
-      "sha256": "c141031f4e61a845d03d3a2dced6815ed6ef12977a0088b96683bc8bca3a67b8"
+      "sha256": "75112645f265c07595af48558b307c7bd56a97492aa59d4595af31ec055ae7ef"
     },
     {
       "path": ".gitignore",
@@ -874,7 +874,7 @@
       "path": ".thecrucible.json",
       "type": ".json",
       "size": 2400,
-      "sha256": "97e2d29d04a780a98710563cf3c4c6bea85c5b38c2b691367a2156521653a618"
+      "sha256": "10928d762438282059ab0034b2b03b2fdb5ac0bfcafc6a7f0fc85777291df17e"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
@@ -1528,7 +1528,7 @@
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
       "size": 10189,
-      "sha256": "81112de490585c1df530bffdc7888973992f242482a5d5557e2f8ff3c0119345"
+      "sha256": "1f58d2107fd4108165b78f2aa61d8690f9ce67b57f7736e8af02cb6416623562"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
@@ -1648,7 +1648,7 @@
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
       "size": 2232,
-      "sha256": "67adc20509bf1a54af3b594f3a7ccda5ead5a8f69513657b66b5562b20cd5764"
+      "sha256": "2d21bf07a6f7167704b20f9f6cce37675840c83c25e9bdff67f540117a61a951"
     },
     {
       "path": "test/debugAdapter.test.js",

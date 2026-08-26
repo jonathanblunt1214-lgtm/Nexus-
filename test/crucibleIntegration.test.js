@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const root = path.resolve(__dirname, '..');
-const PINNED_CRUCIBLE_REF = 'beda014701d292ac1794cf7f6f3dce90b8608275';
+const PINNED_CRUCIBLE_REF = '2937265c232f103963f4d5decf126e839a00bcaa';
 
 test('Crucible integration is external, immutable, and least privilege', () => {
   const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'the-crucible.yml'), 'utf8');
