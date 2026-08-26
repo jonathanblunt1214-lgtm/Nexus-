@@ -3,7 +3,6 @@ name: The Crucible
 on:
   workflow_dispatch:
   push:
-  pull_request:
   schedule:
     - cron: '17 3 * * *'
     - cron: '47 4 * * 0'
@@ -22,4 +21,7 @@ jobs:
       config_path: .thecrucible.json
       run_workload: ${{ github.event_name != 'schedule' || github.event.schedule == '47 4 * * 0' }}
       weekly_maintenance: ${{ github.event.schedule == '47 4 * * 0' }}
-      dependency_review: true
+      # dependency_review only ever runs when github.event_name == 'pull_request',
+      # which this workflow no longer triggers on (see the "on:" block above).
+      # Left false rather than true to not claim coverage that can't fire.
+      dependency_review: false
