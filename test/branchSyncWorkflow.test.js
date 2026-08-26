@@ -49,8 +49,8 @@ test('branch synchronization is serialized and can be run manually', () => {
 
 test('ordinary pushes still run validation gates without moving either branch', () => {
   const integrity = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'branch-integrity.yml'), 'utf8');
-  const stability = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'section0-stability.yml'), 'utf8');
+  const crucible = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'the-crucible.yml'), 'utf8');
   const audit = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release-audit.yml'), 'utf8');
-  for (const gate of [integrity, stability, audit]) assert.match(gate, /push:/);
-  for (const gate of [integrity, stability, audit]) assert.doesNotMatch(gate, /git push/);
+  for (const gate of [integrity, crucible, audit]) assert.match(gate, /push:/);
+  for (const gate of [integrity, crucible, audit]) assert.doesNotMatch(gate, /git push/);
 });
