@@ -1371,8 +1371,8 @@
     {
       "path": "publisherConfig.js",
       "type": ".js",
-      "size": 1242,
-      "sha256": "ed696714d227b051d0e28c0d44180695c7cfcbd04cd6bf29c1429b147468aa63"
+      "size": 985,
+      "sha256": "3839c790fdbe39ac214a414b0a86cc181b1e458f5a067c745ee74d63f958b09b"
     },
     {
       "path": "pureLogic.js",

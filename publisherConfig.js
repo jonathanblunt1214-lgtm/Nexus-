@@ -5,12 +5,7 @@
 // service-account keys, or user tokens in this file.
 module.exports = Object.freeze({
   githubOAuthClientId: 'Ov23liPiROYsTTGcF9jA',
-  // Fill in once you create a Google Cloud OAuth client (Application type:
-  // "Desktop app") - then every install signs in with Google in one click,
-  // the same way GitHub already does above, and nobody needs the
-  // per-machine "Account provider configuration for development builds"
-  // panel just to use Google sign-in.
-  googleOAuthClientId: '',
+  googleOAuthClientId: '1091154247930-dk4mqms66bu99jauqo45g9nu9bq8hvkd.apps.googleusercontent.com',
   // Requires Email/Password Auth, Firestore, and Cloud Storage enabled on
   // the project (see the "Account provider configuration for development
   // builds" panel for the full checklist) before sign-up/sign-in actually
