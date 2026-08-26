@@ -35,7 +35,7 @@
     "pyright": "^1.1.413",
     "tree-sitter-javascript": "0.25.0",
     "tree-sitter-typescript": "0.23.2",
-    "typescript": "~7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vscode-css-languageservice": "^6.3.10",
     "vscode-html-languageservice": "^5.6.2",
     "vscode-json-languageservice": "^6.0.0-next.3",
