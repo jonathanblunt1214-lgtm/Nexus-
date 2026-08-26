@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 200,
+  "fileCount": 199,
   "types": {
     "[no extension]": 3,
-    ".yml": 12,
+    ".yml": 11,
     ".json": 3,
     ".md": 7,
     ".bat": 2,
@@ -813,56 +813,50 @@
     {
       "path": ".github/workflows/branch-integrity.yml",
       "type": ".yml",
-      "size": 962,
-      "sha256": "938a9ed9a7dd39699a74b863df589dac4909ac4be8bbfcbc009a8d7bfeec7d14"
+      "size": 966,
+      "sha256": "571bc4ed9379ca9338f63530f3d73cedb2b0a08b8e7b673b365122c5fe2d4e70"
     },
     {
       "path": ".github/workflows/commit-self-repair-apply.yml",
       "type": ".yml",
       "size": 1974,
-      "sha256": "45575a6d7f81ef2bcef62d26261b880e00cfb45ff211ebea574d5fe6f6e26c90"
+      "sha256": "58ba2f2efe562a1515d4ae75c8a41734aaeffd8c49d1d4da92278420a2ee6fe9"
     },
     {
       "path": ".github/workflows/commit-self-repair.yml",
       "type": ".yml",
       "size": 664,
-      "sha256": "59e4493048b2f24fcb6c1717f0aecd1afa3cb958c16a5f82ba3c7d4241674c1b"
+      "sha256": "a8aba654c8fcdefb719c5151a59cfe1c88700ec3ef71c718a8f2e6b86d209b6d"
     },
     {
       "path": ".github/workflows/promote-development-to-main.yml",
       "type": ".yml",
-      "size": 859,
-      "sha256": "60e01ef0aabcd353aaa91ff7d50fcbecdaf7198918d49fb6c6bcb9d3ebaaf521"
+      "size": 867,
+      "sha256": "10181eb279048d237ae845ddb6dc033c1c7233054536a0a0c020d75eb9c8170a"
     },
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 2311,
-      "sha256": "877da2a54e5e9538ecd2e7ceaed88a02747db72d4b10fa8a8cf0fa1117561caa"
+      "size": 2335,
+      "sha256": "e3d13e30b0b0ec0154a992ef7b0915b7fc3a0d71113052e494e11d3808bd35c5"
     },
     {
       "path": ".github/workflows/release.yml",
       "type": ".yml",
-      "size": 1503,
-      "sha256": "0f8554c154b2680e2b22fd0185ad203166bb560839c284630dbf2a69cbb63c9e"
+      "size": 1511,
+      "sha256": "3d61a5d95ba68b66ad073d1e0f430afed2dc80c6b194b325279af0c853a7de10"
     },
     {
       "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 1691,
-      "sha256": "da36740c6c2c9fe06650391cd44fb27d7d4a277a62b2c3a6d572a1917813871a"
-    },
-    {
-      "path": ".github/workflows/section0-stability.yml",
-      "type": ".yml",
-      "size": 573,
-      "sha256": "0c39c9249c1a455b612fa1494642d5f22a3e2ea6a4feff3660669200057a4526"
+      "size": 1707,
+      "sha256": "6053871d641cc189dfb4c39cbcd7810e5bc723c88ceac384760667712b1ae5ee"
     },
     {
       "path": ".github/workflows/sync-development-branch.yml",
       "type": ".yml",
-      "size": 4698,
-      "sha256": "c189ef7cfdcdc91e177bc609c634d0f73910f476ea50c2dcb4324fcc63032355"
+      "size": 4706,
+      "sha256": "01d2a506634dedb6db51b085fcff0fa0fffd026c49aca576318ff542c0232563"
     },
     {
       "path": ".github/workflows/the-crucible.yml",
@@ -1245,14 +1239,14 @@
     {
       "path": "package-lock.json",
       "type": ".json",
-      "size": 154922,
-      "sha256": "ad6847ad1675adb5bb403251eea8ca4986dc9ea8a622dc0ec289e8dac72e6810"
+      "size": 166142,
+      "sha256": "c1396b816addaa9672157fdd35ec9c8c839a5df6acb670f55c1473cf3246cba8"
     },
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5472,
-      "sha256": "857c55ee7de16f16c41a6c96ba127f7124aa5ea4832a2c6bb7eb16da19ecb615"
+      "size": 5471,
+      "sha256": "d3477fc5a9fd92adf84cb0bd70be0302e2424d0dd0745a6ec2394aa2befd8899"
     },
     {
       "path": "pipelineEngine.js",
@@ -1455,8 +1449,8 @@
     {
       "path": "scripts/promoteTestedDevelopment.js",
       "type": ".js",
-      "size": 4118,
-      "sha256": "89eda503a8c8c8154c4a90c87734978bd3480c4ef884a2d0f0ed619712b97afa"
+      "size": 4112,
+      "sha256": "e1702bee56bb6dd568c4be2cab288e72976ba2031fafcf275f5eb78308c53d34"
     },
     {
       "path": "scripts/releaseAudit.js",
@@ -1617,14 +1611,14 @@
     {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
-      "size": 2759,
-      "sha256": "59cc89f6b2458314766128bcca75c8be88a8ac4eb995c83a4189d7fcc2394f2a"
+      "size": 2687,
+      "sha256": "e9648205bc84032d3f79bdbe25166ab605c69b0b26006816338b58e60b48ff55"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",
       "type": ".js",
-      "size": 2917,
-      "sha256": "db3ec046ff3a54f40b5309e9ee7c395c40ef795d4620efb8c7b45750bb6d459b"
+      "size": 2908,
+      "sha256": "14bdfde257bb8dabce4ac8e0ab4fc05c5599c2f8c6955daea63395a9fa1cae50"
     },
     {
       "path": "test/buildNumber.test.js",
@@ -1857,8 +1851,8 @@
     {
       "path": "test/repositoryPrivacy.test.js",
       "type": ".js",
-      "size": 2627,
-      "sha256": "937b17350e3c7c27e71631589d69af53e2261af83b27714509579b098cea9fa0"
+      "size": 2631,
+      "sha256": "7fe24ee2e4dc43e5f29a2d70199122cbcf3d68841e6e54f0d8b1020cd8a04fe1"
     },
     {
       "path": "test/runtimeDebugger.test.js",
