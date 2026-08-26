@@ -49,7 +49,7 @@ async function main() {
       git(['push', 'origin', 'HEAD:Development-branch'], { inherit:true });
       developmentSha = git(['rev-parse', 'HEAD']);
     }
-    await Promise.all([dispatch('section0-stability.yml'), dispatch('release-audit.yml')]);
+    await Promise.all([dispatch('the-crucible.yml'), dispatch('release-audit.yml')]);
     await waitForChecks(developmentSha);
   }
   const currentDevelopment = git(['ls-remote', 'origin', 'refs/heads/Development-branch']).split(/\s/)[0];
