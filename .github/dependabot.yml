@@ -1,0 +1,36 @@
+# Dependabot version updates: opens PRs when a dependency has a newer
+# version, on the schedule below. This is separate from Dependabot
+# alerts/security updates (those are a repo Settings -> Code security
+# toggle, not a config file) - this file controls routine version bumps.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "Development-branch"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+    groups:
+      production-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      development-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+
+  # Workflow files pin actions to immutable commit SHAs with a trailing
+  # `# vX` comment (see any file under .github/workflows/) - Dependabot
+  # updates the pinned SHA and keeps that comment in sync automatically.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "Development-branch"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "ci"
