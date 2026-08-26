@@ -837,8 +837,8 @@
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 2335,
-      "sha256": "e3d13e30b0b0ec0154a992ef7b0915b7fc3a0d71113052e494e11d3808bd35c5"
+      "size": 2339,
+      "sha256": "46d389a5361c84bf1e4d46439f9244bd3a8cff2250912ddf0e069320098d6489"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -867,8 +867,8 @@
     {
       "path": ".gitignore",
       "type": "[no extension]",
-      "size": 343,
-      "sha256": "0c6937cdb5537714b571bc9d7fc6afafddaea7fe42071a5324c38d215affdf08"
+      "size": 495,
+      "sha256": "5d0e44f150d789f8e1b72400b6d09fcdac5707cba6c714e7f93c63427424fbbe"
     },
     {
       "path": ".thecrucible.json",
@@ -1239,14 +1239,14 @@
     {
       "path": "package-lock.json",
       "type": ".json",
-      "size": 166142,
-      "sha256": "c1396b816addaa9672157fdd35ec9c8c839a5df6acb670f55c1473cf3246cba8"
+      "size": 168850,
+      "sha256": "48199019d185290657a4cff6d3642b4412bc7eb8f167ba0ca62cff961c076f0a"
     },
     {
       "path": "package.json",
       "type": ".json",
       "size": 5471,
-      "sha256": "d3477fc5a9fd92adf84cb0bd70be0302e2424d0dd0745a6ec2394aa2befd8899"
+      "sha256": "6a1bd3cf39f75095d5fbba3087efbc65de3fd8d2d0be69c104bf89cc9c54a304"
     },
     {
       "path": "pipelineEngine.js",
