@@ -873,8 +873,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 2400,
-      "sha256": "10928d762438282059ab0034b2b03b2fdb5ac0bfcafc6a7f0fc85777291df17e"
+      "size": 2448,
+      "sha256": "fe8a07f3dd52a1a54838251f643672bf109ff30de14212bea6264f4083b756e5"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",

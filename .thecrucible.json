@@ -22,6 +22,9 @@
   "privacy": {
     "githubIdentity": "jonathanblunt1214-lgtm"
   },
+  "githubSecurity": {
+    "enabled": false
+  },
   "security": {
     "allow": [
       { "path": "main.js", "reason": "Nexus exposes an owner-operated local terminal; shell execution is the reviewed purpose of this handler.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-24", "rules": ["dynamic code execution", "shell-enabled child process"] },
