@@ -1,0 +1,120 @@
+name: Verify project opening end to end
+
+on:
+  push:
+    branches:
+      - Development-branch
+
+permissions:
+  contents: read
+
+jobs:
+  project-opening-smoke:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify clean final tree guardrails
+        shell: bash
+        run: |
+          rm -f .github/workflows/verify-project-opening.yml
+          node scripts/checkSyntax.js
+          node scripts/verifyArchitecture.js
+          npm test
+          npm run privacy:verify
+          npm run inventory:verify
+          npm run repository:clutter
+      - name: Exercise real Electron project opening
+        shell: bash
+        run: |
+          mkdir -p /tmp/nexus-react-fixture
+          cat > /tmp/nexus-react-fixture/package.json <<'JSON'
+          {
+            "name": "nexus-react-fixture",
+            "private": true,
+            "dependencies": {
+              "react": "^19.0.0",
+              "react-dom": "^19.0.0"
+            },
+            "scripts": { "dev": "node -e \"setTimeout(()=>{}, 60000)\"" }
+          }
+          JSON
+          xvfb-run -a node <<'NODE'
+          const path = require('node:path');
+          const { _electron: electron } = require('playwright-core');
+
+          (async () => {
+            const appDir = process.cwd();
+            const electronBin = path.join(appDir, 'node_modules', 'electron', 'dist', 'electron');
+            const app = await electron.launch({
+              executablePath: electronBin,
+              args: ['--no-sandbox', appDir],
+              env: { ...process.env },
+              timeout: 30000,
+            });
+            try {
+              const page = await app.firstWindow();
+              await page.waitForLoadState('domcontentloaded');
+              await page.waitForTimeout(1500);
+
+              const result = await page.evaluate(async () => {
+                localStorage.removeItem('nexus_projects');
+                localStorage.removeItem('nexus_active');
+                projects = [];
+                activeProjectId = null;
+                renderProjects();
+                switchTab('projects');
+
+                const portInput = document.getElementById('project-port');
+                portInput.value = '123456';
+                portInput.dispatchEvent(new Event('input', { bubbles: true }));
+                const cappedPort = portInput.value;
+
+                document.getElementById('project-name').value = 'React Fixture';
+                document.getElementById('project-path').value = '/tmp/nexus-react-fixture';
+                document.getElementById('project-command').value = 'npm run dev';
+                portInput.value = '3000';
+
+                const detected = await detectAndFillProjectMetadata('/tmp/nexus-react-fixture');
+                await addProject();
+
+                const saved = JSON.parse(localStorage.getItem('nexus_projects') || '[]');
+                const project = saved.find((entry) => entry.name === 'React Fixture');
+                if (!project) throw new Error('Project was not saved by addProject().');
+
+                activeProjectId = project.id;
+                localStorage.setItem('nexus_active', JSON.stringify(project.id));
+                renderProjects();
+                const activeCard = document.querySelector('.project-card.active, .project-card[data-active="true"]');
+
+                return {
+                  cappedPort,
+                  detectedTemplate: detected?.detectedType?.templateId || null,
+                  savedTemplate: project.templateId || null,
+                  savedPort: String(project.port),
+                  activeProjectId,
+                  projectCount: saved.length,
+                  activeCardFound: Boolean(activeCard),
+                };
+              });
+
+              console.log('PROJECT_OPEN_E2E', JSON.stringify(result));
+              if (result.cappedPort !== '12345') throw new Error(`Port cap failed: ${result.cappedPort}`);
+              if (result.detectedTemplate !== 'app') throw new Error(`React type detection failed: ${result.detectedTemplate}`);
+              if (result.savedTemplate !== 'app') throw new Error(`Saved project type failed: ${result.savedTemplate}`);
+              if (result.savedPort !== '3000') throw new Error(`Saved port failed: ${result.savedPort}`);
+              if (result.projectCount !== 1 || !result.activeProjectId) throw new Error('Project did not become available to open.');
+            } finally {
+              await app.close().catch(() => {});
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
