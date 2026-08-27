@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 203,
+  "fileCount": 205,
   "types": {
     ".json": 5,
     "[no extension]": 3,
     ".yml": 11,
-    ".md": 8,
+    ".md": 9,
     ".bat": 2,
-    ".js": 162,
+    ".js": 163,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -883,6 +883,12 @@
       "sha256": "81c02d9a4122c592d85b750bf52ec494c65a8ea8dc4b2a31887d0545306c83c3"
     },
     {
+      "path": "AGENTS.md",
+      "type": ".md",
+      "size": 1821,
+      "sha256": "70281e2fc47b8ab3d2fc426abcc4b9c222262146b3ad0bd571d63b747accc5c1"
+    },
+    {
       "path": "AI-CONFLICTS.json",
       "type": ".json",
       "size": 44,
@@ -897,8 +903,8 @@
     {
       "path": "CLAUDE.md",
       "type": ".md",
-      "size": 1725,
-      "sha256": "5f377e7014341c4fd2140214441b6138107f3e054832772aaa000c0c5b47f9e7"
+      "size": 2329,
+      "sha256": "73797fec8a6f008be603bbf3b3822608603743530ab49273bc618de237571536"
     },
     {
       "path": "CONSTITUTION.md",
@@ -1625,6 +1631,12 @@
       "type": ".js",
       "size": 1938,
       "sha256": "85ce470db5190e641b0d156daa740db6724b8e9a0055fff320428b49cbe913a1"
+    },
+    {
+      "path": "test/branchAuthority.test.js",
+      "type": ".js",
+      "size": 1140,
+      "sha256": "f38a376c5d8f8909d459debec9870b35e3c25a05933d4659fad97b36df3a85d4"
     },
     {
       "path": "test/branchPromotionProtocol.test.js",
