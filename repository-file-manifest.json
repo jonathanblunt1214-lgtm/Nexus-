@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 200,
+  "fileCount": 201,
   "types": {
+    ".json": 4,
     "[no extension]": 3,
     ".yml": 11,
-    ".json": 3,
     ".md": 7,
     ".bat": 2,
     ".js": 162,
@@ -786,6 +786,12 @@
   ],
   "missingCrossReferences": [],
   "files": [
+    {
+      "path": ".claude/settings.json",
+      "type": ".json",
+      "size": 437,
+      "sha256": "5f7a20ff5defae329177a6eb2e48bab670cf7e42ee83f2150097eb89544bb947"
+    },
     {
       "path": ".githooks/pre-commit",
       "type": "[no extension]",
