@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 208,
+  "fileCount": 210,
   "types": {
     ".json": 5,
     ".md": 10,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 164,
+    ".js": 166,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -163,6 +163,11 @@
       "source": "main.js",
       "reference": "./projectCloner",
       "resolved": "projectCloner.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectTypeDetector",
+      "resolved": "projectTypeDetector.js"
     },
     {
       "source": "main.js",
@@ -705,6 +710,11 @@
       "resolved": "projectTemplates.js"
     },
     {
+      "source": "test/projectTypeDetector.test.js",
+      "reference": "../projectTypeDetector",
+      "resolved": "projectTypeDetector.js"
+    },
+    {
       "source": "test/providerDiscovery.test.js",
       "reference": "../providerDiscovery",
       "resolved": "providerDiscovery.js"
@@ -1184,8 +1194,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 133855,
-      "sha256": "082164e19408be1ebacca269d2a9993146abf5990b980fa5057f3a1a550a0b56"
+      "size": 133946,
+      "sha256": "530e63dc036c7729f7813804ea106e9b05e0ccce95223cf8f2131a8969f40d3c"
     },
     {
       "path": "inventoryWorker.js",
@@ -1250,8 +1260,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 218280,
-      "sha256": "198965576e2456992e2bfdf1d4fd7920556e623eed99d4329837f082e1d02550"
+      "size": 218848,
+      "sha256": "6a9a7b889fe52244d462fa4306012179973765444a94d99bc82bc27a579e64e6"
     },
     {
       "path": "memoryEngine.js",
@@ -1292,8 +1302,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5533,
-      "sha256": "0910c90ed9311ba972896df347b8da6b80f8d5b81448842fed1dddd9a75c42be"
+      "size": 5565,
+      "sha256": "9a60020f0949d5f2f091ca429a68440625fe5a802f89b985a3825a06556af90d"
     },
     {
       "path": "pipelineEngine.js",
@@ -1352,8 +1362,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28903,
-      "sha256": "64da5a346eb15932955ad43145684ffb093d2f867d2add91b04645c90cf0330b"
+      "size": 28991,
+      "sha256": "48729d8a12a456e3e152845c3863e236fc45efab7a4197b6e647339b9860e6f0"
     },
     {
       "path": "projectCloner.js",
@@ -1404,6 +1414,12 @@
       "sha256": "6f1d82a0c360b833422e1b0e329e6f9e117814340dd6d5cf35179c88ed70f947"
     },
     {
+      "path": "projectTypeDetector.js",
+      "type": ".js",
+      "size": 1826,
+      "sha256": "a9b5c3f1031647858e28c09c3a41ac425c132bf6235c2a091cd4f7418cda9d3f"
+    },
+    {
       "path": "promptTesting.js",
       "type": ".js",
       "size": 2837,
@@ -1442,8 +1458,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 274404,
-      "sha256": "e4b0527c4df3f925d46a011b0da4a4fd8199d057d4e0e0c01411b6e366b6ece2"
+      "size": 275790,
+      "sha256": "3f3048667a30b19bbe0ec72c5092a173cbbbd6bd1b8ff93d52696594a070cb19"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1886,14 +1902,20 @@
     {
       "path": "test/projectPortForm.test.js",
       "type": ".js",
-      "size": 1048,
-      "sha256": "f821b362cb24766daf0923feb5ec7f46845f4611bc4268142d720ed3cb8d6967"
+      "size": 1604,
+      "sha256": "9e91a2c87435fec84ae3152fbd8c27b10ef6707652c0186aa0239a4db72a5984"
     },
     {
       "path": "test/projectTemplates.test.js",
       "type": ".js",
       "size": 1245,
       "sha256": "21c94b32e37cffc4049a2d72c2a4ad5b9274a77f92afcf3027613417ac705c93"
+    },
+    {
+      "path": "test/projectTypeDetector.test.js",
+      "type": ".js",
+      "size": 2312,
+      "sha256": "05e889659a8a78b434d9e42bd5d504ea44e6dd54470c6e6a23e8eb6930afe70e"
     },
     {
       "path": "test/providerDiscovery.test.js",

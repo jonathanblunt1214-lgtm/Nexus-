@@ -31,6 +31,7 @@ const startupStartedAt = performance.now();
 crashReporter.start({ submitURL: '', uploadToServer: false, compress: true, companyName: 'Nexus', productName: 'Nexus' });
 const { pathToFileURL } = require('url');
 const { resolveProjectPath, isGitUrl, detectProjectPort } = require('./projectCloner');
+const { detectProjectType } = require('./projectTypeDetector');
 const publisherConfig = require('./publisherConfig');
 const { planProjectLaunch, inspectProjectReadiness, verifyProjectLaunchPlan } = require('./projectLaunchPreflight');
 const { getProjectsRoot } = require('./projectSettings');
@@ -599,6 +600,17 @@ ipcMain.handle('detect-project-port', (_event, { folder }) => {
     return { ok:true, detectedPort:detectProjectPort(resolved) };
   } catch (error) {
     return { ok:false, error:error.message };
+  }
+});
+
+ipcMain.handle('detect-project-type', (_event, { folder }) => {
+  try {
+    if (!folder || isGitUrl(folder)) return { ok:false, error:'Choose or enter a local project folder first.' };
+    const resolved = path.resolve(folder);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) return { ok:false, error:'The project folder does not exist.' };
+    return { ok:true, detectedType:detectProjectType(resolved) };
+  } catch (err) {
+    return { ok:false, error:err.message };
   }
 });
 

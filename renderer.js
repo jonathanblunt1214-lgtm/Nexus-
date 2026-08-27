@@ -435,6 +435,26 @@ async function detectAndFillProjectPort(folder = document.getElementById('projec
   return result.detectedPort;
 }
 
+async function detectAndSelectProjectType(folder = document.getElementById('project-path').value.trim()) {
+  if (!folder) return null;
+  const result = await window.nexus.detectProjectType(folder);
+  const templateId = result?.detectedType?.templateId;
+  if (!result?.ok || !['website', 'app', 'api'].includes(templateId)) return null;
+  const radio = document.querySelector(`input[name="new-project-template"][value="${templateId}"]`);
+  if (radio) radio.checked = true;
+  selectProjectTemplate(templateId);
+  return result.detectedType;
+}
+
+async function detectAndFillProjectMetadata(folder = document.getElementById('project-path').value.trim()) {
+  if (!folder) return { detectedPort:null, detectedType:null };
+  const [detectedPort, detectedType] = await Promise.all([
+    detectAndFillProjectPort(folder),
+    detectAndSelectProjectType(folder),
+  ]);
+  return { detectedPort, detectedType };
+}
+
 window.nexus.onProjectCloneLog(({ line }) => {
   const el = document.getElementById('clone-progress');
   if (el) el.innerText = line;
@@ -625,7 +645,17 @@ async function addProject(e) {
   }
   port ||= '3000';
 
-  const project = { id: Date.now(), name, folder, command, port, running: false };
+  const detectedTypeResult = await window.nexus.detectProjectType(folder);
+  const templateId = detectedTypeResult?.ok && ['website', 'app', 'api'].includes(detectedTypeResult.detectedType?.templateId)
+    ? detectedTypeResult.detectedType.templateId
+    : undefined;
+  if (templateId) {
+    const radio = document.querySelector(`input[name="new-project-template"][value="${templateId}"]`);
+    if (radio) radio.checked = true;
+    selectProjectTemplate(templateId);
+  }
+
+  const project = { id: Date.now(), name, folder, command, port, templateId, running: false };
   projects.push(project);
   await classifyGameProject(project, { showGuide: true });
   document.getElementById('project-name').value = '';

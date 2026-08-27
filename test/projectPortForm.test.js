@@ -17,4 +17,12 @@ test('project form supports early auto-fill and validated manual port entry', ()
   assert.match(renderer, /Number\(port\) > 65535/);
   assert.match(preload, /detectProjectPort:.*detect-project-port/);
   assert.match(main, /ipcMain\.handle\('detect-project-port'/);
+  assert.match(html, /id="project-path"[^>]*onblur="detectAndFillProjectMetadata\(\)"/);
+  assert.match(html, /id="project-port"[^>]*maxlength="5"[^>]*oninput=/);
+  assert.match(renderer, /async function detectAndSelectProjectType/);
+  assert.match(renderer, /async function detectAndFillProjectMetadata/);
+  assert.match(renderer, /detectProjectType\(folder\)/);
+  assert.match(renderer, /templateId, running: false/);
+  assert.match(preload, /detectProjectType:.*detect-project-type/);
+  assert.match(main, /ipcMain\.handle\('detect-project-type'/);
 });
