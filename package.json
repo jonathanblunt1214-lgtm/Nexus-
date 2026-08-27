@@ -46,6 +46,7 @@
     "@types/node": "^26.2.0",
     "electron": "^43.4.1",
     "electron-builder": "^26.15.3",
+    "playwright-core": "^1.62.1",
     "tsx": "^4.21.0"
   },
   "build": {

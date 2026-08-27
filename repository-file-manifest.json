@@ -2,12 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 205,
+  "fileCount": 207,
   "types": {
     ".json": 5,
+    ".md": 10,
+    ".mjs": 1,
     "[no extension]": 3,
     ".yml": 11,
-    ".md": 9,
     ".bat": 2,
     ".js": 163,
     ".rules": 2,
@@ -793,6 +794,18 @@
       "sha256": "5f7a20ff5defae329177a6eb2e48bab670cf7e42ee83f2150097eb89544bb947"
     },
     {
+      "path": ".claude/skills/run-desktop/SKILL.md",
+      "type": ".md",
+      "size": 4371,
+      "sha256": "c55bc6bfc21620f2b64873e06e535fb024c6808bc6d738633a147eb70fbf536a"
+    },
+    {
+      "path": ".claude/skills/run-desktop/driver.mjs",
+      "type": ".mjs",
+      "size": 4692,
+      "sha256": "9cbd054dd799a3f59572d75bbb1c6d5b5f65d2f2163101f3c7ce5a1741aa3c34"
+    },
+    {
       "path": ".githooks/pre-commit",
       "type": "[no extension]",
       "size": 70,
@@ -903,8 +916,8 @@
     {
       "path": "CLAUDE.md",
       "type": ".md",
-      "size": 2025,
-      "sha256": "fec97a6ea2009c3c851ba1f7cfbaafd508be19f19149b58b93c23060765647fe"
+      "size": 2254,
+      "sha256": "286e5b8d5cf507586c3e7cfc304a2314eb43194a4489201a27b22f3503e6b807"
     },
     {
       "path": "CONSTITUTION.md",
@@ -1263,14 +1276,14 @@
     {
       "path": "package-lock.json",
       "type": ".json",
-      "size": 157982,
-      "sha256": "3e0d2359ae16aa58c75ebface7d78eb5b397691d23587e5a91b094a1bc8bb08e"
+      "size": 158463,
+      "sha256": "50ec5f1ca96bf356a81de0453bd00ece92c4526c268f0cb87c2892e941510b5a"
     },
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5499,
-      "sha256": "7d63c59a2c56748f8284403a24c58ede09faba157295153aa986f958e0fb166f"
+      "size": 5533,
+      "sha256": "0910c90ed9311ba972896df347b8da6b80f8d5b81448842fed1dddd9a75c42be"
     },
     {
       "path": "pipelineEngine.js",
