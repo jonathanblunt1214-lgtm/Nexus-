@@ -1008,8 +1008,8 @@
     {
       "path": "aiGuardrailTester.js",
       "type": ".js",
-      "size": 3618,
-      "sha256": "a4abffcbef686119f48360c82f37b4755b07335549c0c0239bd874f1a445ced4"
+      "size": 3951,
+      "sha256": "cd060c823c41624a0df6aa710d8026f4c1082c894213c09983f1ec64eec402ea"
     },
     {
       "path": "aiInventory.js",
