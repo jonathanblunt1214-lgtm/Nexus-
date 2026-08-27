@@ -102,8 +102,11 @@ const COMMANDS = {
   help() { console.log('commands:', Object.keys(COMMANDS).join(', ')); },
 };
 
-// Stop Electron from stealing stdin - use the raw fd.
-const stdin = fs.createReadStream(null, { fd: fs.openSync('/dev/stdin', 'r') });
+// Stop Electron from stealing stdin on POSIX by using the raw fd. Windows has
+// no /dev/stdin, and Playwright keeps the parent process stream available.
+const stdin = process.platform === 'win32'
+  ? process.stdin
+  : fs.createReadStream(null, { fd: fs.openSync('/dev/stdin', 'r') });
 const rl = readline.createInterface({ input: stdin, output: process.stdout, prompt: 'driver> ' });
 
 rl.on('line', async line => {
