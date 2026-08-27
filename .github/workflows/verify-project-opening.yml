@@ -84,7 +84,9 @@ jobs:
                 portInput.value = '3000';
 
                 const detected = await detectAndFillProjectMetadata('/tmp/nexus-react-fixture');
-                await addProject();
+                const saveButton = document.querySelector('[onclick*="addProject"]');
+                if (!saveButton) throw new Error('Save Project control was not found.');
+                await addProject({ target: saveButton });
 
                 const saved = JSON.parse(localStorage.getItem('nexus_projects') || '[]');
                 const project = saved.find((entry) => entry.name === 'React Fixture');
