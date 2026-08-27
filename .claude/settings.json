@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Current US Eastern time (include this at the start of your response): %s\"}}' \"$(TZ=America/New_York date '+%Y-%m-%d %I:%M:%S %p %Z')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

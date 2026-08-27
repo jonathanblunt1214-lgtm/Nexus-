@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 201,
+  "fileCount": 203,
   "types": {
+    ".json": 5,
     "[no extension]": 3,
     ".yml": 11,
-    ".json": 4,
-    ".md": 7,
+    ".md": 8,
     ".bat": 2,
     ".js": 162,
     ".rules": 2,
@@ -787,6 +787,12 @@
   "missingCrossReferences": [],
   "files": [
     {
+      "path": ".claude/settings.json",
+      "type": ".json",
+      "size": 437,
+      "sha256": "5f7a20ff5defae329177a6eb2e48bab670cf7e42ee83f2150097eb89544bb947"
+    },
+    {
       "path": ".githooks/pre-commit",
       "type": "[no extension]",
       "size": 70,
@@ -837,8 +843,8 @@
     {
       "path": ".github/workflows/release-audit.yml",
       "type": ".yml",
-      "size": 2335,
-      "sha256": "e3d13e30b0b0ec0154a992ef7b0915b7fc3a0d71113052e494e11d3808bd35c5"
+      "size": 2339,
+      "sha256": "46d389a5361c84bf1e4d46439f9244bd3a8cff2250912ddf0e069320098d6489"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -887,6 +893,12 @@
       "type": ".md",
       "size": 7124,
       "sha256": "f0372096e3cacc1dad8aa54e1acb281226778ee9541fc53f10a930907ad9c4ef"
+    },
+    {
+      "path": "CLAUDE.md",
+      "type": ".md",
+      "size": 1725,
+      "sha256": "5f377e7014341c4fd2140214441b6138107f3e054832772aaa000c0c5b47f9e7"
     },
     {
       "path": "CONSTITUTION.md",
@@ -993,8 +1005,8 @@
     {
       "path": "astEngine.js",
       "type": ".js",
-      "size": 5874,
-      "sha256": "c2ff7fac1cd7e2b219f81b6f2759d8174424e4c5975b8f239279fb15ed9afa08"
+      "size": 6169,
+      "sha256": "1a2241ff97c1fa190a0c7ce303c83bc199ab13b5117b3056b725c007f5dbc944"
     },
     {
       "path": "atomicWrite.js",
@@ -1245,14 +1257,14 @@
     {
       "path": "package-lock.json",
       "type": ".json",
-      "size": 154916,
-      "sha256": "d12816a61e109f1b2cc31e87595a5b111efa3c78dba63a1cc6c6c797d0c28204"
+      "size": 157982,
+      "sha256": "3e0d2359ae16aa58c75ebface7d78eb5b397691d23587e5a91b094a1bc8bb08e"
     },
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5471,
-      "sha256": "be3994916a303b1e9290dd537cfd0e3da9fb142c3976412b8eecbd5a88c1b485"
+      "size": 5499,
+      "sha256": "7d63c59a2c56748f8284403a24c58ede09faba157295153aa986f958e0fb166f"
     },
     {
       "path": "pipelineEngine.js",
@@ -1377,8 +1389,8 @@
     {
       "path": "publisherConfig.js",
       "type": ".js",
-      "size": 1242,
-      "sha256": "ed696714d227b051d0e28c0d44180695c7cfcbd04cd6bf29c1429b147468aa63"
+      "size": 985,
+      "sha256": "3839c790fdbe39ac214a414b0a86cc181b1e458f5a067c745ee74d63f958b09b"
     },
     {
       "path": "pureLogic.js",
@@ -1437,8 +1449,8 @@
     {
       "path": "scripts/installGitHooks.js",
       "type": ".js",
-      "size": 512,
-      "sha256": "945919cabbd92996d4812b1b69fa27a1c55a83b51ae8b66367419e24fa6de16d"
+      "size": 1044,
+      "sha256": "d642838fb334d968a55d9d181cf058c1fec64a1bf75ecfe4f0fd6fd32d2e8deb"
     },
     {
       "path": "scripts/inventoryContent.js",
@@ -1534,7 +1546,7 @@
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
       "size": 10189,
-      "sha256": "1f58d2107fd4108165b78f2aa61d8690f9ce67b57f7736e8af02cb6416623562"
+      "sha256": "59956df3959944bb344fb7c7feed5afa676231cf608865b3e4bb6766378cf47a"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
