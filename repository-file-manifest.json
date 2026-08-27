@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 201,
+  "fileCount": 202,
   "types": {
     ".json": 4,
     "[no extension]": 3,
     ".yml": 11,
-    ".md": 7,
+    ".md": 8,
     ".bat": 2,
     ".js": 162,
     ".rules": 2,
@@ -889,6 +889,12 @@
       "sha256": "f0372096e3cacc1dad8aa54e1acb281226778ee9541fc53f10a930907ad9c4ef"
     },
     {
+      "path": "CLAUDE.md",
+      "type": ".md",
+      "size": 185,
+      "sha256": "7b60250e2e2bd784f61bacd33442bc512aeeb28887d8ee691c7726958a7740be"
+    },
+    {
       "path": "CONSTITUTION.md",
       "type": ".md",
       "size": 934,
@@ -993,8 +999,8 @@
     {
       "path": "astEngine.js",
       "type": ".js",
-      "size": 5874,
-      "sha256": "c2ff7fac1cd7e2b219f81b6f2759d8174424e4c5975b8f239279fb15ed9afa08"
+      "size": 6169,
+      "sha256": "1a2241ff97c1fa190a0c7ce303c83bc199ab13b5117b3056b725c007f5dbc944"
     },
     {
       "path": "atomicWrite.js",

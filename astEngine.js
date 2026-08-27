@@ -2,6 +2,7 @@
 // Tree-sitter semantic parsing primitives. This module is intended to run
 // inside semanticWorker.js, never on Electron's main event loop.
 
+const fs = require('fs');
 const path = require('path');
 
 let initialized = false;
@@ -15,11 +16,15 @@ async function initParserRuntime() {
   Parser = treeSitter.Parser || treeSitter.default || treeSitter;
   Language = treeSitter.Language || Parser.Language;
 
-  const runtimeEntry = require.resolve('web-tree-sitter');
-  const runtimeWasm = path.join(path.dirname(runtimeEntry), 'tree-sitter.wasm');
+  // The runtime wasm's filename has changed across web-tree-sitter releases
+  // (tree-sitter.wasm pre-0.26, web-tree-sitter.wasm from 0.26 on). Rather
+  // than hardcode one name, use whichever file Emscripten actually asks for
+  // if it exists next to the resolved package entry point.
+  const runtimeDir = path.dirname(require.resolve('web-tree-sitter'));
   await Parser.init({
     locateFile(filename) {
-      return filename === 'tree-sitter.wasm' ? runtimeWasm : filename;
+      const candidate = path.join(runtimeDir, filename);
+      return fs.existsSync(candidate) ? candidate : filename;
     },
   });
   initialized = true;
