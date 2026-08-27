@@ -19,7 +19,9 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node node_modules/electron/install.js
       - name: Verify clean final tree guardrails
         shell: bash
         run: |
@@ -91,7 +93,6 @@ jobs:
                 activeProjectId = project.id;
                 localStorage.setItem('nexus_active', JSON.stringify(project.id));
                 renderProjects();
-                const activeCard = document.querySelector('.project-card.active, .project-card[data-active="true"]');
 
                 return {
                   cappedPort,
@@ -100,7 +101,6 @@ jobs:
                   savedPort: String(project.port),
                   activeProjectId,
                   projectCount: saved.length,
-                  activeCardFound: Boolean(activeCard),
                 };
               });
 
