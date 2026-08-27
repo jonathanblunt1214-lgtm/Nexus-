@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 210,
+  "fileCount": 211,
   "types": {
     ".json": 5,
     ".md": 10,
     ".mjs": 1,
     "[no extension]": 3,
-    ".yml": 11,
+    ".yml": 12,
     ".bat": 2,
     ".js": 166,
     ".rules": 2,
@@ -866,6 +866,12 @@
       "type": ".yml",
       "size": 664,
       "sha256": "a8aba654c8fcdefb719c5151a59cfe1c88700ec3ef71c718a8f2e6b86d209b6d"
+    },
+    {
+      "path": ".github/workflows/project-opening-e2e-once.yml",
+      "type": ".yml",
+      "size": 6412,
+      "sha256": "e4badbd5c0fd7184a69a079007148fc976e3dc40f24ae59e7c9141bd6664068d"
     },
     {
       "path": ".github/workflows/promote-development-to-main.yml",
