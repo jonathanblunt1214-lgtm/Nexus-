@@ -903,8 +903,8 @@
     {
       "path": "CLAUDE.md",
       "type": ".md",
-      "size": 2329,
-      "sha256": "73797fec8a6f008be603bbf3b3822608603743530ab49273bc618de237571536"
+      "size": 2025,
+      "sha256": "fec97a6ea2009c3c851ba1f7cfbaafd508be19f19149b58b93c23060765647fe"
     },
     {
       "path": "CONSTITUTION.md",
@@ -1635,8 +1635,8 @@
     {
       "path": "test/branchAuthority.test.js",
       "type": ".js",
-      "size": 1140,
-      "sha256": "f38a376c5d8f8909d459debec9870b35e3c25a05933d4659fad97b36df3a85d4"
+      "size": 1289,
+      "sha256": "6ff74bd6c3593cae2ddecf1d4ed6215c0bea9d9dc4d6e6ad1534b2d2932a0525"
     },
     {
       "path": "test/branchPromotionProtocol.test.js",

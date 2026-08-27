@@ -21,4 +21,6 @@ test('every AI is restricted to literal Development-branch without an exact owne
   assert.match(claude, /Do all ordinary work directly on literal `Development-branch`/);
   assert.match(claude, /Do not create or update `claude\/\*`/);
   assert.match(claude, /Shared owner credentials do not grant an AI owner authority/);
+  assert.match(claude, /Never create a temporary synchronization branch or PR/);
+  assert.doesNotMatch(claude, /Disable auto-merge on that one PR/);
 });
