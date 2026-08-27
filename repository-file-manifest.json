@@ -1443,8 +1443,8 @@
     {
       "path": "scripts/installGitHooks.js",
       "type": ".js",
-      "size": 512,
-      "sha256": "945919cabbd92996d4812b1b69fa27a1c55a83b51ae8b66367419e24fa6de16d"
+      "size": 1044,
+      "sha256": "d642838fb334d968a55d9d181cf058c1fec64a1bf75ecfe4f0fd6fd32d2e8deb"
     },
     {
       "path": "scripts/inventoryContent.js",
