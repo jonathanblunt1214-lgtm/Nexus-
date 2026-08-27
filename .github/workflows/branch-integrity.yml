@@ -26,8 +26,21 @@ jobs:
           git fetch origin main Development-branch
           main_sha="$(git rev-parse origin/main)"
           development_sha="$(git rev-parse origin/Development-branch)"
-          if ! git merge-base --is-ancestor "$main_sha" "$development_sha"; then
-            echo "::error::main contains work that was not promoted from Development-branch, or the branches diverged."
-            exit 1
+          if git merge-base --is-ancestor "$main_sha" "$development_sha"; then
+            echo "Branch flow is valid: main is the same as, or behind, Development-branch."
+            exit 0
           fi
-          echo "Branch flow is valid: main is the same as, or behind, Development-branch."
+
+          # Squash promotion deliberately gives main a new commit identity. In
+          # that case, require its complete tree to match a tree that actually
+          # existed in Development history; a main-only change cannot pass.
+          main_tree="$(git rev-parse "${main_sha}^{tree}")"
+          while read -r development_commit; do
+            if [ "$(git rev-parse "${development_commit}^{tree}")" = "$main_tree" ]; then
+              echo "Branch flow is valid: main exactly matches promoted Development tree ${development_commit}."
+              exit 0
+            fi
+          done < <(git rev-list "$development_sha")
+
+          echo "::error::main contains a tree that never existed in Development-branch."
+          exit 1
