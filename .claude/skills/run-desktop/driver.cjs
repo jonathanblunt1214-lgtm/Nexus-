@@ -1,11 +1,11 @@
 // REPL driver for Nexus. Run under xvfb on headless Linux.
 // Designed for agents: wrap in tmux, send-keys commands, capture-pane output.
-import { _electron as electron } from 'playwright-core';
-import * as readline from 'node:readline';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+const { _electron: electron } = require('playwright-core');
+const readline = require('node:readline');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const APP_DIR = path.resolve(import.meta.dirname, '../../..');
+const APP_DIR = path.resolve(__dirname, '../../..');
 const SHOT_DIR = process.env.SCREENSHOT_DIR || '/tmp/shots';
 fs.mkdirSync(SHOT_DIR, { recursive: true });
 
