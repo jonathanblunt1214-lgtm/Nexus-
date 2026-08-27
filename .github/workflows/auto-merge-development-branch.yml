@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   enable-auto-merge:
-    name: Enable auto-merge (merge commit)
+    name: Enable auto-merge (squash)
     runs-on: ubuntu-latest
     if: github.event.action != 'closed' && github.event.pull_request.draft == false
     steps:
@@ -21,7 +21,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr merge --auto --merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+          # Squash (not a plain merge commit) so the resulting commit subject
+          # is the PR title, not GitHub's auto-generated "Merge pull request
+          # #N from owner/branch-name" - which regularly exceeds the 72-char
+          # commit-subject gate the-crucible.yml's precheck enforces, and
+          # would otherwise fail that gate on every single auto-merge.
+          # Matches main's branch protection, which already squash-only.
+          gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
 
   trigger-post-merge-checks:
     name: Re-trigger push-gated checks after merge
