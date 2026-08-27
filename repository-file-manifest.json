@@ -852,8 +852,8 @@
     {
       "path": ".github/workflows/branch-integrity.yml",
       "type": ".yml",
-      "size": 966,
-      "sha256": "571bc4ed9379ca9338f63530f3d73cedb2b0a08b8e7b673b365122c5fe2d4e70"
+      "size": 1586,
+      "sha256": "7c7a502d8c47f794d9c1b3a60eb409f81179188e7ad3413a17247de7a85dbca6"
     },
     {
       "path": ".github/workflows/commit-self-repair-apply.yml",
@@ -1686,8 +1686,8 @@
     {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
-      "size": 2687,
-      "sha256": "e9648205bc84032d3f79bdbe25166ab605c69b0b26006816338b58e60b48ff55"
+      "size": 2897,
+      "sha256": "719fed0075279cc7f4cff07e523340e0a6f185a82b989321619327cfaa85cadb"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",

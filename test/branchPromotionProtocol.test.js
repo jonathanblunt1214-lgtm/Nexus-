@@ -40,8 +40,11 @@ test('failed promotion remediates only on development and retries all gates', ()
   assert.match(remediation, /NEXUS_REPAIR_REF/);
 });
 
-test('branch integrity rejects main-only commits and divergence', () => {
+test('branch integrity accepts ancestry or an exact squash-promoted Development tree', () => {
   const workflow = read('.github/workflows/branch-integrity.yml');
   assert.match(workflow, /git merge-base --is-ancestor "\$main_sha" "\$development_sha"/);
-  assert.match(workflow, /main contains work that was not promoted from Development-branch/);
+  assert.match(workflow, /main_tree=.*\$\{main_sha\}\^\{tree\}/);
+  assert.match(workflow, /git rev-list "\$development_sha"/);
+  assert.match(workflow, /\$\{development_commit\}\^\{tree\}/);
+  assert.match(workflow, /main contains a tree that never existed in Development-branch/);
 });
