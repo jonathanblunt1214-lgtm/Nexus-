@@ -5,7 +5,7 @@ description: Build, run, and drive the Nexus Electron desktop app. Use when aske
 
 Nexus is an Electron desktop app (`main.js` + `index.html`, no bundler —
 files load directly). For agent/automated use, drive it via the Playwright
-REPL at `.claude/skills/run-desktop/driver.mjs` under xvfb.
+REPL at `.claude/skills/run-desktop/driver.cjs` under xvfb.
 
 ## Prerequisites
 
@@ -23,14 +23,14 @@ succeeds on the 2nd attempt.
 ## Run (agent path)
 
 ```bash
-xvfb-run -a node .claude/skills/run-desktop/driver.mjs
+xvfb-run -a node .claude/skills/run-desktop/driver.cjs
 ```
 
 Wrap in tmux for interactive use:
 
 ```bash
 tmux new-session -d -s app -x 200 -y 50
-tmux send-keys -t app 'xvfb-run -a node .claude/skills/run-desktop/driver.mjs' Enter
+tmux send-keys -t app 'xvfb-run -a node .claude/skills/run-desktop/driver.cjs' Enter
 timeout 20 bash -c 'until tmux capture-pane -t app -p | grep -q "driver>"; do sleep 0.2; done'
 tmux send-keys -t app 'launch' Enter
 timeout 30 bash -c 'until tmux capture-pane -t app -p | grep -q "launched"; do sleep 0.2; done'

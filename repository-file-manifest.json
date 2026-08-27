@@ -6,7 +6,7 @@
   "types": {
     ".json": 5,
     ".md": 10,
-    ".mjs": 1,
+    ".cjs": 1,
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
@@ -817,13 +817,13 @@
       "path": ".claude/skills/run-desktop/SKILL.md",
       "type": ".md",
       "size": 4371,
-      "sha256": "c55bc6bfc21620f2b64873e06e535fb024c6808bc6d738633a147eb70fbf536a"
+      "sha256": "3c45cdf54c6bd2ef21b5a18b5f923201499d863cad0c751420f98e37802ab8d5"
     },
     {
-      "path": ".claude/skills/run-desktop/driver.mjs",
-      "type": ".mjs",
-      "size": 4692,
-      "sha256": "9cbd054dd799a3f59572d75bbb1c6d5b5f65d2f2163101f3c7ce5a1741aa3c34"
+      "path": ".claude/skills/run-desktop/driver.cjs",
+      "type": ".cjs",
+      "size": 4685,
+      "sha256": "d3a852a15c82f262c90e8b5c6f0642f2a536b950218ffd2d8477aa5b4cd8f990"
     },
     {
       "path": ".githooks/pre-commit",
@@ -913,7 +913,7 @@
       "path": ".thecrucible.json",
       "type": ".json",
       "size": 2888,
-      "sha256": "78494acd211eff428ee0b0ed4af41bbd832a937e19fb3b322e598784e1c9186f"
+      "sha256": "eb89076dbe31578970344955e9cc1b57488378a7744850ad7d2743e9330038bc"
     },
     {
       "path": "AGENTS.md",
@@ -1008,8 +1008,8 @@
     {
       "path": "aiGuardrailTester.js",
       "type": ".js",
-      "size": 3951,
-      "sha256": "cd060c823c41624a0df6aa710d8026f4c1082c894213c09983f1ec64eec402ea"
+      "size": 3952,
+      "sha256": "de2e9568f09b2fce9c4b90e6ba73d901bf25c9db28f7add7b2f64b11b352c3b2"
     },
     {
       "path": "aiInventory.js",
