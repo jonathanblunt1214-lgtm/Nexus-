@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 211,
+  "fileCount": 210,
   "types": {
     ".json": 5,
     ".md": 10,
     ".mjs": 1,
     "[no extension]": 3,
-    ".yml": 12,
+    ".yml": 11,
     ".bat": 2,
     ".js": 166,
     ".rules": 2,
@@ -868,16 +868,10 @@
       "sha256": "a8aba654c8fcdefb719c5151a59cfe1c88700ec3ef71c718a8f2e6b86d209b6d"
     },
     {
-      "path": ".github/workflows/project-opening-e2e-once.yml",
-      "type": ".yml",
-      "size": 6412,
-      "sha256": "e4badbd5c0fd7184a69a079007148fc976e3dc40f24ae59e7c9141bd6664068d"
-    },
-    {
       "path": ".github/workflows/promote-development-to-main.yml",
       "type": ".yml",
-      "size": 867,
-      "sha256": "10181eb279048d237ae845ddb6dc033c1c7233054536a0a0c020d75eb9c8170a"
+      "size": 904,
+      "sha256": "6547948fd339355d29aa6ad1eba5687833d1739582b8a9ad8fa9c2ff2c9b1366"
     },
     {
       "path": ".github/workflows/release-audit.yml",
@@ -894,14 +888,14 @@
     {
       "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 1707,
-      "sha256": "6053871d641cc189dfb4c39cbcd7810e5bc723c88ceac384760667712b1ae5ee"
+      "size": 1781,
+      "sha256": "fcd4e80b41f04028e05490487f881a5458b43a17e48acc77b5fe280876800571"
     },
     {
       "path": ".github/workflows/sync-development-branch.yml",
       "type": ".yml",
-      "size": 4706,
-      "sha256": "01d2a506634dedb6db51b085fcff0fa0fffd026c49aca576318ff542c0232563"
+      "size": 4780,
+      "sha256": "3b56ad32811d3ab3b1684b04f84afbe575bdbdbd8d3eb996a26aef6c3d3e8610"
     },
     {
       "path": ".github/workflows/the-crucible.yml",
