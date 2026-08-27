@@ -6,6 +6,12 @@ const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 const PINNED_CRUCIBLE_REF = '9d52a29bade03027cb523dd3aa0dd629cecb31a1';
 
+test('AI conflict governance has a mandatory auditable ledger', () => {
+  const ledger = JSON.parse(fs.readFileSync(path.join(root, 'AI-CONFLICTS.json'), 'utf8'));
+  assert.equal(ledger.schemaVersion, 1);
+  assert.ok(Array.isArray(ledger.conflicts));
+});
+
 test('Crucible integration is external, immutable, and least privilege', () => {
   const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'the-crucible.yml'), 'utf8');
   const references = [...workflow.matchAll(/The-Crucible[^\s@]*@([0-9a-f]{40})|core_ref:\s*([0-9a-f]{40})/g)]
