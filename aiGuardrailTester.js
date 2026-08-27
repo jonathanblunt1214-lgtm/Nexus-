@@ -5,9 +5,10 @@
 // guardrail scripts, it says so instead of reporting a score.
 //
 // Runs each script via `npm run <name>` through execFile with an argv array
-// (no shell), the same safe pattern used for git-commit/run-tests-detailed
-// in main.js - a script name read from package.json is still untrusted
-// input as far as the process boundary is concerned.
+// (no shell). On Windows, npm is exposed through a .cmd shim, which cannot
+// be executed reliably by execFile on current Node releases. Invoke npm's
+// JavaScript CLI with the current Node executable instead so script names
+// remain argv data rather than shell input.
 
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +17,12 @@ const { execFile } = require('child_process');
 const RUNS_FILENAME = '.nexus-ai-guardrail-runs.json';
 const MAX_RUNS = 200;
 const GUARDRAIL_SCRIPT_PATTERN = /guardrail|contract|safety|compliance|constitution/i;
-const NPM_BIN = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+function npmInvocation() {
+  if (process.platform !== 'win32') return { file: 'npm', prefixArgs: [] };
+  const npmCli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  return { file: process.execPath, prefixArgs: [npmCli] };
+}
 
 function findGuardrailScripts(projectPath) {
   const pkgPath = path.join(projectPath, 'package.json');
@@ -32,7 +38,8 @@ function findGuardrailScripts(projectPath) {
 function runNpmScript(projectPath, scriptName) {
   return new Promise((resolve) => {
     const start = Date.now();
-    execFile(NPM_BIN, ['run', scriptName], { cwd: projectPath, timeout: 120_000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const { file, prefixArgs } = npmInvocation();
+    execFile(file, [...prefixArgs, 'run', scriptName], { cwd: projectPath, timeout: 120_000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
       resolve({
         script: scriptName,
         passed: !error,
