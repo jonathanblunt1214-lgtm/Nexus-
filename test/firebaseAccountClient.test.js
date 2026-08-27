@@ -42,13 +42,18 @@ test('GitHub and Google credentials can sign in or link to one Firebase-backed N
 test('GitHub Google and email are presented as methods for one Nexus account profile', () => {
   const html = require('fs').readFileSync(require.resolve('../index.html'), 'utf8');
   const renderer = require('fs').readFileSync(require.resolve('../renderer'), 'utf8');
+  const main = require('fs').readFileSync(require.resolve('../main'), 'utf8');
   assert.match(html, /id="connected-services-title">Nexus Account</);
   assert.match(html, /GitHub, Google, and email are sign-in methods for the same Nexus account and profile/);
   assert.doesNotMatch(html, />Nexus Email Account</);
-  assert.match(html, /id="nexus-profile-email"[^>]*readonly/);
-  assert.match(renderer, /profileEmail\.value = result\.nexusEmail \|\| ''/);
   assert.match(renderer, /sign-in methods:/);
   assert.match(html, /id="google-service-btn"[^>]*onclick="toggleGoogleConnection\(\)"/);
+  assert.match(html, /id="nexus-profile-email"[^>]*autocomplete="email"/);
+  assert.doesNotMatch(html.match(/<input[^>]*id="nexus-profile-email"[^>]*>/)?.[0] || '', /readonly/);
+  assert.match(renderer, /applyNexusProfileEmail\(result\.authenticatedEmail, profile\.email/);
+  assert.match(renderer, /input\.readOnly = locked/);
+  assert.match(main, /authenticatedEmail.*firebaseRefreshToken/);
+  assert.match(main, /if \(authenticatedEmail\) profile\.email = authenticatedEmail/);
   assert.match(html, /id="wordpress-service-btn"[^>]*onclick="toggleWordPressConnection\(\)"/);
   assert.doesNotMatch(html, /onclick="disconnectGoogleOAuth\(\)"/);
   assert.doesNotMatch(html, /onclick="disconnectWordPressOAuth\(\)"/);

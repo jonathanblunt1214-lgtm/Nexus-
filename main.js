@@ -3910,13 +3910,24 @@ const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([
 
 function sanitizeUserProfile(value = {}) {
   const clean = (item, max) => String(item || '').trim().slice(0, max);
-  return { displayName:clean(value.displayName, 80), handle:clean(value.handle, 40).replace(/[^A-Za-z0-9._-]/g, ''), role:clean(value.role, 80), bio:clean(value.bio, 300) };
+  const email = clean(value.email, 254).toLowerCase();
+  return { displayName:clean(value.displayName, 80), handle:clean(value.handle, 40).replace(/[^A-Za-z0-9._-]/g, ''), role:clean(value.role, 80), bio:clean(value.bio, 300), email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '' };
 }
 
-ipcMain.handle('account-profile:get', () => ({ ok:true, profile:sanitizeUserProfile(loadConfig().nexusUserProfile || {}) }));
+ipcMain.handle('account-profile:get', () => {
+  const cfg = loadConfig();
+  const authenticatedEmail = encryptedConfigValue(cfg, 'firebaseRefreshToken') ? String(cfg.firebaseEmail || '').trim().toLowerCase() : '';
+  return { ok:true, profile:sanitizeUserProfile(cfg.nexusUserProfile || {}), authenticatedEmail:authenticatedEmail || null };
+});
 ipcMain.handle('account-profile:save', async (_event, value = {}) => {
-  if (!encryptedConfigValue(loadConfig(), 'firebaseRefreshToken')) return { ok:false, error:'Sign in to a Nexus account before saving a profile.' };
-  const cfg = loadConfig(); cfg.nexusUserProfile = sanitizeUserProfile(value); await saveConfig(cfg); return { ok:true, profile:cfg.nexusUserProfile };
+  const cfg = loadConfig();
+  const profile = sanitizeUserProfile(value);
+  const suppliedEmail = String(value.email || '').trim();
+  if (suppliedEmail && !profile.email) return { ok:false, error:'Enter a valid account email address.' };
+  const authenticatedEmail = encryptedConfigValue(cfg, 'firebaseRefreshToken') ? String(cfg.firebaseEmail || '').trim().toLowerCase() : '';
+  if (authenticatedEmail) profile.email = authenticatedEmail;
+  cfg.nexusUserProfile = profile; await saveConfig(cfg);
+  return { ok:true, profile, authenticatedEmail:authenticatedEmail || null };
 });
 
 function sanitizeAccountPreferences(value) {
