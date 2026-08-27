@@ -45,7 +45,7 @@ jobs:
           cat > "$FIXTURE/index.html" <<'HTML'
           <!doctype html><html><body><div id="root"></div></body></html>
           HTML
-          cat > "$RUNNER_TEMP/project-opening-e2e.mjs" <<'NODE'
+          cat > .project-opening-e2e.mjs <<'NODE'
           import { _electron as electron } from 'playwright-core';
           import path from 'node:path';
           import process from 'node:process';
@@ -122,7 +122,8 @@ jobs:
             await second.app.close();
           }
           NODE
-          FIXTURE="$FIXTURE" xvfb-run -a node "$RUNNER_TEMP/project-opening-e2e.mjs"
+          trap 'rm -f .project-opening-e2e.mjs' EXIT
+          FIXTURE="$FIXTURE" xvfb-run -a node .project-opening-e2e.mjs
       - name: Verify repository gates relevant to project opening
         run: |
           node scripts/checkSyntax.js
