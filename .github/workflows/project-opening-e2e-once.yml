@@ -69,7 +69,7 @@ jobs:
 
           const first = await launch();
           try {
-            const result = await first.page.evaluate(async (fixturePath) => {
+            const metadataResult = await first.page.evaluate(async (fixturePath) => {
               const name = document.getElementById('project-name');
               const folder = document.getElementById('project-path');
               const command = document.getElementById('project-command');
@@ -91,18 +91,26 @@ jobs:
                 throw new Error(`React type detection failed: ${JSON.stringify(metadata)}`);
               }
               if (!appRadio?.checked) throw new Error('React project type was not selected in the form');
+              return { metadata, portCap: '12345' };
+            }, fixture);
 
-              await addProject({ preventDefault() {} });
+            await first.page.getByRole('button', { name: 'Save Project' }).click();
+            await first.page.waitForFunction((fixturePath) => {
+              const saved = JSON.parse(localStorage.getItem('nexus_projects') || '[]');
+              return saved.some((entry) => entry.folder === fixturePath);
+            }, fixture, { timeout: 15000 });
+
+            const result = await first.page.evaluate((fixturePath) => {
               const saved = JSON.parse(localStorage.getItem('nexus_projects') || '[]');
               const project = saved.find((entry) => entry.folder === fixturePath);
-              if (!project) throw new Error('Project was not saved after Add Project flow');
+              if (!project) throw new Error('Project was not saved after clicking Save Project');
               if (project.templateId !== 'app') throw new Error(`Saved project type is ${project.templateId || 'missing'}, expected app`);
               if (!document.getElementById('project-list')?.innerText.includes('React Fixture Project')) {
                 throw new Error('Saved project is not rendered in the project list');
               }
-              return { project, metadata, portCap: '12345' };
+              return { project };
             }, fixture);
-            console.log('FIRST-LAUNCH-PASS', JSON.stringify(result));
+            console.log('FIRST-LAUNCH-PASS', JSON.stringify({ ...metadataResult, ...result }));
           } finally {
             await first.app.close();
           }
