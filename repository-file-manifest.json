@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 207,
+  "fileCount": 208,
   "types": {
     ".json": 5,
     ".md": 10,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 163,
+    ".js": 164,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -518,6 +518,16 @@
       "source": "test/agentOrchestrator.test.js",
       "reference": "../agentOrchestrator",
       "resolved": "agentOrchestrator.js"
+    },
+    {
+      "source": "test/aiGuardrailCompliance.test.js",
+      "reference": "../aiGuardrailTester",
+      "resolved": "aiGuardrailTester.js"
+    },
+    {
+      "source": "test/aiGuardrailCompliance.test.js",
+      "reference": "../complianceMonitor",
+      "resolved": "complianceMonitor.js"
     },
     {
       "source": "test/buildNumber.test.js",
@@ -1644,6 +1654,12 @@
       "type": ".js",
       "size": 1938,
       "sha256": "85ce470db5190e641b0d156daa740db6724b8e9a0055fff320428b49cbe913a1"
+    },
+    {
+      "path": "test/aiGuardrailCompliance.test.js",
+      "type": ".js",
+      "size": 6528,
+      "sha256": "3528e70e17dbf7782bca96fb0cec283361d0486ff289f9a722fb3c2cbfef0391"
     },
     {
       "path": "test/branchAuthority.test.js",
