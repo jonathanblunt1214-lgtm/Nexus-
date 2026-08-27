@@ -813,8 +813,8 @@
     {
       "path": ".github/workflows/auto-merge-development-branch.yml",
       "type": ".yml",
-      "size": 617,
-      "sha256": "c527d4a6e04fa3ae45a363b3035ca7b3b9a7b8d51096d98c6a48c4c84e0a4e71"
+      "size": 1816,
+      "sha256": "cf7f9731af55e7bd206006ac25cad2144cd34add4a91369bc07011334121d8be"
     },
     {
       "path": ".github/workflows/branch-integrity.yml",

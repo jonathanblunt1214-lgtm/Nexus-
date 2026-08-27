@@ -2,22 +2,43 @@ name: Auto-merge into Development-branch
 
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, closed]
     branches:
       - Development-branch
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   enable-auto-merge:
     name: Enable auto-merge (merge commit)
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event.action != 'closed' && github.event.pull_request.draft == false
     steps:
       - name: Enable auto-merge for this PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr merge --auto --merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+
+  trigger-post-merge-checks:
+    name: Re-trigger push-gated checks after merge
+    runs-on: ubuntu-latest
+    # A merge performed by this workflow's own GITHUB_TOKEN push never fires
+    # other on: push workflows (GitHub's built-in loop-prevention silently
+    # skips them), so the-crucible.yml and release-audit.yml never ran on any
+    # commit this automation produced. pull_request_target's own closed event
+    # is a distinct, GitHub-native signal (not a token-caused push), so it
+    # isn't subject to that suppression - and workflow_dispatch is exempt
+    # from it regardless of which token calls it, so an explicit dispatch
+    # here reliably reaches the commit this merge just produced.
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    steps:
+      - name: Dispatch The Crucible and Full Release Audit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run the-crucible.yml --repo "${{ github.repository }}" --ref Development-branch
+          gh workflow run release-audit.yml --repo "${{ github.repository }}" --ref Development-branch
