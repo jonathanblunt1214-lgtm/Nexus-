@@ -902,8 +902,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 2448,
-      "sha256": "81c02d9a4122c592d85b750bf52ec494c65a8ea8dc4b2a31887d0545306c83c3"
+      "size": 2888,
+      "sha256": "78494acd211eff428ee0b0ed4af41bbd832a937e19fb3b322e598784e1c9186f"
     },
     {
       "path": "AGENTS.md",
