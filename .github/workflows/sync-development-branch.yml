@@ -20,6 +20,7 @@ jobs:
       - name: Check out confirmed main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
       - name: Prepare an automatic Nexus update at the synchronization threshold
@@ -84,6 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
       - name: Fast-forward development only after the update is published
