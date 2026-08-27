@@ -861,8 +861,8 @@
     {
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
-      "size": 1623,
-      "sha256": "0e911759a1cd7ce499c735e3693a70fc393d4e4e768d863aae04902623563275"
+      "size": 1401,
+      "sha256": "98897fda35215e3024abb0e8e7a4d12a92fab6f68ae1552940a83458cffe7be0"
     },
     {
       "path": ".gitignore",
