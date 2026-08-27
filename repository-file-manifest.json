@@ -1546,7 +1546,7 @@
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
       "size": 10189,
-      "sha256": "1f58d2107fd4108165b78f2aa61d8690f9ce67b57f7736e8af02cb6416623562"
+      "sha256": "59956df3959944bb344fb7c7feed5afa676231cf608865b3e4bb6766378cf47a"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
