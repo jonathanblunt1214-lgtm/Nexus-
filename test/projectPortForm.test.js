@@ -10,7 +10,7 @@ test('project form supports early auto-fill and validated manual port entry', ()
   const renderer = fs.readFileSync(path.join(root, 'renderer.js'), 'utf8');
   const preload = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
   const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
-  assert.match(html, /id="project-path"[^>]*onblur="detectAndFillProjectPort\(\)"/);
+  assert.match(html, /id="project-path"[^>]*onblur="detectAndFillProjectMetadata\(\)"/);
   assert.match(html, /type="number" id="project-port" min="1" max="65535"/);
   assert.match(renderer, /async function detectAndFillProjectPort/);
   assert.match(renderer, /You can change it before saving/);
