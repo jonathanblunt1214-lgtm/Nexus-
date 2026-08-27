@@ -1111,7 +1111,7 @@
             <input type="text" id="project-name" placeholder="Display name (e.g. my-web-app)">
           </div>
           <div class="form-row">
-            <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it" onblur="detectAndFillProjectPort()">
+            <input type="text" id="project-path" placeholder="Real folder path, or paste a GitHub URL to clone it" onblur="detectAndFillProjectMetadata()">
             <button class="btn btn-secondary" onclick="browseFolder()">Browse…</button>
             <button class="btn btn-secondary" onclick="showGitHubRepositoryPicker()">Choose from GitHub</button>
           </div>
@@ -1119,7 +1119,7 @@
           <div class="muted small" id="clone-progress" style="min-height:16px;"></div>
           <div class="form-row">
             <input type="text" id="project-command" placeholder="Start command" value="npm run dev">
-            <input type="number" id="project-port" min="1" max="65535" step="1" inputmode="numeric" aria-label="Project port" placeholder="Port (auto)" title="Enter a port from 1 to 65535, or leave blank to auto-detect" style="max-width:160px; min-width:130px;">
+            <input type="number" id="project-port" min="1" max="65535" step="1" inputmode="numeric" maxlength="5" oninput="if (this.value.length > 5) this.value = this.value.slice(0, 5)" aria-label="Project port" placeholder="Port (auto)" title="Enter a port from 1 to 65535, or leave blank to auto-detect" style="max-width:160px; min-width:130px;">
             <button class="btn" onclick="addProject(event)">Save Project</button>
             <button class="btn btn-secondary" onclick="cancelEdit()" title="Clear the form / cancel editing">✕</button>
           </div>
@@ -1470,7 +1470,7 @@ Type "help" for tips.
       <div class="card" aria-labelledby="connected-services-title">
         <label class="label" id="nexus-profile-title">Nexus Account</label>
         <p class="muted small" style="margin-top:6px;">Your profile and preferences save locally immediately and are included in your passphrase-encrypted account vault when you sync.</p>
-        <div class="form-row" style="margin-top:8px;"><input id="nexus-profile-display-name" maxlength="80" placeholder="Display name"><input id="nexus-profile-handle" maxlength="40" placeholder="Handle"><input id="nexus-profile-role" maxlength="80" placeholder="Role or specialty"><input type="email" id="nexus-profile-email" placeholder="Account email" readonly aria-label="Nexus profile email"></div>
+        <div class="form-row" style="margin-top:8px;"><input id="nexus-profile-display-name" maxlength="80" placeholder="Display name"><input id="nexus-profile-handle" maxlength="40" placeholder="Handle"><input id="nexus-profile-role" maxlength="80" placeholder="Role or specialty"><input type="email" id="nexus-profile-email" maxlength="254" autocomplete="email" placeholder="Account email" aria-label="Nexus profile email"></div>
         <div class="form-row" style="margin-top:8px;"><input id="nexus-profile-bio" maxlength="300" placeholder="Short profile description" style="min-width:280px; flex:1"><button class="btn" onclick="saveNexusProfile()">Save profile</button></div>
         <div class="form-row" style="margin-top:8px;"><label class="small">Interface density <select id="nexus-preference-density" onchange="saveNexusPreferences()"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label><label class="small">Editor size <input type="number" id="nexus-preference-font-size" min="11" max="24" value="13" onchange="saveNexusPreferences()" style="width:70px"></label><label class="small">Tab size <select id="nexus-preference-tab-size" onchange="saveNexusPreferences()"><option value="2">2 spaces</option><option value="4">4 spaces</option></select></label><label class="small"><input type="checkbox" id="nexus-preference-word-wrap" onchange="saveNexusPreferences()"> Word wrap</label><label class="small"><input type="checkbox" id="nexus-preference-format-save" onchange="saveNexusPreferences()"> Format on save</label><label class="small"><input type="checkbox" id="nexus-preference-reduced-motion" onchange="saveNexusPreferences()"> Reduced motion</label></div>
         <p id="nexus-profile-status" class="muted small" style="margin-top:8px;">Sign in to save a synced profile.</p>

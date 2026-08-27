@@ -1,5 +1,14 @@
 # Standing preferences
 
+## Non-negotiable branch authority
+
+- Read and follow `AGENTS.md` before any repository action.
+- Do all ordinary work directly on literal `Development-branch`.
+- Do not create or update `claude/*` or any other auxiliary branch without the repository owner's explicit authorization for that exact branch in the current conversation.
+- Do not push or merge directly to `main` without an explicit instruction for that exact operation. Prior permission is not reusable.
+- Never change or bypass the `AI branch scope - development only` ruleset. Shared owner credentials do not grant an AI owner authority.
+
+- Always work in order of criticality: when a request has multiple parts (or a follow-up adds one), do the highest-stakes/most-blocking item first, then move down the list — don't default to request order or convenience order.
 - Once something (a PR, an event, a completed task) is more than an hour old, don't bring it up in status updates or summaries unless explicitly asked about it.
 - Always be thinking one step ahead: while working a task, keep identifying and preparing the next logical course of action rather than stopping to ask "what now" once the current task finishes.
 - Actually verify things are working, proactively, without being asked — a merge, a push, or a green check isn't confirmation on its own; check the real outcome (does the check that's supposed to run actually run, does the fix actually take effect) before reporting something done.
@@ -7,4 +16,4 @@
 
 # Known gotchas
 
-- When merging `main` into `Development-branch` to restore ancestry (required by `.github/workflows/branch-integrity.yml`'s `git merge-base --is-ancestor` check), that merge must be a real two-parent merge commit, not a squash — the repo's auto-merge automation squashes every PR into `Development-branch` by default, which silently discards the second parent and leaves ancestry broken despite the PR appearing to merge cleanly. Disable auto-merge on that one PR and merge it manually with `merge_method: "merge"`, and pass an explicit short `commit_title` (<=72 chars) — GitHub's default merge-commit title ("Merge pull request #N from owner/branch") routinely exceeds 72 characters and fails The Crucible's own commit-subject precheck gate on that exact commit otherwise.
+- When `main` must be merged into `Development-branch` to restore ancestry, work directly in the existing `Development-branch` checkout and create a real two-parent merge commit there after synchronizing both refs. Never create a temporary synchronization branch or PR for this. Verify the combined tree, then push only `Development-branch`. If repository protections make that impossible, stop and obtain an explicit owner decision; do not route around the branch boundary.

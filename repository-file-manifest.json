@@ -2,14 +2,15 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 203,
+  "fileCount": 210,
   "types": {
     ".json": 5,
+    ".md": 10,
+    ".mjs": 1,
     "[no extension]": 3,
     ".yml": 11,
-    ".md": 8,
     ".bat": 2,
-    ".js": 162,
+    ".js": 166,
     ".rules": 2,
     ".html": 1,
     ".txt": 5,
@@ -162,6 +163,11 @@
       "source": "main.js",
       "reference": "./projectCloner",
       "resolved": "projectCloner.js"
+    },
+    {
+      "source": "main.js",
+      "reference": "./projectTypeDetector",
+      "resolved": "projectTypeDetector.js"
     },
     {
       "source": "main.js",
@@ -519,6 +525,16 @@
       "resolved": "agentOrchestrator.js"
     },
     {
+      "source": "test/aiGuardrailCompliance.test.js",
+      "reference": "../aiGuardrailTester",
+      "resolved": "aiGuardrailTester.js"
+    },
+    {
+      "source": "test/aiGuardrailCompliance.test.js",
+      "reference": "../complianceMonitor",
+      "resolved": "complianceMonitor.js"
+    },
+    {
       "source": "test/buildNumber.test.js",
       "reference": "../buildNumber",
       "resolved": "buildNumber.js"
@@ -694,6 +710,11 @@
       "resolved": "projectTemplates.js"
     },
     {
+      "source": "test/projectTypeDetector.test.js",
+      "reference": "../projectTypeDetector",
+      "resolved": "projectTypeDetector.js"
+    },
+    {
       "source": "test/providerDiscovery.test.js",
       "reference": "../providerDiscovery",
       "resolved": "providerDiscovery.js"
@@ -793,6 +814,18 @@
       "sha256": "5f7a20ff5defae329177a6eb2e48bab670cf7e42ee83f2150097eb89544bb947"
     },
     {
+      "path": ".claude/skills/run-desktop/SKILL.md",
+      "type": ".md",
+      "size": 4371,
+      "sha256": "c55bc6bfc21620f2b64873e06e535fb024c6808bc6d738633a147eb70fbf536a"
+    },
+    {
+      "path": ".claude/skills/run-desktop/driver.mjs",
+      "type": ".mjs",
+      "size": 4692,
+      "sha256": "9cbd054dd799a3f59572d75bbb1c6d5b5f65d2f2163101f3c7ce5a1741aa3c34"
+    },
+    {
       "path": ".githooks/pre-commit",
       "type": "[no extension]",
       "size": 70,
@@ -837,8 +870,8 @@
     {
       "path": ".github/workflows/promote-development-to-main.yml",
       "type": ".yml",
-      "size": 867,
-      "sha256": "10181eb279048d237ae845ddb6dc033c1c7233054536a0a0c020d75eb9c8170a"
+      "size": 904,
+      "sha256": "6547948fd339355d29aa6ad1eba5687833d1739582b8a9ad8fa9c2ff2c9b1366"
     },
     {
       "path": ".github/workflows/release-audit.yml",
@@ -855,14 +888,14 @@
     {
       "path": ".github/workflows/repository-maintenance.yml",
       "type": ".yml",
-      "size": 1707,
-      "sha256": "6053871d641cc189dfb4c39cbcd7810e5bc723c88ceac384760667712b1ae5ee"
+      "size": 1781,
+      "sha256": "fcd4e80b41f04028e05490487f881a5458b43a17e48acc77b5fe280876800571"
     },
     {
       "path": ".github/workflows/sync-development-branch.yml",
       "type": ".yml",
-      "size": 4706,
-      "sha256": "01d2a506634dedb6db51b085fcff0fa0fffd026c49aca576318ff542c0232563"
+      "size": 4780,
+      "sha256": "3b56ad32811d3ab3b1684b04f84afbe575bdbdbd8d3eb996a26aef6c3d3e8610"
     },
     {
       "path": ".github/workflows/the-crucible.yml",
@@ -879,8 +912,14 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 2448,
-      "sha256": "81c02d9a4122c592d85b750bf52ec494c65a8ea8dc4b2a31887d0545306c83c3"
+      "size": 2888,
+      "sha256": "78494acd211eff428ee0b0ed4af41bbd832a937e19fb3b322e598784e1c9186f"
+    },
+    {
+      "path": "AGENTS.md",
+      "type": ".md",
+      "size": 1821,
+      "sha256": "70281e2fc47b8ab3d2fc426abcc4b9c222262146b3ad0bd571d63b747accc5c1"
     },
     {
       "path": "AI-CONFLICTS.json",
@@ -897,8 +936,8 @@
     {
       "path": "CLAUDE.md",
       "type": ".md",
-      "size": 1725,
-      "sha256": "5f377e7014341c4fd2140214441b6138107f3e054832772aaa000c0c5b47f9e7"
+      "size": 2254,
+      "sha256": "286e5b8d5cf507586c3e7cfc304a2314eb43194a4489201a27b22f3503e6b807"
     },
     {
       "path": "CONSTITUTION.md",
@@ -969,8 +1008,8 @@
     {
       "path": "aiGuardrailTester.js",
       "type": ".js",
-      "size": 3618,
-      "sha256": "a4abffcbef686119f48360c82f37b4755b07335549c0c0239bd874f1a445ced4"
+      "size": 3951,
+      "sha256": "cd060c823c41624a0df6aa710d8026f4c1082c894213c09983f1ec64eec402ea"
     },
     {
       "path": "aiInventory.js",
@@ -1155,8 +1194,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 133855,
-      "sha256": "082164e19408be1ebacca269d2a9993146abf5990b980fa5057f3a1a550a0b56"
+      "size": 133974,
+      "sha256": "e9f37275fd21fe87905867dd7cc2ef0b28fcb7708c0bd8aa6effef8cfa7cef2e"
     },
     {
       "path": "inventoryWorker.js",
@@ -1221,8 +1260,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 218280,
-      "sha256": "198965576e2456992e2bfdf1d4fd7920556e623eed99d4329837f082e1d02550"
+      "size": 219456,
+      "sha256": "f271bc11bf0f6d6f807076d55fd28d3385f12eb06a58eb456ada25c6244a8a42"
     },
     {
       "path": "memoryEngine.js",
@@ -1257,14 +1296,14 @@
     {
       "path": "package-lock.json",
       "type": ".json",
-      "size": 157982,
-      "sha256": "3e0d2359ae16aa58c75ebface7d78eb5b397691d23587e5a91b094a1bc8bb08e"
+      "size": 158463,
+      "sha256": "50ec5f1ca96bf356a81de0453bd00ece92c4526c268f0cb87c2892e941510b5a"
     },
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5499,
-      "sha256": "7d63c59a2c56748f8284403a24c58ede09faba157295153aa986f958e0fb166f"
+      "size": 5565,
+      "sha256": "9a60020f0949d5f2f091ca429a68440625fe5a802f89b985a3825a06556af90d"
     },
     {
       "path": "pipelineEngine.js",
@@ -1323,8 +1362,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28903,
-      "sha256": "64da5a346eb15932955ad43145684ffb093d2f867d2add91b04645c90cf0330b"
+      "size": 28991,
+      "sha256": "48729d8a12a456e3e152845c3863e236fc45efab7a4197b6e647339b9860e6f0"
     },
     {
       "path": "projectCloner.js",
@@ -1375,6 +1414,12 @@
       "sha256": "6f1d82a0c360b833422e1b0e329e6f9e117814340dd6d5cf35179c88ed70f947"
     },
     {
+      "path": "projectTypeDetector.js",
+      "type": ".js",
+      "size": 1826,
+      "sha256": "a9b5c3f1031647858e28c09c3a41ac425c132bf6235c2a091cd4f7418cda9d3f"
+    },
+    {
       "path": "promptTesting.js",
       "type": ".js",
       "size": 2837,
@@ -1413,8 +1458,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 274404,
-      "sha256": "e4b0527c4df3f925d46a011b0da4a4fd8199d057d4e0e0c01411b6e366b6ece2"
+      "size": 276354,
+      "sha256": "b8db6b989cebedb6db8a042212bd7cddb07551c07e4766dbd54920ef12e92309"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1627,6 +1672,18 @@
       "sha256": "85ce470db5190e641b0d156daa740db6724b8e9a0055fff320428b49cbe913a1"
     },
     {
+      "path": "test/aiGuardrailCompliance.test.js",
+      "type": ".js",
+      "size": 6528,
+      "sha256": "3528e70e17dbf7782bca96fb0cec283361d0486ff289f9a722fb3c2cbfef0391"
+    },
+    {
+      "path": "test/branchAuthority.test.js",
+      "type": ".js",
+      "size": 1289,
+      "sha256": "6ff74bd6c3593cae2ddecf1d4ed6215c0bea9d9dc4d6e6ad1534b2d2932a0525"
+    },
+    {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
       "size": 2687,
@@ -1689,8 +1746,8 @@
     {
       "path": "test/firebaseAccountClient.test.js",
       "type": ".js",
-      "size": 6661,
-      "sha256": "5235966490644a626ced274efa6453b3491b0dfb1b7d4e2ad9e9048ec30f77d9"
+      "size": 7080,
+      "sha256": "af9e8c0b9edd8050212cc5fe161bc13dcd3ff1a45b7fee35101d2c33b7c5c3ef"
     },
     {
       "path": "test/gameProjectDetector.test.js",
@@ -1845,14 +1902,20 @@
     {
       "path": "test/projectPortForm.test.js",
       "type": ".js",
-      "size": 1048,
-      "sha256": "f821b362cb24766daf0923feb5ec7f46845f4611bc4268142d720ed3cb8d6967"
+      "size": 1604,
+      "sha256": "9e91a2c87435fec84ae3152fbd8c27b10ef6707652c0186aa0239a4db72a5984"
     },
     {
       "path": "test/projectTemplates.test.js",
       "type": ".js",
       "size": 1245,
       "sha256": "21c94b32e37cffc4049a2d72c2a4ad5b9274a77f92afcf3027613417ac705c93"
+    },
+    {
+      "path": "test/projectTypeDetector.test.js",
+      "type": ".js",
+      "size": 2312,
+      "sha256": "05e889659a8a78b434d9e42bd5d504ea44e6dd54470c6e6a23e8eb6930afe70e"
     },
     {
       "path": "test/providerDiscovery.test.js",
@@ -1923,8 +1986,8 @@
     {
       "path": "test/trainingPipeline.test.js",
       "type": ".js",
-      "size": 5366,
-      "sha256": "18b3121e10b06d0e2167de81dc163a604fd4700c5086ef6eb659a6e87d4936bb"
+      "size": 5372,
+      "sha256": "ce73b909f69931d5ca439c7df94ae244f0a820a37911ecd375fcfbcd108d51f0"
     },
     {
       "path": "test/uiUsability.test.js",

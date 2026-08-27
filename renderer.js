@@ -435,6 +435,26 @@ async function detectAndFillProjectPort(folder = document.getElementById('projec
   return result.detectedPort;
 }
 
+async function detectAndSelectProjectType(folder = document.getElementById('project-path').value.trim()) {
+  if (!folder) return null;
+  const result = await window.nexus.detectProjectType(folder);
+  const templateId = result?.detectedType?.templateId;
+  if (!result?.ok || !['website', 'app', 'api'].includes(templateId)) return null;
+  const radio = document.querySelector(`input[name="new-project-template"][value="${templateId}"]`);
+  if (radio) radio.checked = true;
+  selectProjectTemplate(templateId);
+  return result.detectedType;
+}
+
+async function detectAndFillProjectMetadata(folder = document.getElementById('project-path').value.trim()) {
+  if (!folder) return { detectedPort:null, detectedType:null };
+  const [detectedPort, detectedType] = await Promise.all([
+    detectAndFillProjectPort(folder),
+    detectAndSelectProjectType(folder),
+  ]);
+  return { detectedPort, detectedType };
+}
+
 window.nexus.onProjectCloneLog(({ line }) => {
   const el = document.getElementById('clone-progress');
   if (el) el.innerText = line;
@@ -625,7 +645,17 @@ async function addProject(e) {
   }
   port ||= '3000';
 
-  const project = { id: Date.now(), name, folder, command, port, running: false };
+  const detectedTypeResult = await window.nexus.detectProjectType(folder);
+  const templateId = detectedTypeResult?.ok && ['website', 'app', 'api'].includes(detectedTypeResult.detectedType?.templateId)
+    ? detectedTypeResult.detectedType.templateId
+    : undefined;
+  if (templateId) {
+    const radio = document.querySelector(`input[name="new-project-template"][value="${templateId}"]`);
+    if (radio) radio.checked = true;
+    selectProjectTemplate(templateId);
+  }
+
+  const project = { id: Date.now(), name, folder, command, port, templateId, running: false };
   projects.push(project);
   await classifyGameProject(project, { showGuide: true });
   document.getElementById('project-name').value = '';
@@ -4267,7 +4297,7 @@ async function refreshEmailAccountStatus() {
   if (!result.configured) { panel.innerText = 'Email sign-in needs Firebase configuration. Open Account provider configuration below.'; return; }
   if (!result.signedIn) { panel.innerText = 'Not signed in with email.'; return; }
   panel.innerText = `Email sign-in method: ${result.email || 'signed in'} · ${result.emailVerified ? 'verified and ready to sync' : 'verification required before vault sync'}${result.error ? ` · ${result.error}` : ''}`;
-  const profileEmail = document.getElementById('nexus-profile-email'); if (profileEmail && result.email) profileEmail.value = result.email;
+  if (result.email) applyNexusProfileEmail(result.email);
   if (result.emailVerified) document.getElementById('account-vault-email').checked = true;
 }
 
@@ -4282,7 +4312,7 @@ async function refreshOAuthServices() {
   if (!result.ok) return;
   const providers = (result.linkedProviders || []).map((id) => id === 'password' ? 'Email' : id === 'github.com' ? 'GitHub' : id === 'google.com' ? 'Google' : id).join(', ');
   document.getElementById('oauth-service-status').innerText = `Nexus account: ${result.nexusAccount ? `signed in${providers ? ` · sign-in methods: ${providers}` : ''}` : 'not signed in'} · GitHub: ${result.github ? 'connected' : 'not connected'} · Google: ${result.google ? 'connected' : 'not connected'} · WordPress.com: ${result.wordpress ? `linked${result.wordpressProfile?.displayName ? ` as ${result.wordpressProfile.displayName}` : ''}` : 'not linked'}`;
-  const profileEmail = document.getElementById('nexus-profile-email'); if (profileEmail) profileEmail.value = result.nexusEmail || '';
+  applyNexusProfileEmail(result.nexusAccount ? result.nexusEmail : null);
   googleConnectionActive = Boolean(result.google);
   wordpressConnectionActive = Boolean(result.wordpress);
   const googleButton = document.getElementById('google-service-btn');
@@ -4365,11 +4395,21 @@ function saveNexusPreferences() {
 async function loadNexusProfile() {
   const result = await window.nexus.userProfileGet(); if (!result.ok) return; const profile = result.profile || {};
   for (const [id, key] of [['nexus-profile-display-name','displayName'],['nexus-profile-handle','handle'],['nexus-profile-role','role'],['nexus-profile-bio','bio']]) { const element = document.getElementById(id); if (element) element.value = profile[key] || ''; }
+  applyNexusProfileEmail(result.authenticatedEmail, profile.email || '');
   applyNexusPreferences();
 }
+function applyNexusProfileEmail(authenticatedEmail, localEmail = null) {
+  const input = document.getElementById('nexus-profile-email'); if (!input) return;
+  const locked = Boolean(authenticatedEmail);
+  if (locked) input.value = authenticatedEmail;
+  else if (localEmail !== null) input.value = localEmail;
+  input.readOnly = locked;
+  input.title = locked ? 'This email comes from the signed-in Nexus account.' : 'Enter the email to keep with this local Nexus profile.';
+}
 async function saveNexusProfile() {
-  const profile = { displayName:document.getElementById('nexus-profile-display-name').value, handle:document.getElementById('nexus-profile-handle').value, role:document.getElementById('nexus-profile-role').value, bio:document.getElementById('nexus-profile-bio').value };
+  const profile = { displayName:document.getElementById('nexus-profile-display-name').value, handle:document.getElementById('nexus-profile-handle').value, role:document.getElementById('nexus-profile-role').value, bio:document.getElementById('nexus-profile-bio').value, email:document.getElementById('nexus-profile-email').value };
   const result = await window.nexus.userProfileSave(profile); document.getElementById('nexus-profile-status').innerText = result.ok ? 'Profile saved. Use Sync now to add it to the encrypted account vault.' : result.error;
+  if (result.ok) applyNexusProfileEmail(result.authenticatedEmail, result.profile?.email || '');
   showToast(result.ok ? 'success' : 'error', result.ok ? 'Profile saved' : 'Profile not saved', result.error || 'Your Nexus profile is ready to sync.');
 }
 
