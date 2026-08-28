@@ -155,8 +155,13 @@ bootstrap = bootstrap.replace(/\n    \/\/ Ask Gemini remains an internal Nexus s
 bootstrap = bootstrap.replace(/\n\/\/ Permanently retire the user-managed Gemini-key and OpenAI surfaces[\s\S]*?ipcMain\.removeHandler\(channel\);\n/, '\n');
 write('bootstrap.js', bootstrap);
 
-// Replace the runtime-only regression test with a source-clean regression test.
+// Replace stale provider-string coverage and the runtime-only settings test
+// with behavior/source-clean regression checks.
 let testFile = read('test/codingModelProviders.test.js');
+const staleGlmAssertion = '  assert.match(bootstrap, /option\\[value=\\\\"glm\\\\"\\]/);\n';
+if (testFile.includes(staleGlmAssertion)) {
+  testFile = testFile.replace(staleGlmAssertion, "  assert.match(bootstrap, /item\\.id !== 'glm'/);\n");
+}
 const testStart = testFile.indexOf("test('safe provider discovery owns hosted keys and obsolete global settings are absent at runtime'");
 if (testStart < 0) throw new Error('Expected provider/settings regression test was not found.');
 testFile = testFile.slice(0, testStart) + `test('retired Gemini/OpenAI settings are physically absent from application source', () => {\n  const files = ['main.js', 'preload.js', 'renderer.js', 'index.html', 'bootstrap.js'];\n  const contents = Object.fromEntries(files.map((file) => [file, fs.readFileSync(require.resolve('../' + file), 'utf8')]));\n  const retired = /save-gemini-key|has-gemini-key|clear-gemini-key|save-openai-key|has-openai-key|clear-openai-key|openai-ask|Gemini API Key|OpenAI API Key|Ask OpenAI/;\n  for (const [file, content] of Object.entries(contents)) assert.doesNotMatch(content, retired, file);\n  assert.doesNotMatch(contents['index.html'], /Ask Gemini/);\n  assert.match(contents['main.js'], /NEXUS_GEMINI_API_KEY/);\n  assert.match(contents['main.js'], /gemini-ask/);\n  assert.match(contents['preload.js'], /geminiAsk/);\n});\n`;
