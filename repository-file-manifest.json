@@ -1827,8 +1827,8 @@
     {
       "path": "test/branchSyncWorkflow.test.js",
       "type": ".js",
-      "size": 2908,
-      "sha256": "14bdfde257bb8dabce4ac8e0ab4fc05c5599c2f8c6955daea63395a9fa1cae50"
+      "size": 3497,
+      "sha256": "a8893462aa379aeee1a48847acd03eee2da55e94e99cf341457fe2e9330aeb05"
     },
     {
       "path": "test/buildNumber.test.js",
