@@ -1,0 +1,48 @@
+name: Finalize retired AI cleanup
+
+on:
+  push:
+    branches: [Development-branch]
+    paths:
+      - scripts/finalizeRetiredAiCleanup.js
+      - .github/workflows/finalize-retired-ai-cleanup.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nexus-finalize-retired-ai-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: Development-branch
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Finalize source cleanup
+        run: node scripts/finalizeRetiredAiCleanup.js
+      - name: Remove one-time cleanup machinery
+        run: rm scripts/finalizeRetiredAiCleanup.js .github/workflows/finalize-retired-ai-cleanup.yml
+      - name: Refresh inventory
+        run: node scripts/verifyRepositoryInventory.js --write
+      - name: Verify affected tests
+        run: node --test test/codingModelProviders.test.js test/providerDiscovery.test.js
+      - name: Commit final cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add main.js providerDiscovery.js test/providerDiscovery.test.js repository-file-manifest.json scripts/finalizeRetiredAiCleanup.js .github/workflows/finalize-retired-ai-cleanup.yml
+          git diff --cached --check
+          git commit -m "Finish removing retired AI key integrations"
+          git push origin HEAD:Development-branch
