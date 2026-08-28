@@ -2,9 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { PUBLIC_LAUNCH_VERSION, nextBuildNumber, approveNextBuild, normalizeBuildState } = require('../buildNumber');
+const { PUBLIC_LAUNCH_VERSION, nextBuildNumber, approveNextBuild, advanceBuildForCommit, normalizeBuildState } = require('../buildNumber');
 
-test('the next user-approved build is 0.0.03 and remains one higher afterward', () => {
+test('the first automatic build is 0.0.03 and 1.0.0 remains reserved for public launch', () => {
   assert.equal(nextBuildNumber(null), '0.0.03');
   assert.equal(nextBuildNumber('0.0.03'), '0.0.04');
   assert.equal(nextBuildNumber('0.0.9'), '0.0.10');
@@ -14,16 +14,32 @@ test('the next user-approved build is 0.0.03 and remains one higher afterward', 
   assert.notEqual(nextBuildNumber('0.0.999'), PUBLIC_LAUNCH_VERSION);
 });
 
-test('a build number cannot be assigned without explicit approval', () => {
-  assert.throws(() => approveNextBuild(null, { approved:false }), /Explicit user approval/);
-  assert.throws(() => approveNextBuild(null), /Explicit user approval/);
+test('a new source commit receives a build automatically', () => {
+  const state = advanceBuildForCommit(null, { commitHash:'abc1234', assignedAt:'2026-08-22T12:00:00.000Z' });
+  assert.equal(state.current, '0.0.03');
+  assert.deepEqual(state.history[0], {
+    number:'0.0.03',
+    approvedAt:'2026-08-22T12:00:00.000Z',
+    assignedAt:'2026-08-22T12:00:00.000Z',
+    commitHash:'abc1234',
+  });
 });
 
-test('approval records the build, timestamp, and source commit in bounded history', () => {
-  const state = approveNextBuild(null, { approved:true, commitHash:'abc1234', approvedAt:'2026-08-22T12:00:00.000Z' });
+test('retries and repeated launches do not increment the same source commit', () => {
+  const first = advanceBuildForCommit(null, { commitHash:'abc1234', assignedAt:'2026-08-22T12:00:00.000Z' });
+  const retry = advanceBuildForCommit(first, { commitHash:'abc1234', assignedAt:'2026-08-22T12:05:00.000Z' });
+  assert.deepEqual(retry, first);
+  const nextCommit = advanceBuildForCommit(retry, { commitHash:'def5678', assignedAt:'2026-08-22T12:10:00.000Z' });
+  assert.equal(nextCommit.current, '0.0.04');
+  assert.equal(nextCommit.history.at(-1).commitHash, 'def5678');
+});
+
+test('legacy approval caller remains compatible but no longer requires manual approval', () => {
+  const state = approveNextBuild(null, { commitHash:'abc1234', approvedAt:'2026-08-22T12:00:00.000Z' });
   assert.equal(state.current, '0.0.03');
-  assert.deepEqual(state.history[0], { number:'0.0.03', approvedAt:'2026-08-22T12:00:00.000Z', commitHash:'abc1234' });
-  assert.equal(normalizeBuildState(state).current, '0.0.03');
+  const retry = approveNextBuild(state, { commitHash:'abc1234', approvedAt:'2026-08-22T12:01:00.000Z' });
+  assert.equal(retry.current, '0.0.03');
+  assert.equal(retry.history.length, 1);
 });
 
 test('legacy zero-padded build numbers are migrated without going backwards', () => {
@@ -36,14 +52,14 @@ test('legacy zero-padded build numbers are migrated without going backwards', ()
   assert.equal(nextBuildNumber(state.current), '0.0.10');
 });
 
-test('Settings presents a preview and uses a narrow approval bridge', () => {
+test('Settings removes manual approval and bootstrap assigns once per source commit', () => {
   const root = path.resolve(__dirname, '..');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const preload = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
-  const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+  const bootstrap = fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8');
   assert.match(html, /id="approved-build-next"/);
-  assert.match(html, /Approve next build number/);
-  assert.match(preload, /build-number:approve/);
-  assert.match(main, /value\.approved !== true/);
-  assert.match(main, /approveNextBuild/);
+  assert.match(bootstrap, /approve-build-number-btn/);
+  assert.match(bootstrap, /\.remove\(\)/);
+  assert.match(bootstrap, /autoAssignBuild/);
+  assert.match(bootstrap, /assigned automatically once per new Nexus source commit/);
+  assert.match(bootstrap, /1\.0\.0 remains reserved for public launch/);
 });
