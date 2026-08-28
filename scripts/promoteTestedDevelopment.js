@@ -7,6 +7,14 @@ const token = process.env.GH_TOKEN;
 const required = ['The Crucible', 'dependency-and-release-audit', 'windows-package-smoke', ...['ubuntu-latest','windows-latest','macos-latest'].flatMap(os => [20,22,24].map(node => `Tests ${os} / Node ${node}`))];
 
 function git(args, options = {}) { const result = execFileSync('git', args, { cwd:root, encoding:'utf8', stdio:options.inherit ? 'inherit' : undefined }); return typeof result === 'string' ? result.trim() : ''; }
+// actions/checkout runs with persist-credentials: false, so no credential helper
+// survives into this script. Authenticate pushes the same way actions/checkout
+// itself does (a Basic auth extraheader), scoped to this one invocation via -c
+// rather than written into any persistent git config.
+function pushAuthenticated(refspec, options = {}) {
+  const header = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`;
+  return git(['-c', `http.https://github.com/.extraheader=${header}`, 'push', 'origin', refspec], options);
+}
 async function api(endpoint, options = {}) {
   const response = await fetch(`https://api.github.com/repos/${repository}${endpoint}`, { ...options, headers:{ Authorization:`Bearer ${token}`, Accept:'application/vnd.github+json', 'User-Agent':'Nexus-Promotion-Retry', 'X-GitHub-Api-Version':'2022-11-28', ...(options.headers || {}) } });
   if (!response.ok) throw new Error(`GitHub API ${response.status}: ${await response.text()}`);
@@ -46,7 +54,7 @@ async function main() {
       git(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
       git(['add', '-A']);
       git(['commit', '-m', 'Apply deterministic promotion repairs']);
-      git(['push', 'origin', 'HEAD:Development-branch'], { inherit:true });
+      pushAuthenticated('HEAD:Development-branch', { inherit:true });
       developmentSha = git(['rev-parse', 'HEAD']);
     }
     await Promise.all([dispatch('the-crucible.yml'), dispatch('release-audit.yml')]);
@@ -54,7 +62,7 @@ async function main() {
   }
   const currentDevelopment = git(['ls-remote', 'origin', 'refs/heads/Development-branch']).split(/\s/)[0];
   if (currentDevelopment !== developmentSha) throw new Error('Development-branch moved during retry. No rejection or overwrite occurred; run promotion again for the newer commit.');
-  git(['push', 'origin', `${developmentSha}:refs/heads/main`], { inherit:true });
+  pushAuthenticated(`${developmentSha}:refs/heads/main`, { inherit:true });
   console.log(`Promoted repaired and validated development commit ${developmentSha}.`);
 }
 

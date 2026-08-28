@@ -1558,8 +1558,8 @@
     {
       "path": "scripts/promoteTestedDevelopment.js",
       "type": ".js",
-      "size": 4112,
-      "sha256": "e1702bee56bb6dd568c4be2cab288e72976ba2031fafcf275f5eb78308c53d34"
+      "size": 4661,
+      "sha256": "9c2a28ceec22d2fed65cc308a3c32bf14d71b023661fef5593f3e454e44dcd2e"
     },
     {
       "path": "scripts/releaseAudit.js",
@@ -1738,8 +1738,8 @@
     {
       "path": "test/branchPromotionProtocol.test.js",
       "type": ".js",
-      "size": 2897,
-      "sha256": "719fed0075279cc7f4cff07e523340e0a6f185a82b989321619327cfaa85cadb"
+      "size": 3624,
+      "sha256": "f536d5c8a154358fb44ed9daddea32e6ef5043b0e765e36b475f662dce6f5638"
     },
     {
       "path": "test/branchSyncWorkflow.test.js",
