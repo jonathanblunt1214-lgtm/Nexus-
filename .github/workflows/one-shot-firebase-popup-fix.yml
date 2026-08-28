@@ -36,20 +36,14 @@ jobs:
           const fs = require('fs');
           const file = 'main.js';
           const source = fs.readFileSync(file, 'utf8');
-          const guard = /if \(contents\.getType\(\) === 'window'\) \{\r?\n\s*contents\.on\('will-navigate', \(event, url\) => \{\r?\n\s*if \(url !== pathToFileURL\(path\.join\(__dirname, 'index\.html'\)\)\.href\) event\.preventDefault\(\);\r?\n\s*\}\);\r?\n\s*\}/;
-          const replacement = `if (contents.getType() === 'window') {
-              contents.on('will-navigate', (event, url) => {
-                const nexusAppUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
-                if (url === nexusAppUrl || isAllowedPopupUrl(url)) return;
-                event.preventDefault();
-              });
-            }`;
-          const matches = source.match(new RegExp(guard.source, 'g')) || [];
-          if (matches.length !== 1) {
-            console.error(`Expected exactly one popup navigation guard, found ${matches.length}; refusing an ambiguous repair.`);
+          const before = "if (url !== pathToFileURL(path.join(__dirname, 'index.html')).href) event.preventDefault();";
+          const after = "const nexusAppUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;\n        if (url === nexusAppUrl || isAllowedPopupUrl(url)) return;\n        event.preventDefault();";
+          const count = source.split(before).length - 1;
+          if (count !== 1) {
+            console.error(`Expected exactly one popup navigation guard statement, found ${count}; refusing an ambiguous repair.`);
             process.exit(1);
           }
-          fs.writeFileSync(file, source.replace(guard, replacement));
+          fs.writeFileSync(file, source.replace(before, after));
           NODE
           rm .github/workflows/one-shot-firebase-popup-fix.yml
           node scripts/selfRepairCommit.js --apply --no-report
