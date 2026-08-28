@@ -16,7 +16,14 @@
   },
   "artifacts": ["package.json", "repository-file-manifest.json"],
   "clutter": {
-    "allow": [],
+    "allow": [
+      { "path": "governingDocuments/native/AGENTS.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/AI-CONFLICTS.json", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/AI-HANDOFF.json", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/CLAUDE.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/CONSTITUTION.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/DEVLOG.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" }
+    ],
     "allowDuplicateContent": false
   },
   "privacy": {
