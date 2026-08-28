@@ -8,7 +8,7 @@ test('detects only allowlisted environment key names and never returns values', 
   assert.deepEqual(results, [{ env:'DEEPSEEK_API_KEY', provider:'deepseek', name:'DeepSeek' }]);
   assert.doesNotMatch(JSON.stringify(results), /super-secret|not-allowed/);
   assert.ok(ENVIRONMENT_KEYS.every((item) => /_API_KEY$/.test(item.env)));
-  assert.doesNotMatch(JSON.stringify(ENVIRONMENT_KEYS), /ZAI|ZHIPU|z\.ai|GLM/i);
+  assert.doesNotMatch(JSON.stringify(ENVIRONMENT_KEYS), /ZAI|ZHIPU|z\.ai|GLM|OPENAI|GEMINI/i);
 });
 
 test('provider discovery is localhost-only and imports require explicit renderer confirmation', () => {

@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 233,
+  "fileCount": 231,
   "types": {
     ".json": 11,
     ".md": 19,
     ".cjs": 1,
     "[no extension]": 3,
-    ".yml": 12,
+    ".yml": 11,
     ".bat": 2,
-    ".js": 172,
+    ".js": 171,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -883,12 +883,6 @@
       "sha256": "a8aba654c8fcdefb719c5151a59cfe1c88700ec3ef71c718a8f2e6b86d209b6d"
     },
     {
-      "path": ".github/workflows/finalize-retired-ai-cleanup.yml",
-      "type": ".yml",
-      "size": 1803,
-      "sha256": "fcc8a3c1ad561bb638a2d84ce8b2afc817a93ee2b447ead0d531f322bda2df9f"
-    },
-    {
       "path": ".github/workflows/promote-development-to-main.yml",
       "type": ".yml",
       "size": 904,
@@ -1395,8 +1389,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 216822,
-      "sha256": "667f40738e243e564309bb4fb53db6d024e84bac62abe6380cc40bdc173e824f"
+      "size": 216662,
+      "sha256": "013ca587250b8f5eac34473fef0c5f00f7c767e244b5320c1886b7cc2d05c514"
     },
     {
       "path": "memoryEngine.js",
@@ -1563,8 +1557,8 @@
     {
       "path": "providerDiscovery.js",
       "type": ".js",
-      "size": 1588,
-      "sha256": "cd7e2b4983a8680467ec993b51e635ec00f0d47078a0d64dcc39dc61aff40013"
+      "size": 1457,
+      "sha256": "a8ec63c7b1aae06e6604d243672f7bd92d66347231c8798617fdbf173c975feb"
     },
     {
       "path": "publisherConfig.js",
@@ -1619,12 +1613,6 @@
       "type": ".js",
       "size": 1064,
       "sha256": "cc2587f7f05f4036becfd68fcb676be19a9a4385588edf0d402e4f54885c7394"
-    },
-    {
-      "path": "scripts/finalizeRetiredAiCleanup.js",
-      "type": ".js",
-      "size": 2826,
-      "sha256": "89420f50faf607755439ef8f95d66663bc3e8ed3a739b7e9183562d6e4348cd9"
     },
     {
       "path": "scripts/heavyWorkloadWorker.js",
@@ -2073,8 +2061,8 @@
     {
       "path": "test/providerDiscovery.test.js",
       "type": ".js",
-      "size": 1406,
-      "sha256": "bf85e6a5a9512cebe288ed99a11694fadedf99ab47b209aef1e383119c30d11f"
+      "size": 1420,
+      "sha256": "684a708317a955e1d5089c5cc8947c2a6ffa783103a444ce20198d172bb42da4"
     },
     {
       "path": "test/repositoryMaintenance.test.js",

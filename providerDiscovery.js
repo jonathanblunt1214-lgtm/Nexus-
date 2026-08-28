@@ -3,8 +3,6 @@ const ENVIRONMENT_KEYS = Object.freeze([
   { env:'MOONSHOT_API_KEY', provider:'kimi', name:'Kimi / Moonshot' },
   { env:'KIMI_API_KEY', provider:'kimi', name:'Kimi / Moonshot' },
   { env:'DEEPSEEK_API_KEY', provider:'deepseek', name:'DeepSeek' },
-  { env:'OPENAI_API_KEY', provider:'openai', name:'OpenAI' },
-  { env:'GEMINI_API_KEY', provider:'gemini', name:'Google Gemini' },
 ]);
 
 function detectedEnvironmentKeys(environment = process.env) {

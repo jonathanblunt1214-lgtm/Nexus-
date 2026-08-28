@@ -940,13 +940,13 @@ const NIM_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const NIM_MODEL = 'qwen/qwen3-coder-next';
 
 // --- Live AI-metrics auto-instrumentation --------------------------------
-// Every real AI call Nexus itself makes (NIM, Gemini) is timed and recorded
+// Every real AI call Nexus itself makes is timed and recorded
 // here automatically, so the AI Tools metrics dashboard has real data
 // without anything having to call aiMetrics.recordMetric() by hand. Falls
 // back to Nexus's own userData folder (the same place nexus-config.json
 // lives) when no project folder is open yet - so calls that happen before a
 // project exists (project generation) or that aren't tied to one project
-// (the general Ask Gemini box, changelog generation) still get recorded
+// (for example, changelog generation) still get recorded
 // instead of silently dropped. Recording is best-effort: a metrics-write
 // failure never affects the actual AI call's result.
 const NEXUS_GLOBAL_METRICS_DIR = app.getPath('userData');
@@ -1055,7 +1055,7 @@ ipcMain.handle('provider-discovery:import-environment', async (_event, { env }) 
   const value = allowed ? process.env[allowed.env] : null;
   if (!allowed || !value) return { ok:false, error:'That environment key is no longer available.' };
   const cfg = loadConfig();
-  const storageKey = allowed.provider === 'nim' ? 'nimKey' : allowed.provider === 'openai' ? 'openaiKey' : allowed.provider === 'gemini' ? 'geminiKey' : `${allowed.provider}ApiKey`;
+  const storageKey = allowed.provider === 'nim' ? 'nimKey' : `${allowed.provider}ApiKey`;
   setEncryptedConfigValue(cfg, storageKey, value); await saveConfig(cfg);
   return { ok:true, provider:allowed.provider, name:allowed.name };
 });
@@ -1199,7 +1199,7 @@ ipcMain.handle('save-constitution', (_event, { folder, content }) => {
   }
 });
 
-// --- Shared Gemini call, used only by the general "Ask Gemini" box now ---
+// --- Nexus-owned Gemini call. The credential is injected by the build. ---
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
 async function callGemini(prompt, meta = {}) {
@@ -3795,7 +3795,7 @@ async function getGoogleAccessToken() {
 
 ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile || null, nexusAccount:Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), nexusEmail:cfg.firebaseEmail || null, linkedProviders:cfg.nexusLinkedProviders || [] }; });
 
-const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiKey', 'glmApiKey', 'deepseekApiKey'];
+const ACCOUNT_VAULT_SECRET_KEYS = ['nimKey', 'kimiApiKey', 'deepseekApiKey'];
 const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([
   'nexus_workspace_col_fraction', 'nexus_workspace_row_fraction',
   'nexus_github_auto_sync_enabled', 'nexus_github_auto_sync_seconds',
