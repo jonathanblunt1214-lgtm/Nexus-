@@ -1191,8 +1191,8 @@
     {
       "path": "firebaseAccountClient.js",
       "type": ".js",
-      "size": 6694,
-      "sha256": "3e97bd9749c0024d4c83fc3818ccaf43a271ca0cf24fbee71db2ff8727912eb5"
+      "size": 6678,
+      "sha256": "1a8b436c2664f13cb92351ea553fe5d9e2c8fdffcb5a4a3e983ff64f820d3e5d"
     },
     {
       "path": "firestore.rules",
