@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "Nexus",
+    "repository": "jonathanblunt1214-lgtm/Nexus-",
+    "branch": "Development-branch"
+  },
+  "purpose": "Non-secret token-health declaration and state used by The Crucible only for authorized Nexus injection/assimilation protection checks.",
+  "scope": {
+    "injectionAssimilationOnly": true,
+    "nonInjectionUseForbidden": true,
+    "disabledWhenNoAuthorizedInjectionIsActive": true,
+    "applicationOrWorkflowMutationAuthorized": false,
+    "credentialValueStorageForbidden": true
+  },
+  "healthContract": {
+    "checks": [
+      "credential-present-at-runtime",
+      "authentication-succeeds",
+      "required-injection-capability-succeeds",
+      "expiration-observed-when-provider-exposes-it",
+      "maximum-token-lifetime-not-greater-than-30-days",
+      "expired-or-expiring-state"
+    ],
+    "persistOnly": [
+      "status",
+      "checkedAt",
+      "present",
+      "authenticated",
+      "capabilityVerified",
+      "expiresAt",
+      "daysRemaining",
+      "expiresSoon",
+      "healthy",
+      "renewalRequired",
+      "reason"
+    ],
+    "neverPersist": [
+      "token",
+      "token-value",
+      "authorization-header",
+      "credential-payload"
+    ]
+  },
+  "lifecycle": {
+    "maximumLifetimeDays": 30,
+    "expiryAction": "Require a fresh injection-only credential cycle for the same authorized Nexus target before further protected injection/assimilation checks.",
+    "renewalDoesNotExpandAuthority": true,
+    "disableAfterInjectionOrAssimilation": true
+  },
+  "currentHealth": {
+    "status": "unverified",
+    "checkedAt": "2026-08-28 11:44:03 EDT",
+    "present": null,
+    "authenticated": null,
+    "capabilityVerified": null,
+    "expiresAt": null,
+    "daysRemaining": null,
+    "expiresSoon": null,
+    "healthy": null,
+    "renewalRequired": null,
+    "reason": "Declaration/state installed during a governingDocuments-only injection. No Nexus runtime credential was supplied to this write, so no token value was read and no health result is fabricated. The next authorized injection/assimilation runtime that supplies the protected credential may update only these non-secret health fields after capability and expiration checks."
+  },
+  "injectionAuthorization": {
+    "scope": "governingDocuments/",
+    "startsAt": "2026-08-28 08:43:34 EDT",
+    "expiresAt": "2026-08-29 08:43:34 EDT"
+  }
+}
