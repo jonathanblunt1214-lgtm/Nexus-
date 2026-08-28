@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 229,
+  "fileCount": 230,
   "types": {
     ".json": 11,
     ".md": 17,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 171,
+    ".js": 172,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -915,8 +915,8 @@
     {
       "path": ".github/workflows/the-crucible.yml",
       "type": ".yml",
-      "size": 7840,
-      "sha256": "a41844852a264b58e72c462c02243bc5f0b6adf8702bfb910ff7ba537721b12f"
+      "size": 6333,
+      "sha256": "5946a29d92cce58be939941ec706ccc3e4828ec7cfe9ce2ca1961aa4937ac2f8"
     },
     {
       "path": ".gitignore",
@@ -1601,6 +1601,12 @@
       "type": ".js",
       "size": 1064,
       "sha256": "cc2587f7f05f4036becfd68fcb676be19a9a4385588edf0d402e4f54885c7394"
+    },
+    {
+      "path": "scripts/githubModelsRepairAgent.js",
+      "type": ".js",
+      "size": 8601,
+      "sha256": "bdfaa0a5590c2982f392b281ba6004b01dcff10a161231f6a48db5e9f6d8dd48"
     },
     {
       "path": "scripts/heavyWorkloadWorker.js",
