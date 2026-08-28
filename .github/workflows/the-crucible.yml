@@ -40,3 +40,108 @@ jobs:
         run: |
           echo "Crucible engine job result: ${{ needs.crucible.result }}"
           test "${{ needs.crucible.result }}" = "success"
+
+  autonomous-repair:
+    name: Autonomous Development repair
+    needs: crucible
+    if: >-
+      ${{ always() && needs.crucible.result == 'failure' &&
+          github.ref == 'refs/heads/Development-branch' &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: write
+    concurrency:
+      group: nexus-crucible-auto-repair-development
+      cancel-in-progress: false
+    steps:
+      - name: Check out exact failed Development revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 8
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Refuse stale or conflicting repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin Development-branch
+          current="$(git rev-parse origin/Development-branch)"
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "Development advanced from $GITHUB_SHA to $current; refusing stale autonomous repair."
+            exit 1
+          fi
+          node - <<'NODE'
+          const fs = require('fs');
+          const conflicts = JSON.parse(fs.readFileSync('AI-CONFLICTS.json', 'utf8'));
+          if (Array.isArray(conflicts.conflicts) && conflicts.conflicts.length > 0) {
+            console.error('AI-CONFLICTS.json is not empty; autonomous repair is blocked.');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Enforce bounded repair attempts
+        id: attempt
+        shell: bash
+        run: |
+          set -euo pipefail
+          attempts=0
+          while IFS= read -r subject; do
+            case "$subject" in
+              "Auto-repair Crucible attempt "*) attempts=$((attempts + 1)) ;;
+              *) break ;;
+            esac
+          done < <(git log --format=%s -n 4)
+          next=$((attempts + 1))
+          if [ "$next" -gt 3 ]; then
+            echo "Autonomous repair limit reached after $attempts consecutive attempts."
+            exit 1
+          fi
+          echo "number=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Apply deterministic Nexus repair
+        run: node scripts/selfRepairCommit.js --apply --no-report
+
+      - name: Verify repaired repository state
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run inventory:verify
+          node scripts/checkSyntax.js
+          node scripts/verifyArchitecture.js
+          node scripts/privacyRetryGate.js
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "Crucible failed but Nexus has no safe deterministic repair to commit. Failing closed."
+            exit 1
+          fi
+
+      - name: Commit repaired Development state
+        shell: bash
+        env:
+          ATTEMPT: ${{ steps.attempt.outputs.number }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Auto-repair Crucible attempt ${ATTEMPT}/3 for ${GITHUB_SHA}"
+          git push origin HEAD:Development-branch
+
+      - name: Dispatch fresh Crucible on repaired Development HEAD
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run the-crucible.yml --repo "$GITHUB_REPOSITORY" --ref Development-branch
