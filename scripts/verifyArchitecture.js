@@ -185,11 +185,11 @@ for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','plugi
 
 const crucibleWorkflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'the-crucible.yml'), 'utf8');
 const crucibleRef = '9d52a29bade03027cb523dd3aa0dd629cecb31a1';
-const topLevelPermissions = /permissions:\s*\n\s*contents: read\s*\n\s*issues: write\s*\n\s*pull-requests: read/.test(crucibleWorkflow);
-const repairJob = crucibleWorkflow.match(/\n  autonomous-repair:\n([\s\S]*)$/)?.[1] || '';
+const topLevelPermissions = /permissions:\s*\r?\n\s*contents: read\s*\r?\n\s*issues: write\s*\r?\n\s*pull-requests: read/.test(crucibleWorkflow);
+const repairJob = crucibleWorkflow.match(/\r?\n  autonomous-repair:\r?\n([\s\S]*)$/)?.[1] || '';
 const repairIsBounded = /needs\.crucible\.result == 'failure'/.test(repairJob) &&
   /github\.ref == 'refs\/heads\/Development-branch'/.test(repairJob) &&
-  /permissions:\s*\n\s*contents: write\s*\n\s*actions: write\s*\n\s*models: read/.test(repairJob) &&
+  /permissions:\s*\r?\n\s*contents: write\s*\r?\n\s*actions: write\s*\r?\n\s*models: read/.test(repairJob) &&
   /git push origin HEAD:Development-branch/.test(repairJob) &&
   !/refs\/heads\/main|git push[^\n]*(--force|-f\b)/.test(repairJob);
 if (!crucibleWorkflow.includes(`The-Crucible/.github/workflows/the-crucible.yml@${crucibleRef}`) ||
