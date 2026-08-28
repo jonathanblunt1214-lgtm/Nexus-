@@ -1827,8 +1827,8 @@
     {
       "path": "test/branchSyncWorkflow.test.js",
       "type": ".js",
-      "size": 3497,
-      "sha256": "a8893462aa379aeee1a48847acd03eee2da55e94e99cf341457fe2e9330aeb05"
+      "size": 3503,
+      "sha256": "78cd9bafcaddd4588b98a7e306dfad3961dcf77339f4ec3321e9fc504c149237"
     },
     {
       "path": "test/buildNumber.test.js",
@@ -1857,8 +1857,8 @@
     {
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
-      "size": 3028,
-      "sha256": "342f44b56625e038967e63c555572d0e869a37e11f828b662cdf897e2f1087e8"
+      "size": 3052,
+      "sha256": "29bfe0a0038639c199991aef3bcd96e1d0daaeb921d637c2ae4a70f9e00a9c2f"
     },
     {
       "path": "test/debugAdapter.test.js",
