@@ -54,7 +54,7 @@ test('ordinary pushes validate without branch movement except bounded failed-Cru
   for (const gate of [integrity, crucible, audit]) assert.match(gate, /push:/);
   for (const gate of [integrity, audit]) assert.doesNotMatch(gate, /git push/);
 
-  const repairJob = crucible.match(/\n  autonomous-repair:\n([\s\S]*)$/)?.[1] || '';
+  const repairJob = crucible.match(/\r?\n  autonomous-repair:\r?\n([\s\S]*)$/)?.[1] || '';
   assert.ok(repairJob, 'Crucible branch writes must be isolated to autonomous-repair');
   assert.match(repairJob, /needs\.crucible\.result == 'failure'/);
   assert.match(repairJob, /github\.ref == 'refs\/heads\/Development-branch'/);
