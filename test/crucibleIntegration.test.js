@@ -18,8 +18,16 @@ test('Crucible integration is external, immutable, and least privilege', () => {
     .map((match) => match[1] || match[2]);
 
   assert.deepEqual(references, [PINNED_CRUCIBLE_REF, PINNED_CRUCIBLE_REF]);
-  assert.match(workflow, /permissions:\s*\n\s*contents: read\s*\n\s*issues: write\s*\n\s*pull-requests: read/);
-  assert.doesNotMatch(workflow, /contents: write|pull-requests: write|secrets:\s*inherit/);
+  assert.match(workflow, /^permissions:\s*\n\s*contents: read\s*\n\s*issues: write\s*\n\s*pull-requests: read/m);
+  assert.doesNotMatch(workflow, /pull-requests: write|secrets:\s*inherit/);
+
+  const repairJob = workflow.match(/\n  autonomous-repair:\n([\s\S]*)$/)?.[1] || '';
+  assert.ok(repairJob, 'autonomous repair job must remain present');
+  assert.match(repairJob, /permissions:\s*\n\s*contents: write\s*\n\s*actions: write\s*\n\s*models: read/);
+  assert.equal((workflow.match(/contents: write/g) || []).length, 1, 'write access must stay isolated to the repair job');
+  assert.match(repairJob, /github\.ref == 'refs\/heads\/Development-branch'/);
+  assert.match(repairJob, /needs\.crucible\.result == 'failure'/);
+
   assert.match(workflow, /name: The Crucible[\s\S]*config_path: \.thecrucible\.json/);
 });
 
