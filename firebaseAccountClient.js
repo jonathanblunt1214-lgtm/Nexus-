@@ -82,7 +82,7 @@ async function saveAccountVault({ apiKey, projectId, uid, idToken, encryptedVaul
   return { updatedAt };
 }
 
-async function loadAccountVault({ apiKey, projectId, uid, idToken, encryptedVault, appCheckToken }) {
+async function loadAccountVault({ apiKey, projectId, uid, idToken, appCheckToken }) {
   requireConfiguration(apiKey, projectId);
   const response = await fetch(firestoreDocumentUrl(projectId, uid), { headers: { Authorization: `Bearer ${idToken}`, ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}) } });
   if (response.status === 404) return null;
