@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 232,
+  "fileCount": 231,
   "types": {
     ".json": 11,
     ".md": 17,
     ".cjs": 1,
     "[no extension]": 3,
-    ".yml": 12,
+    ".yml": 11,
     ".bat": 2,
     ".js": 173,
     ".html": 2,
@@ -883,12 +883,6 @@
       "sha256": "9e412f69b2ce8256b6e315df02555f343617fbf86c1ca2eec9b85b5b1f2afc30"
     },
     {
-      "path": ".github/workflows/one-shot-firebase-popup-fix.yml",
-      "type": ".yml",
-      "size": 2839,
-      "sha256": "ba557f2dd03d2d3317ac2afd540f6fe981b6e4f7fa0ff2af42c9a8f653f2d19f"
-    },
-    {
       "path": ".github/workflows/promote-development-to-main.yml",
       "type": ".yml",
       "size": 904,
@@ -1383,8 +1377,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 216662,
-      "sha256": "013ca587250b8f5eac34473fef0c5f00f7c767e244b5320c1886b7cc2d05c514"
+      "size": 216745,
+      "sha256": "88eca177e404d14bfe5733b04f0d958328c20189b5a9fdcc15863a932149079f"
     },
     {
       "path": "memoryEngine.js",
