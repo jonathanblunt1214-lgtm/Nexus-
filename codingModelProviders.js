@@ -1,7 +1,6 @@
 const PROVIDERS = Object.freeze({
   nim: Object.freeze({ id: 'nim', name: 'NVIDIA NIM · Qwen3 Coder Next', model: 'qwen/qwen3-coder-next', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions' }),
   kimi: Object.freeze({ id: 'kimi', name: 'Kimi K3', model: 'kimi-k3', endpoint: 'https://api.moonshot.ai/v1/chat/completions' }),
-  glm: Object.freeze({ id: 'glm', name: 'GLM 5.2', model: 'GLM-5.2', endpoint: 'https://api.z.ai/api/paas/v4/chat/completions' }),
   deepseek: Object.freeze({ id: 'deepseek', name: 'DeepSeek V4 Pro', model: 'deepseek-v4-pro', endpoint: 'https://api.deepseek.com/chat/completions', thinking: true }),
   ollama: Object.freeze({ id:'ollama', name:'Ollama · Local', model:'auto', endpoint:'http://127.0.0.1:11434/v1/chat/completions', keyless:true }),
   lmstudio: Object.freeze({ id:'lmstudio', name:'LM Studio · Local', model:'auto', endpoint:'http://127.0.0.1:1234/v1/chat/completions', keyless:true }),
