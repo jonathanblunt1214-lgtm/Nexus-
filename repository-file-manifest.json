@@ -1250,18 +1250,6 @@
       "sha256": "5213201d47631ae4de841622fc8c9cbaa45b4c604ff781f23aff0c906c214959"
     },
     {
-      "path": "governingDocuments/agent-progress-policy.md",
-      "type": ".md",
-      "size": 3155,
-      "sha256": "df561081a2b443efbd6ea1b4798c1da9ca2006fa1aff7015113b88ed1905dcba"
-    },
-    {
-      "path": "governingDocuments/ai-conflict-resolution.md",
-      "type": ".md",
-      "size": 1979,
-      "sha256": "23a66954d804da914e601ecd599e49147547949edb7636dfbc0db8264bbe82ff"
-    },
-    {
       "path": "governingDocuments/native/AGENTS.md",
       "type": ".md",
       "size": 4649,
@@ -1298,13 +1286,25 @@
       "sha256": "695f586e8780524200fa9eeec6624391edc127326c01ee05e0ea747a8b8b9de9"
     },
     {
-      "path": "governingDocuments/nexus-native-assimilation.md",
+      "path": "governingDocuments/native/agent-progress-policy.md",
       "type": ".md",
-      "size": 3056,
-      "sha256": "0780e651c15c9f6a8331ba74c7e3af500ea831845c41720656783e94ff08db71"
+      "size": 3155,
+      "sha256": "df561081a2b443efbd6ea1b4798c1da9ca2006fa1aff7015113b88ed1905dcba"
     },
     {
-      "path": "governingDocuments/required-check-rollout.md",
+      "path": "governingDocuments/native/ai-conflict-resolution.md",
+      "type": ".md",
+      "size": 1979,
+      "sha256": "23a66954d804da914e601ecd599e49147547949edb7636dfbc0db8264bbe82ff"
+    },
+    {
+      "path": "governingDocuments/native/nexus-native-assimilation.md",
+      "type": ".md",
+      "size": 2447,
+      "sha256": "5667173bf7dbf867008bd8b785ca703215ec4d6337a2d43bc4189a0b250d235b"
+    },
+    {
+      "path": "governingDocuments/native/required-check-rollout.md",
       "type": ".md",
       "size": 1667,
       "sha256": "82ae8eb6bea398e60b4089bffc6202a417c64ffc12418609940feb419099ff4a"
