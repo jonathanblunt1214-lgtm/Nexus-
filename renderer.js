@@ -265,7 +265,7 @@ function getCommandList() {
     { label: 'Open Package Manager', category: 'Navigate', keywords: 'npm install uninstall update dependencies', action: () => togglePackageManager() },
     { label: 'Open Recent Changes', category: 'Navigate', keywords: 'revert undo history backup bak', action: () => toggleRecentChanges() },
     { label: 'Open Activity', category: 'Navigate', keywords: 'running processes docker npm status', action: () => toggleActivityView() },
-    { label: 'Check for Nexus Updates (pull from GitHub)', category: 'Navigate', keywords: 'sync update pull refresh source', action: () => checkForUpdatesNow() },
+    { label: 'Open Nexus Updates', category: 'Navigate', keywords: 'check update download install restart release source', action: () => openNexusUpdates() },
     { label: 'Open Object Pipeline', category: 'Navigate', keywords: 'powershell query data pipe', action: () => togglePipelinePanel() },
     { label: 'Open AI Tools', category: 'Navigate', keywords: 'ai inventory metrics guardrails upgrade prompt experiment', action: () => toggleAIToolsPanel() },
     { label: 'Search across project files', category: 'Navigate', keywords: 'find search replace grep', action: async () => { await toggleCodeEditor(); showCodeEditorSearch(); } },
@@ -755,19 +755,26 @@ function toggleSandboxed(id, e) {
 
 let currentSettingsSection = 'account';
 function settingsSectionForCard(card) {
+  if (card.dataset.settingsSection) return card.dataset.settingsSection;
   if (card.querySelector('#nexus-profile-title, #connected-services-title, #account-vault-passphrase, #email-account-email')) return 'account';
   if (card.querySelector('#github-settings-title, #github-operations-summary, #github-project-pr-list, #config-active-name, #secret-key-name') || /GitHub|Stashes & Conflicts|Portable Project Setup|Project Constitution|Services —|Detected Integrations/.test(card.textContent)) return 'github';
   return 'system';
 }
 
 function setSettingsSection(section) {
-  const allowed = new Set(['account', 'github', 'system']);
+  const allowed = new Set(['account', 'github', 'system', 'updates']);
   currentSettingsSection = allowed.has(section) ? section : 'account';
   const view = document.getElementById('view-cloud');
   if (!view) return;
   view.querySelectorAll(':scope > .card').forEach((card) => { card.hidden = settingsSectionForCard(card) !== currentSettingsSection; });
   view.querySelectorAll('.settings-section-nav [data-settings-section]').forEach((button) => button.classList.toggle('active', button.dataset.settingsSection === currentSettingsSection));
   view.scrollTop = 0;
+}
+
+function openNexusUpdates() {
+  switchTab('cloud');
+  setSettingsSection('updates');
+  document.getElementById('update-check-btn')?.focus();
 }
 
 async function linkProjectToAccount(id, event) {

@@ -1092,7 +1092,7 @@
   <div id="main-container">
     <header>
       <h2>NEXUS <span class="muted">Active: <strong id="header-active-name" class="accent">None</strong></span></h2>
-      <span class="muted small mono" id="build-badge" style="margin-right:10px; cursor:pointer;" title="Build number = real git commit count in Nexus's own repo. Click to check for updates." onclick="checkForUpdatesNow()">Build —</span>
+      <span class="muted small mono" id="build-badge" style="margin-right:10px; cursor:pointer;" title="Build number = real git commit count in Nexus's own repo. Click to open Nexus Updates." onclick="openNexusUpdates()">Build —</span>
       <button class="btn btn-secondary tiny" onclick="openCommandPalette()" title="Command Palette" style="margin-right:10px;">⌘ Ctrl+K</button>
       <div class="status-badge"><span class="status-dot"></span> ELECTRON — REAL BACKEND</div>
     </header>
@@ -1440,6 +1440,7 @@ Type "help" for tips.
         <button class="btn btn-secondary active" data-settings-section="account" onclick="setSettingsSection('account')">Account &amp; Sync</button>
         <button class="btn btn-secondary" data-settings-section="github" onclick="setSettingsSection('github')">GitHub &amp; Projects</button>
         <button class="btn btn-secondary" data-settings-section="system" onclick="setSettingsSection('system')">System</button>
+        <button class="btn btn-secondary" data-settings-section="updates" onclick="setSettingsSection('updates')">Updates</button>
       </div>
       <div class="card" aria-labelledby="plugin-security-title">
         <label class="label" id="plugin-security-title">Plug-ins &amp; Security Screening</label>
@@ -1586,7 +1587,7 @@ Type "help" for tips.
         <div id="github-project-pr-review" style="margin-top:8px;"></div>
       </div>
 
-      <div class="card update-card" aria-labelledby="update-card-title">
+      <div class="card update-card" data-settings-section="updates" aria-labelledby="update-card-title">
         <div class="update-card-heading">
           <div>
             <label class="label" id="update-card-title">Nexus Updates</label>

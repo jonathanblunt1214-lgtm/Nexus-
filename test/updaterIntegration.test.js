@@ -26,6 +26,18 @@ test('Settings exposes installed version, progress, and explicit restart action'
   assert.match(renderer, /onUpdaterStatus\(renderReleaseUpdateStatus\)/);
 });
 
+test('Nexus Updates is a visibly reachable Settings section wired to the release updater', () => {
+  const html = read('index.html');
+  const renderer = read('renderer.js');
+  assert.match(html, /data-settings-section="updates"[^>]*>Updates<\/button>/);
+  assert.match(html, /class="card update-card" data-settings-section="updates"/);
+  assert.match(html, /id="build-badge"[\s\S]*?onclick="openNexusUpdates\(\)"/);
+  assert.match(renderer, /function openNexusUpdates\(\)\s*\{[\s\S]*?switchTab\('cloud'\);[\s\S]*?setSettingsSection\('updates'\);[\s\S]*?update-check-btn/);
+  assert.match(renderer, /async function checkForReleaseUpdate\(\)[\s\S]*?window\.nexus\.checkForUpdates\(\)/);
+  assert.match(renderer, /async function downloadReleaseUpdate\(\)[\s\S]*?window\.nexus\.downloadUpdate\(\)/);
+  assert.match(renderer, /async function installReleaseUpdate\(\)[\s\S]*?window\.nexus\.installUpdateAndRestart\(\)/);
+});
+
 test('installed Nexus checks for updates every time the application opens', () => {
   const main = read('main.js');
   const createWindow = main.slice(main.indexOf('function createWindow()'), main.indexOf('function setupPreviewSession()'));

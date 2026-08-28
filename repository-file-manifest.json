@@ -1311,8 +1311,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 132315,
-      "sha256": "6de8b51c8c70e132d64bb84f5bf8f32a8ab42c074c6ae1d4a7ebae2968ab987c"
+      "size": 132477,
+      "sha256": "974610d30a554a56038a4380d5119fe2008f1355ce063543bb598abbfba69ed0"
     },
     {
       "path": "inventoryWorker.js",
@@ -1575,8 +1575,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 274055,
-      "sha256": "c3e9efd1a694c4f3e47ca16dc867e58f6adf76770ea0b78af9876aa3e72d2a88"
+      "size": 274278,
+      "sha256": "03917f2641025fd405532908a4c2c313e58fc4498508ba161a44efdbbb9a20c3"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1713,8 +1713,8 @@
     {
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
-      "size": 10960,
-      "sha256": "7c743b8305dfafc6113e7abf2607e8a1e77168491bd3b699367d31fe233bf576"
+      "size": 10984,
+      "sha256": "eea3b28eb5d93a822db14e27cfc5feaf4c0bd6cd78f2a36a8397d2e092ff300a"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
@@ -2115,8 +2115,8 @@
     {
       "path": "test/settingsScroll.test.js",
       "type": ".js",
-      "size": 3170,
-      "sha256": "1f53809e99934e7f0b06295925e79186024d7c32f996f6c7a7bc340486cd844d"
+      "size": 3181,
+      "sha256": "b79b615997a6d79982832dd55c091bce63e0f55c59120822d4f53f4cfd75d195"
     },
     {
       "path": "test/toolRegistry.test.js",
@@ -2139,8 +2139,8 @@
     {
       "path": "test/updaterIntegration.test.js",
       "type": ".js",
-      "size": 6861,
-      "sha256": "1a862dbd2976ba7e74e9490dddd1fa9967ebb283b0b9094f3a392eac631820ce"
+      "size": 7781,
+      "sha256": "074525c2eba96ca7efb32600709ba77a43d7a7325e70d9407ef39074da5b9836"
     },
     {
       "path": "test/visualContext.test.js",
