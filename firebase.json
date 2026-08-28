@@ -4,5 +4,22 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "firebase-hosting",
+    "ignore": ["**/config.example.json"],
+    "headers": [
+      {
+        "source": "/appcheck-broker/**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'none'; script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; connect-src 'self' https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/; frame-src https://www.google.com/recaptcha/; img-src 'self' https://www.gstatic.com/recaptcha/; style-src 'self'; base-uri 'none'; form-action 'none'"
+          },
+          { "key": "X-Frame-Options", "value": "DENY" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" }
+        ]
+      }
+    ]
   }
 }

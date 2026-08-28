@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 211,
+  "fileCount": 217,
   "types": {
-    ".json": 6,
+    ".json": 7,
     ".md": 10,
     ".cjs": 1,
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 166,
+    ".js": 170,
+    ".html": 2,
     ".rules": 2,
-    ".html": 1,
     ".txt": 5,
     ".ps1": 2,
     ".py": 1,
@@ -341,6 +341,11 @@
     },
     {
       "source": "main.js",
+      "reference": "./appCheckBroker",
+      "resolved": "appCheckBroker.js"
+    },
+    {
+      "source": "main.js",
       "reference": "./firebaseAccountClient",
       "resolved": "firebaseAccountClient.js"
     },
@@ -573,6 +578,11 @@
       "source": "test/firebaseAccountClient.test.js",
       "reference": "../firebaseAccountClient",
       "resolved": "firebaseAccountClient.js"
+    },
+    {
+      "source": "test/firebaseAccountClient.test.js",
+      "reference": "../appCheckBroker",
+      "resolved": "appCheckBroker.js"
     },
     {
       "source": "test/gameProjectDetector.test.js",
@@ -906,14 +916,14 @@
     {
       "path": ".gitignore",
       "type": "[no extension]",
-      "size": 495,
-      "sha256": "5d0e44f150d789f8e1b72400b6d09fcdac5707cba6c714e7f93c63427424fbbe"
+      "size": 540,
+      "sha256": "033e2f72543758dbc26df4aec5da12a1397b5505fd95c1f625a2a9025771ccf6"
     },
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 2888,
-      "sha256": "eb89076dbe31578970344955e9cc1b57488378a7744850ad7d2743e9330038bc"
+      "size": 3487,
+      "sha256": "26ecb040d12a96840ad48b9594c988f6aa2ae971b0042ed0081f0795620d432e"
     },
     {
       "path": "AGENTS.md",
@@ -948,8 +958,8 @@
     {
       "path": "FIREBASE_SETUP.md",
       "type": ".md",
-      "size": 2158,
-      "sha256": "a9e787bd6bca6031e811c385771fe3034397f9a8453e4399afa7451552cd7050"
+      "size": 4346,
+      "sha256": "39b2bc3ff0dfc9886fb4d333fb65eb6e6e2c79fad7f9cacf41c5332c77eb5068"
     },
     {
       "path": "README.md",
@@ -1040,6 +1050,18 @@
       "type": ".js",
       "size": 6263,
       "sha256": "887d80409ac46a66e942497381319884e4f30bdd8a35b201bb0f4060688f8a2e"
+    },
+    {
+      "path": "appCheckBroker.js",
+      "type": ".js",
+      "size": 4745,
+      "sha256": "8477e18e36066ba8f878be97c0fa28667f092343f5eaa823dc269915bbfa29a9"
+    },
+    {
+      "path": "appCheckBrokerPreload.js",
+      "type": ".js",
+      "size": 793,
+      "sha256": "2eba3d8a1cb7648bee87ec16ea740f91cde820090bc04001b05dfebfa91d0ddd"
     },
     {
       "path": "astEngine.js",
@@ -1138,16 +1160,34 @@
       "sha256": "e814f8d35373efdc10c0b02f84328384e361200a136a9dc67b497e488b224300"
     },
     {
+      "path": "firebase-hosting/appcheck-broker/broker.js",
+      "type": ".js",
+      "size": 4003,
+      "sha256": "f8a643b5e3401bfaf44765d3d7a48a765c15b9c8da544d8a1c4028a9047a2195"
+    },
+    {
+      "path": "firebase-hosting/appcheck-broker/config.example.json",
+      "type": ".json",
+      "size": 314,
+      "sha256": "bfe7e0e885144a71c31b7f6d210a19cfb0faa1a8eaa5c61ed892a308eefc2ff8"
+    },
+    {
+      "path": "firebase-hosting/appcheck-broker/index.html",
+      "type": ".html",
+      "size": 205,
+      "sha256": "49973803cee24d8ffe05d3272c3f3d530a048fc343e9094f13a0053d01d73e41"
+    },
+    {
       "path": "firebase.json",
       "type": ".json",
-      "size": 105,
-      "sha256": "d224b75385b451433e5c59bdbf0cc147697fbe88e773c11dab44f3b71e3e8a74"
+      "size": 889,
+      "sha256": "4d7b8f45f4c87e531069c895f785c63831cb6ae3c56e31da58b6fdd2d208ab97"
     },
     {
       "path": "firebaseAccountClient.js",
       "type": ".js",
-      "size": 5732,
-      "sha256": "080a47e36939af1d369ea20b020e10dc882c382fe9894775cd0fc0c0bd9de778"
+      "size": 6216,
+      "sha256": "66a880bf9c327628f346fe5f24be21b01bd4ed2813e8d17d5d4a061861c22a66"
     },
     {
       "path": "firestore.rules",
@@ -1200,8 +1240,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 133974,
-      "sha256": "e9f37275fd21fe87905867dd7cc2ef0b28fcb7708c0bd8aa6effef8cfa7cef2e"
+      "size": 134341,
+      "sha256": "1e5ee13832fa26b5818f48bed91f1b423c561ec6a5a2840ea8c46822e131f829"
     },
     {
       "path": "inventoryWorker.js",
@@ -1266,8 +1306,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 219456,
-      "sha256": "f271bc11bf0f6d6f807076d55fd28d3385f12eb06a58eb456ada25c6244a8a42"
+      "size": 220995,
+      "sha256": "283b65edd26d29ed0ce98a234726a4183b1c60a15b08f3bebf3f6bcf76e91f2b"
     },
     {
       "path": "memoryEngine.js",
@@ -1464,8 +1504,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 276354,
-      "sha256": "b8db6b989cebedb6db8a042212bd7cddb07551c07e4766dbd54920ef12e92309"
+      "size": 276541,
+      "sha256": "90bee0ecf93b35f6e5e1d8288a75d8779f459445381fb663f4d0ea74c21721ac"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1684,6 +1724,12 @@
       "sha256": "3528e70e17dbf7782bca96fb0cec283361d0486ff289f9a722fb3c2cbfef0391"
     },
     {
+      "path": "test/appCheckBroker.test.js",
+      "type": ".js",
+      "size": 4582,
+      "sha256": "0d4b3ec84e9a33f2c074c10cd19da67dba4da40a38c60819f8c3a654b66e7fa3"
+    },
+    {
       "path": "test/branchAuthority.test.js",
       "type": ".js",
       "size": 1289,
@@ -1752,8 +1798,8 @@
     {
       "path": "test/firebaseAccountClient.test.js",
       "type": ".js",
-      "size": 7392,
-      "sha256": "eedd9c4f619bf34cd2c7038bcae75ef30af21251eda739ff7b1c553a0f0ef8ac"
+      "size": 8795,
+      "sha256": "ad33d3a63f996e892d7c09d54bef76559de13a6f959cc96cce690cf8a9804d84"
     },
     {
       "path": "test/gameProjectDetector.test.js",

@@ -4242,11 +4242,12 @@ async function loadEmailAccountConfiguration() {
   document.getElementById('firebase-project-id').value = result.projectId || '';
   document.getElementById('firebase-web-api-key').value = result.apiKey || '';
   document.getElementById('firebase-storage-bucket').value = result.storageBucket || '';
+  document.getElementById('firebase-appcheck-broker-url').value = result.appCheckBrokerUrl || '';
 }
 
 async function saveEmailAccountConfiguration() {
   let result;
-  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim(), storageBucket: document.getElementById('firebase-storage-bucket').value.trim() }); }
+  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim(), storageBucket: document.getElementById('firebase-storage-bucket').value.trim(), appCheckBrokerUrl: document.getElementById('firebase-appcheck-broker-url').value.trim() }); }
   catch (error) { result = { ok: false, error: error.message }; }
   showToast(result.ok ? 'success' : 'error', result.ok ? 'Email account configuration saved' : 'Configuration could not be saved', result.error || 'Firebase email sign-in is ready.');
   refreshEmailAccountStatus();

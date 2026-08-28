@@ -3686,7 +3686,16 @@ function firebaseAccountConfiguration() {
     apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY || cfg.firebaseWebApiKey || publisherConfig.firebaseWebApiKey,
     projectId: process.env.NEXUS_FIREBASE_PROJECT_ID || cfg.firebaseProjectId || publisherConfig.firebaseProjectId,
     storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET || cfg.firebaseStorageBucket || publisherConfig.firebaseStorageBucket,
+    appCheckBrokerUrl: process.env.NEXUS_FIREBASE_APPCHECK_BROKER_URL || cfg.firebaseAppCheckBrokerUrl || publisherConfig.firebaseAppCheckBrokerUrl,
   };
+}
+
+// Best-effort: resolves to null (never throws) when App Check isn't configured
+// or the broker fails, so real Firebase traffic is never blocked by it.
+async function currentAppCheckToken(configuration) {
+  if (!configuration.appCheckBrokerUrl) return null;
+  try { return await require('./appCheckBroker').getAppCheckToken(configuration.appCheckBrokerUrl); }
+  catch { return null; }
 }
 
 function storeFirebaseSession(cfg, tokens, profile = {}) {
@@ -3708,8 +3717,9 @@ async function establishNexusProviderAccount(providerId, credential, credentialT
   if (!configuration.apiKey || !configuration.projectId) return { unified:false, reason:'Configure the Nexus Firebase account project to use provider sign-in.' };
   require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
   const existing = await getFirebaseSession().catch(() => null);
-  const tokens = await require('./firebaseAccountClient').signInWithProvider(configuration.apiKey, { providerId, credential, credentialType, idToken:existing?.idToken || null });
-  const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken);
+  const appCheckToken = await currentAppCheckToken(configuration);
+  const tokens = await require('./firebaseAccountClient').signInWithProvider(configuration.apiKey, { providerId, credential, credentialType, idToken:existing?.idToken || null, appCheckToken });
+  const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken, appCheckToken);
   const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile);
   cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), providerId])]; await saveConfig(cfg);
   return { unified:true, linked:Boolean(existing), uid:profile.uid, email:profile.email || null, providers:cfg.nexusLinkedProviders };
@@ -3719,15 +3729,16 @@ async function getFirebaseSession({ requireVerified = false, refreshProfile = fa
   const cfg = loadConfig();
   const configuration = firebaseAccountConfiguration();
   require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
+  const appCheckToken = await currentAppCheckToken(configuration);
   let idToken = encryptedConfigValue(cfg, 'firebaseIdToken');
   if (!idToken || Number(cfg.firebaseTokenExpiresAt || 0) <= Date.now() + 60_000) {
     const refreshToken = encryptedConfigValue(cfg, 'firebaseRefreshToken');
     if (!refreshToken) return null;
-    const refreshed = await require('./firebaseAccountClient').refreshSession(configuration.apiKey, refreshToken);
+    const refreshed = await require('./firebaseAccountClient').refreshSession(configuration.apiKey, refreshToken, appCheckToken);
     storeFirebaseSession(cfg, refreshed); idToken = refreshed.idToken;
   }
   if (refreshProfile || requireVerified || !cfg.firebaseUid) {
-    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, idToken);
+    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, idToken, appCheckToken);
     storeFirebaseSession(cfg, { idToken, refreshToken: encryptedConfigValue(cfg, 'firebaseRefreshToken'), expiresIn: Math.max(60, Math.floor((Number(cfg.firebaseTokenExpiresAt || 0) - Date.now()) / 1000)) }, profile);
   }
   await saveConfig(cfg);
@@ -3742,12 +3753,13 @@ async function requireLinkedNexusProvider(providerId, label) {
   return session;
 }
 
-ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey, storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET ? '' : value.storageBucket }; });
+ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey, storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET ? '' : value.storageBucket, appCheckBrokerUrl: process.env.NEXUS_FIREBASE_APPCHECK_BROKER_URL ? '' : (value.appCheckBrokerUrl || '') }; });
 ipcMain.handle('email-account:configure', async (_event, value = {}) => {
-  const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim(); const storageBucket = String(value.storageBucket || '').trim();
+  const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim(); const storageBucket = String(value.storageBucket || '').trim(); const appCheckBrokerUrl = String(value.appCheckBrokerUrl || '').trim();
   require('./firebaseAccountClient').requireConfiguration(apiKey, projectId);
   if (storageBucket && !/^[a-z0-9._-]+$/.test(storageBucket)) throw new Error('Enter a valid Firebase Storage bucket name.');
-  const cfg = loadConfig(); cfg.firebaseWebApiKey = apiKey; cfg.firebaseProjectId = projectId; cfg.firebaseStorageBucket = storageBucket; await saveConfig(cfg); return { ok: true };
+  if (appCheckBrokerUrl && !/^https:\/\//.test(appCheckBrokerUrl)) throw new Error('The App Check broker URL must be an https:// Firebase Hosting URL.');
+  const cfg = loadConfig(); cfg.firebaseWebApiKey = apiKey; cfg.firebaseProjectId = projectId; cfg.firebaseStorageBucket = storageBucket; cfg.firebaseAppCheckBrokerUrl = appCheckBrokerUrl; await saveConfig(cfg); return { ok: true };
 });
 ipcMain.handle('email-account:sign-up', async (_event, value = {}) => {
   try {
@@ -3755,9 +3767,10 @@ ipcMain.handle('email-account:sign-up', async (_event, value = {}) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
     if (password.length < 8) throw new Error('Use a password with at least 8 characters.');
     const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
-    const tokens = await require('./firebaseAccountClient').signUp(configuration.apiKey, email, password);
+    const appCheckToken = await currentAppCheckToken(configuration);
+    const tokens = await require('./firebaseAccountClient').signUp(configuration.apiKey, email, password, appCheckToken);
     const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, { uid: tokens.localId, email, emailVerified: false }); cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), 'password'])]; await saveConfig(cfg);
-    await require('./firebaseAccountClient').sendVerification(configuration.apiKey, tokens.idToken);
+    await require('./firebaseAccountClient').sendVerification(configuration.apiKey, tokens.idToken, appCheckToken);
     return { ok: true, email, emailVerified: false };
   } catch (error) { return { ok: false, error: error.message }; }
 });
@@ -3765,8 +3778,9 @@ ipcMain.handle('email-account:sign-in', async (_event, value = {}) => {
   try {
     const email = String(value.email || '').trim().toLowerCase(); const password = String(value.password || '');
     const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
-    const tokens = await require('./firebaseAccountClient').signIn(configuration.apiKey, email, password);
-    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken);
+    const appCheckToken = await currentAppCheckToken(configuration);
+    const tokens = await require('./firebaseAccountClient').signIn(configuration.apiKey, email, password, appCheckToken);
+    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken, appCheckToken);
     const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile); cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), 'password'])]; await saveConfig(cfg);
     return { ok: true, email: profile.email, emailVerified: profile.emailVerified };
   } catch (error) { return { ok: false, error: error.message }; }
@@ -3775,8 +3789,8 @@ ipcMain.handle('email-account:status', async () => {
   try { const session = await getFirebaseSession({ refreshProfile: true }); return { ok: true, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(session), email: session?.email || null, emailVerified: session?.emailVerified === true }; }
   catch (error) { const cfg = loadConfig(); return { ok: false, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), email: cfg.firebaseEmail || null, emailVerified: cfg.firebaseEmailVerified === true, error: error.message }; }
 });
-ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
-ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase()); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken, await currentAppCheckToken(session.configuration)); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase(), await currentAppCheckToken(configuration)); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('email-account:sign-out', async () => {
   const cfg = loadConfig();
   clearFirebaseSession(cfg);
@@ -4000,7 +4014,7 @@ async function saveEncryptedAccountVault(encrypted, providers) {
     try {
       const session = await getFirebaseSession({ requireVerified: true });
       if (!session) results.email = { ok: false, error: 'Sign in with a verified email account first.' };
-      else { await require('./firebaseAccountClient').saveAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken, encryptedVault: encrypted }); results.email = { ok: true }; }
+      else { await require('./firebaseAccountClient').saveAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken, encryptedVault: encrypted, appCheckToken: await currentAppCheckToken(session.configuration) }); results.email = { ok: true }; }
     } catch (error) { results.email = { ok: false, error: error.message }; }
   }
   return results;
@@ -4053,7 +4067,7 @@ ipcMain.handle('account-vault:restore', async (_event, value = {}) => {
     if (token) { try { await requireLinkedNexusProvider('github.com', 'GitHub'); const vault = await require('./githubClient').loadAccountVaultGist(token); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `GitHub: ${error.message}` }); } }
     const googleToken = await requireLinkedNexusProvider('google.com', 'Google').then(() => getGoogleAccessToken()).catch((error) => { candidates.push({ error:`Google: ${error.message}` }); return null; });
     if (googleToken) { try { const vault = await require('./googleDriveClient').loadAccountVaultFile(googleToken); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `Google: ${error.message}` }); } }
-    try { const session = await getFirebaseSession({ requireVerified: true }); if (session) { const vault = await require('./firebaseAccountClient').loadAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken }); if (vault) candidates.push(vault); } } catch (error) { candidates.push({ error: `Email account: ${error.message}` }); }
+    try { const session = await getFirebaseSession({ requireVerified: true }); if (session) { const vault = await require('./firebaseAccountClient').loadAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken, appCheckToken: await currentAppCheckToken(session.configuration) }); if (vault) candidates.push(vault); } } catch (error) { candidates.push({ error: `Email account: ${error.message}` }); }
     const available = candidates.filter((item) => item.content).sort((a, b) => Date.parse(b.modifiedTime || 0) - Date.parse(a.modifiedTime || 0));
     if (!available.length) return { ok: false, error: candidates.map((item) => item.error).filter(Boolean).join(' ') || 'No Nexus account vault was found in the connected accounts.' };
     const payload = require('./accountVault').decryptVault(available[0].content, value.passphrase);
