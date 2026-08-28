@@ -11,6 +11,11 @@
     "reference": "AI-CONFLICTS.json",
     "summary": "Plain language: if two AI agents, or two runs of the same agent, make changes that could clash, the clash gets written down as an entry in AI-CONFLICTS.json instead of one side silently overwriting the other. Any conflict entry that is still open or incomplete blocks The Crucible CI gate, so nothing can be promoted to main while a real conflict is unresolved. Nobody force-pushes, deletes, renames, or overwrites a branch to make a conflict go away; it gets resolved and recorded instead."
   },
+  "crucibleGoverningDocumentInjection": {
+    "allowed": true,
+    "scope": "governingDocuments/",
+    "summary": "The Crucible may create, copy, inject, replace, or update files under governingDocuments/ during governance synchronization or enforcement. Do not block such a change solely because it is automated. This permission does not extend to unrelated Nexus files outside governingDocuments/, and normal conflict/integrity checks still apply."
+  },
   "branchAuthoritySummary": "Plain language: ordinary AI work happens only on Development-branch. An AI does not create or use claude/*, codex/*, or other auxiliary branches, and does not touch main directly, unless the repository owner explicitly authorizes that exact branch or operation in the current conversation — and that authorization does not carry over to the next task. main only changes through the protected promote-development-to-main.yml workflow. See AGENTS.md for the full, binding rules.",
-  "lastUpdated": "2026-08-28 08:10:42 EDT"
+  "lastUpdated": "2026-08-28 08:43:34 EDT"
 }
