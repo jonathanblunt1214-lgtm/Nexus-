@@ -879,8 +879,8 @@
     {
       "path": ".github/workflows/commit-self-repair.yml",
       "type": ".yml",
-      "size": 664,
-      "sha256": "a8aba654c8fcdefb719c5151a59cfe1c88700ec3ef71c718a8f2e6b86d209b6d"
+      "size": 3291,
+      "sha256": "9e412f69b2ce8256b6e315df02555f343617fbf86c1ca2eec9b85b5b1f2afc30"
     },
     {
       "path": ".github/workflows/promote-development-to-main.yml",
