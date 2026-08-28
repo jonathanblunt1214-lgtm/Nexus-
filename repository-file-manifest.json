@@ -1713,8 +1713,8 @@
     {
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
-      "size": 10189,
-      "sha256": "59956df3959944bb344fb7c7feed5afa676231cf608865b3e4bb6766378cf47a"
+      "size": 10960,
+      "sha256": "7c743b8305dfafc6113e7abf2607e8a1e77168491bd3b699367d31fe233bf576"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
@@ -1953,8 +1953,8 @@
     {
       "path": "test/officialLanguageServers.test.js",
       "type": ".js",
-      "size": 3193,
-      "sha256": "e1f35b2abe66bf4174cd13cadeaec513f19b25055f66fb2a4a0fa47b5de3c8e4"
+      "size": 3460,
+      "sha256": "b87a2b1cba36cad8fceb2fde3758414d5f1aafd0ea4af85e33eefb79f7105f39"
     },
     {
       "path": "test/operationalDiagnostics.test.js",
