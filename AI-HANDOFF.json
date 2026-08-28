@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Plain-language handoff state for jonathanblunt1214-lgtm/Nexus-, so a different AI agent or a fresh session of the same agent can pick up work with full context. See AGENTS.md for the binding rules this file summarizes; this file is the human- and agent-readable index, not a separate source of authority.",
+  "agentCommunicationPolicy": {
+    "requireTimestampOnCheckIns": true,
+    "timestampFormat": "YYYY-MM-DD HH:MM:SS EDT/EST",
+    "appliesTo": "Every attended progress or completion check-in message an AI agent sends to the repository owner while working on this repository.",
+    "summary": "Plain language: before telling the owner about progress or that something is done, an AI must open that message with the current date and time written as YYYY-MM-DD HH:MM:SS followed by EDT or EST, e.g. 2026-08-28 08:10:42 EDT. This lets the owner tell how fresh a status update is at a glance, and lets a later session or agent reconstruct the real order of events across multiple AI agents working on this repository."
+  },
+  "aiConflictGovernance": {
+    "reference": "AI-CONFLICTS.json",
+    "summary": "Plain language: if two AI agents, or two runs of the same agent, make changes that could clash, the clash gets written down as an entry in AI-CONFLICTS.json instead of one side silently overwriting the other. Any conflict entry that is still open or incomplete blocks The Crucible gate, so nothing can be promoted to main while a real conflict is unresolved. Nobody force-pushes, deletes, renames, or overwrites a branch to make a conflict go away; it gets resolved and recorded instead."
+  },
+  "crucibleGoverningDocumentInjection": {
+    "allowed": true,
+    "scope": "governingDocuments/",
+    "startsAt": "2026-08-28 08:43:34 EDT",
+    "expiresAt": "2026-08-29 08:43:34 EDT",
+    "afterExpiration": "No external write access is granted by this exception. The Crucible or any other external system requires new explicit repository-owner authorization before writing.",
+    "summary": "For this 24-hour window only, The Crucible may create, copy, inject, replace, or update files under governingDocuments/ during governance synchronization or enforcement. The permission is path-scoped and expires automatically at the stated time."
+  },
+  "nativeGovernanceAssimilation": {
+    "trigger": "A Crucible-injected governingDocuments/ tree exists on Development-branch.",
+    "nativeDocuments": ["AGENTS.md", "AI-HANDOFF.json", "AI-CONFLICTS.json", "CLAUDE.md", "DEVLOG.md", "CONSTITUTION.md"],
+    "copyDestination": "governingDocuments/native/",
+    "preserveRootCopies": true,
+    "preserveCrucibleBaseline": true,
+    "conflictPolicy": "Compatible Nexus-specific rules are assimilated into the injected governing-document structure without erasing Crucible-originated requirements. Irreconcilable conflicts are recorded in AI-CONFLICTS.json and both source documents remain intact until resolved.",
+    "externalAuthority": "Assimilation is an internal Nexus write and does not extend or renew external write access."
+  },
+  "branchAuthoritySummary": "Plain language: ordinary AI work happens only on Development-branch. An AI does not create or use claude/*, codex/*, or other auxiliary branches, and does not touch main directly, unless the repository owner explicitly authorizes that exact branch or operation in the current conversation — and that authorization does not carry over to the next task. main only changes through the protected promote-development-to-main.yml workflow. See AGENTS.md for the full, binding rules.",
+  "lastUpdated": "2026-08-28 08:55:15 EDT"
+}

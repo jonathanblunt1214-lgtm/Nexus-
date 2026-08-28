@@ -8,22 +8,83 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 jobs:
-  diagnose:
-    name: Diagnose commit against Nexus invariants
+  diagnose-and-repair:
+    name: Diagnose and repair Development invariants
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out target revision
+        uses: actions/checkout@v7
         with:
-          persist-credentials: false
+          persist-credentials: ${{ github.event_name == 'push' && github.ref == 'refs/heads/Development-branch' }}
           fetch-depth: 0
+          path: target
+
+      - name: Check out trusted repair engine from main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/Development-branch'
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: trusted
+          persist-credentials: false
+          fetch-depth: 1
+
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
           package-manager-cache: false
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Check deterministic repair state
+
+      - name: Install locked dependencies for diagnosis
+        working-directory: target
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Diagnose deterministic repair state
+        if: github.event_name != 'push' || github.ref != 'refs/heads/Development-branch'
+        working-directory: target
         run: node scripts/selfRepairCommit.js
+
+      - name: Apply trusted static repairs on Development
+        if: github.event_name == 'push' && github.ref == 'refs/heads/Development-branch'
+        env:
+          NEXUS_REPAIR_ROOT: ${{ github.workspace }}/target
+        run: node trusted/scripts/selfRepairCommit.js --apply --trusted-static --no-report
+
+      - name: Commit trusted repair and dispatch Crucible on exact repaired HEAD
+        if: github.event_name == 'push' && github.ref == 'refs/heads/Development-branch'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin Development-branch
+          current="$(git rev-parse origin/Development-branch)"
+          local_head="$(git rev-parse HEAD)"
+          if [ "$current" != "$local_head" ]; then
+            echo "Development advanced from $local_head to $current; refusing stale repair."
+            exit 1
+          fi
+
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/workflows repository-file-manifest.json
+            if ! git diff --cached --quiet; then
+              git commit -m "Automatically repair commit invariants"
+              git push origin HEAD:Development-branch
+            fi
+          fi
+
+          repaired="$(git rev-parse HEAD)"
+          git fetch origin Development-branch
+          current="$(git rev-parse origin/Development-branch)"
+          if [ "$current" != "$repaired" ]; then
+            echo "Development advanced during repair from $repaired to $current; refusing stale Crucible dispatch."
+            exit 1
+          fi
+          echo "Dispatching Crucible for exact Development HEAD $repaired"
+          gh workflow run the-crucible.yml --repo "$GITHUB_REPOSITORY" --ref Development-branch

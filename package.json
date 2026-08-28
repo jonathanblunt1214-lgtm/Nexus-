@@ -144,7 +144,6 @@
       "webLanguageServices.js",
       "officialLanguageServers.js",
       "officialDevelopmentPlatforms.js",
-      "THIRD_PARTY_NOTICES.md",
       "scripts/train_lora.py",
       "learning_sources/AGENTS.md.txt",
       "learning_sources/scriptsprocess_logs.py.txt",

@@ -87,9 +87,6 @@ contextBridge.exposeInMainWorld('nexus', {
 
   openExternal: (url) => ipcRenderer.invoke('open-external', { url }),
 
-  saveGeminiKey: (key) => ipcRenderer.invoke('save-gemini-key', { key }),
-  hasGeminiKey: () => ipcRenderer.invoke('has-gemini-key'),
-  clearGeminiKey: () => ipcRenderer.invoke('clear-gemini-key'),
   saveNimKey: (key) => ipcRenderer.invoke('save-nim-key', { key }),
   hasNimKey: () => ipcRenderer.invoke('has-nim-key'),
   clearNimKey: () => ipcRenderer.invoke('clear-nim-key'),
@@ -104,10 +101,6 @@ contextBridge.exposeInMainWorld('nexus', {
   saveGcpProject: (projectId) => ipcRenderer.invoke('save-gcp-project', { projectId }),
   getGcpProject: () => ipcRenderer.invoke('get-gcp-project'),
   geminiAsk: (prompt, folder) => ipcRenderer.invoke('gemini-ask', { prompt, folder }),
-  saveOpenaiKey: (key) => ipcRenderer.invoke('save-openai-key', { key }),
-  hasOpenaiKey: () => ipcRenderer.invoke('has-openai-key'),
-  clearOpenaiKey: () => ipcRenderer.invoke('clear-openai-key'),
-  openaiAsk: (prompt, folder) => ipcRenderer.invoke('openai-ask', { prompt, folder }),
 
   // Code assist — proposals only pass through the renderer; the actual
   // write path (apply-file-change) is the single choke point for any

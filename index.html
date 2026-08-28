@@ -1507,7 +1507,7 @@ Type "help" for tips.
           <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="exportAirGappedVault()">Export offline vault</button><button class="btn btn-secondary" onclick="restoreAirGappedVault()">Restore offline vault</button></div>
           <p class="muted small" id="airgap-vault-status" style="margin-top:8px;">Uses the passphrase entered above. The removable drive and passphrase should be stored separately.</p>
         </div>
-        <details style="margin-top:12px;"><summary class="muted small">Account provider configuration for development builds</summary><p class="muted small">Packaged releases should provide these identifiers. Firebase’s Web API key identifies the project and is not a user password.</p><div class="form-row"><input id="oauth-github-client-id" placeholder="GitHub OAuth client ID"><input id="oauth-google-client-id" placeholder="Google desktop client ID"><input type="password" id="oauth-google-client-secret" placeholder="Google client secret"><button class="btn btn-secondary" onclick="saveOAuthConfiguration()">Save OAuth configuration</button></div><div class="form-row" style="margin-top:8px;"><input id="oauth-wordpress-client-id" placeholder="WordPress.com client ID"><input type="password" id="oauth-wordpress-client-secret" placeholder="WordPress.com client secret"><input id="oauth-wordpress-redirect-uri" value="http://127.0.0.1:42819/oauth/wordpress/callback" readonly aria-label="WordPress.com redirect URI"></div><div class="form-row" style="margin-top:8px;"><input id="firebase-project-id" placeholder="Firebase project ID"><input id="firebase-web-api-key" placeholder="Firebase Web API key"><input id="firebase-storage-bucket" placeholder="Firebase Storage bucket"><button class="btn btn-secondary" onclick="saveEmailAccountConfiguration()">Save email configuration</button></div><p class="muted small" style="margin-top:6px;">Register the exact WordPress.com redirect URI shown above. Client secrets and account tokens are Windows-encrypted. Enable Email/Password Authentication, create Firestore and Cloud Storage, then deploy the repository’s <code>firestore.rules</code> and <code>storage.rules</code>.</p></details>
+        <details style="margin-top:12px;"><summary class="muted small">Account provider configuration for development builds</summary><p class="muted small">Packaged releases should provide these identifiers. Firebase’s Web API key identifies the project and is not a user password.</p><div class="form-row"><input id="oauth-github-client-id" placeholder="GitHub OAuth client ID"><input id="oauth-google-client-id" placeholder="Google desktop client ID"><input type="password" id="oauth-google-client-secret" placeholder="Google client secret"><button class="btn btn-secondary" onclick="saveOAuthConfiguration()">Save OAuth configuration</button></div><div class="form-row" style="margin-top:8px;"><input id="oauth-wordpress-client-id" placeholder="WordPress.com client ID"><input type="password" id="oauth-wordpress-client-secret" placeholder="WordPress.com client secret"><input id="oauth-wordpress-redirect-uri" value="http://127.0.0.1:42819/oauth/wordpress/callback" readonly aria-label="WordPress.com redirect URI"></div><div class="form-row" style="margin-top:8px;"><input id="firebase-project-id" placeholder="Firebase project ID"><input id="firebase-web-api-key" placeholder="Firebase Web API key"><input id="firebase-storage-bucket" placeholder="Firebase Storage bucket"><button class="btn btn-secondary" onclick="saveEmailAccountConfiguration()">Save email configuration</button></div><div class="form-row" style="margin-top:8px;"><input id="firebase-appcheck-broker-url" placeholder="App Check broker URL (optional, e.g. https://your-project.web.app/appcheck-broker/)" style="flex:1;"></div><p class="muted small" style="margin-top:6px;">Register the exact WordPress.com redirect URI shown above. Client secrets and account tokens are Windows-encrypted. Enable Email/Password Authentication, create Firestore and Cloud Storage, then deploy the repository’s <code>firestore.rules</code> and <code>storage.rules</code>. The App Check broker URL is optional; leave it blank unless you have deployed <code>firebase-hosting/appcheck-broker</code> per <code>FIREBASE_SETUP.md</code>.</p></details>
       </div>
       <div class="card" aria-labelledby="github-settings-title">
         <label class="label" id="github-settings-title">GitHub Connection &amp; Auto Save/Push</label>
@@ -1644,28 +1644,7 @@ Type "help" for tips.
         <div id="provider-discovery-results" class="suggestions-list" style="margin-top:8px;"></div>
       </div>
 
-      <div class="card">
-        <label class="label">Gemini API Key — powers the "Ask Gemini" box below</label>
-        <div class="form-row">
-          <input type="password" id="gemini-api-key" placeholder="Paste your Gemini API key">
-          <button class="btn" onclick="saveGeminiKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearGeminiKey()">Clear</button>
-        </div>
-        <p class="muted small" id="gemini-status" style="margin-top:8px;">No key saved yet.</p>
-      </div>
-
-      <div class="card">
-        <label class="label">OpenAI API Key — powers the "Ask OpenAI" box below</label>
-        <p class="muted small">Not required for anything else in Nexus (Gemini and NVIDIA NIM power the rest) - this exists so Nexus's own AI tooling, metrics, and cost tracking stay usable if a project you're working on (or its own AI assistant) migrates to OpenAI.</p>
-        <div class="form-row" style="margin-top:8px;">
-          <input type="password" id="openai-api-key" placeholder="Paste your OpenAI API key">
-          <button class="btn" onclick="saveOpenaiKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearOpenaiKey()">Clear</button>
-        </div>
-        <p class="muted small" id="openai-status" style="margin-top:8px;">No key saved yet.</p>
-      </div>
-
-      <div class="card">
+                  <div class="card">
         <label class="label">GCP / Firebase Project ID</label>
         <div class="form-row">
           <input type="text" id="gcp-project-id" placeholder="my-firebase-project">
@@ -1685,24 +1664,7 @@ Type "help" for tips.
         </div>
       </div>
 
-      <div class="card">
-        <label class="label">Ask Gemini (real API call)</label>
-        <div class="form-row">
-          <input type="text" id="gemini-prompt" placeholder="Ask something…">
-          <button class="btn" onclick="askGemini()">Send</button>
-        </div>
-        <pre id="gemini-response" class="response-box"></pre>
-      </div>
-
-      <div class="card">
-        <label class="label">Ask OpenAI (real API call)</label>
-        <div class="form-row">
-          <input type="text" id="openai-prompt" placeholder="Ask something…">
-          <button class="btn" onclick="askOpenAi()">Send</button>
-        </div>
-        <pre id="openai-response" class="response-box"></pre>
-      </div>
-    </div>
+                </div>
 
     <!-- PROJECT CONFIG: secrets + services -->
     <!-- Per-project config panel - hidden here by default, physically moved

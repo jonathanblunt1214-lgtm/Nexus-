@@ -13,6 +13,7 @@ push/
 account-vault*
 nexus-user-data*
 nexus-config.json
+firebase-hosting/appcheck-broker/config.json
 
 # Never commit local Git repository internals or accidental duplicate exports.
 .git/

@@ -16,7 +16,14 @@
   },
   "artifacts": ["package.json", "repository-file-manifest.json"],
   "clutter": {
-    "allow": [],
+    "allow": [
+      { "path": "governingDocuments/native/AGENTS.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/AI-CONFLICTS.json", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/AI-HANDOFF.json", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/CLAUDE.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/CONSTITUTION.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" },
+      { "path": "governingDocuments/native/DEVLOG.md", "reason": "Intentional native-governance mirror required by Nexus AGENTS.md while the authoritative root copy remains in place.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28" }
+    ],
     "allowDuplicateContent": false
   },
   "privacy": {
@@ -29,7 +36,8 @@
     "allow": [
       { "path": "main.js", "reason": "Nexus exposes an owner-operated local terminal; shell execution is the reviewed purpose of this handler.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-24", "rules": ["dynamic code execution", "shell-enabled child process"] },
       { "path": "codeChecker.js", "reason": "The reviewed YAML checker parses editor input with the bundled safe loader.", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-24", "rules": ["unsafe deserialization"] },
-      { "path": ".claude/skills/run-desktop/driver.cjs", "reason": "Agent-only Playwright driver for launching and clicking through the Electron app during development; its `eval` REPL command deliberately runs developer-typed JS inside the app's page for debugging. Not part of the shipped app (excluded from package.json's build.files).", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-27", "rules": ["dynamic code execution"] }
+      { "path": ".claude/skills/run-desktop/driver.cjs", "reason": "Agent-only Playwright driver for launching and clicking through the Electron app during development; its `eval` REPL command deliberately runs developer-typed JS inside the app's page for debugging. Not part of the shipped app (excluded from package.json's build.files).", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-27", "rules": ["dynamic code execution"] },
+      { "path": "firebase-hosting/appcheck-broker/broker.js", "reason": "App Check broker page loads Google's own reCAPTCHA Enterprise script via a pinned, hardcoded https://www.google.com/recaptcha/enterprise.js URL, exactly as Firebase's own documentation requires; the URL is not derived from user input. It runs only inside a hidden, sandboxed, contextIsolated Electron window on Nexus's own Hosting origin, never in the app's normal UI (see appCheckBroker.js and test/appCheckBroker.test.js).", "owner": "jonathanblunt1214-lgtm", "expires": "2027-08-28", "rules": ["dynamic code execution"] }
     ],
     "allowBinaries": [],
     "dependencyAudit": [

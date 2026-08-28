@@ -99,3 +99,30 @@ test('Firestore rules isolate verified users to their own bounded vault document
   assert.match(rules, /hasOnly\(\['encryptedVault', 'updatedAt', 'schemaVersion'\]\)/);
   assert.match(rules, /size\(\) <= 2097152/);
 });
+
+test('Firebase deployment config publishes only the reviewed repository rules', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'firebase.json'), 'utf8'));
+  assert.equal(config.firestore.rules, 'firestore.rules');
+  assert.equal(config.storage.rules, 'storage.rules');
+});
+
+test('App Check tokens, when supplied, are attached to Firebase Authentication and Firestore requests but never required', async () => {
+  const originalFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, options) => { calls.push({ url, options }); return response({ localId:'uid-1', idToken:'id-token', refreshToken:'refresh-token', expiresIn:'3600' }); };
+  try {
+    await client.signIn('A'.repeat(24), 'person@example.com', 'password-123', 'app-check-token-1');
+    await client.signIn('A'.repeat(24), 'person@example.com', 'password-123');
+    await client.saveAccountVault({ apiKey:'A'.repeat(24), projectId:'nexus-account-test', uid:'uid-123', idToken:'firebase-id', encryptedVault:'ciphertext', appCheckToken:'app-check-token-2' });
+  } finally { global.fetch = originalFetch; }
+  assert.equal(calls[0].options.headers['X-Firebase-AppCheck'], 'app-check-token-1');
+  assert.equal(calls[1].options.headers['X-Firebase-AppCheck'], undefined);
+  assert.equal(calls[2].options.headers['X-Firebase-AppCheck'], 'app-check-token-2');
+});
+
+test('the App Check broker is optional and never blocks Firebase sign-in when unconfigured or failing', async () => {
+  const broker = require('../appCheckBroker');
+  assert.equal(await broker.getAppCheckToken(''), null);
+  assert.equal(await broker.getAppCheckToken(null), null);
+  assert.equal(await broker.getAppCheckToken(undefined), null);
+});

@@ -2474,26 +2474,6 @@ async function askCodingModel() {
   box.innerText = result.ok ? result.text : `Error: ${result.error}`;
 }
 
-async function saveGeminiKey() {
-  const key = document.getElementById('gemini-api-key').value.trim();
-  if (!key) return;
-  await window.nexus.saveGeminiKey(key);
-  document.getElementById('gemini-api-key').value = '';
-  refreshGeminiStatus();
-}
-
-async function clearGeminiKey() {
-  await window.nexus.clearGeminiKey();
-  refreshGeminiStatus();
-}
-
-async function refreshGeminiStatus() {
-  const has = await window.nexus.hasGeminiKey();
-  document.getElementById('gemini-status').innerText = has
-    ? 'A key is saved (encrypted on disk).'
-    : 'No key saved yet.';
-}
-
 async function saveNimKey() {
   const key = document.getElementById('nim-api-key').value.trim();
   if (!key) return;
@@ -2565,44 +2545,6 @@ async function importNexusSetupUI() {
 async function saveGcpProject() {
   const id = document.getElementById('gcp-project-id').value.trim();
   await window.nexus.saveGcpProject(id);
-}
-
-async function askGemini() {
-  const prompt = document.getElementById('gemini-prompt').value.trim();
-  if (!prompt) return;
-  const box = document.getElementById('gemini-response');
-  box.innerText = 'Asking Gemini…';
-  const result = await window.nexus.geminiAsk(prompt, activeProjectFolder());
-  box.innerText = result.ok ? result.text : `Error: ${result.error}`;
-}
-
-async function saveOpenaiKey() {
-  const key = document.getElementById('openai-api-key').value.trim();
-  if (!key) return;
-  await window.nexus.saveOpenaiKey(key);
-  document.getElementById('openai-api-key').value = '';
-  refreshOpenAiStatus();
-}
-
-async function clearOpenaiKey() {
-  await window.nexus.clearOpenaiKey();
-  refreshOpenAiStatus();
-}
-
-async function refreshOpenAiStatus() {
-  const has = await window.nexus.hasOpenaiKey();
-  document.getElementById('openai-status').innerText = has
-    ? 'A key is saved (encrypted on disk).'
-    : 'No key saved yet.';
-}
-
-async function askOpenAi() {
-  const prompt = document.getElementById('openai-prompt').value.trim();
-  if (!prompt) return;
-  const box = document.getElementById('openai-response');
-  box.innerText = 'Asking OpenAI…';
-  const result = await window.nexus.openaiAsk(prompt, activeProjectFolder());
-  box.innerText = result.ok ? result.text : `Error: ${result.error}`;
 }
 
 // ---------- AI Code Assist ----------
@@ -4064,6 +4006,8 @@ function renderReleaseUpdateStatus(status) {
   else message.innerText = status.message || 'Check GitHub Releases for a newer version of Nexus.';
 }
 
+window.nexus.onUpdaterStatus(renderReleaseUpdateStatus);
+
 async function checkForReleaseUpdate() {
   try {
     const status = await window.nexus.getUpdaterStatus();
@@ -4169,36 +4113,6 @@ setInterval(async () => {
     showToast('info', `${result.behindCount} update(s) available`, 'Click the build badge in the header to review and pull.');
   }
 }, 10 * 60 * 1000);
-
-(async function init() {
-  renderProjects();
-  updatePrompt();
-  refreshGeminiStatus();
-  refreshNimStatus();
-  refreshGitHubStatus();
-  refreshOAuthServices();
-  const accountVaultState = await window.nexus.accountVaultStatus();
-  if (accountVaultState.autoSyncEnabled) scheduleAccountVaultAutoSync();
-  refreshAccountVaultStatus();
-  loadOAuthConfiguration();
-  loadEmailAccountConfiguration();
-  refreshEmailAccountStatus();
-  refreshPluginMarketplace();
-  refreshLanguageServices();
-  loadNexusProfile();
-  refreshOpenAiStatus();
-  renderGitHubAutoSyncSettings();
-  scheduleGitHubAutoSync();
-  const gcp = await window.nexus.getGcpProject();
-  if (gcp) document.getElementById('gcp-project-id').value = gcp;
-
-  await loadBuildInfoAndCheckUpdates();
-
-  renderReleaseUpdateStatus(await window.nexus.getUpdaterStatus());
-  window.nexus.onUpdaterStatus(renderReleaseUpdateStatus);
-
-  updateActivityDot();
-})();
 let googleDriveFiles = [];
 
 async function loadOAuthConfiguration() {
@@ -4242,11 +4156,12 @@ async function loadEmailAccountConfiguration() {
   document.getElementById('firebase-project-id').value = result.projectId || '';
   document.getElementById('firebase-web-api-key').value = result.apiKey || '';
   document.getElementById('firebase-storage-bucket').value = result.storageBucket || '';
+  document.getElementById('firebase-appcheck-broker-url').value = result.appCheckBrokerUrl || '';
 }
 
 async function saveEmailAccountConfiguration() {
   let result;
-  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim(), storageBucket: document.getElementById('firebase-storage-bucket').value.trim() }); }
+  try { result = await window.nexus.emailAccountConfigure({ projectId: document.getElementById('firebase-project-id').value.trim(), apiKey: document.getElementById('firebase-web-api-key').value.trim(), storageBucket: document.getElementById('firebase-storage-bucket').value.trim(), appCheckBrokerUrl: document.getElementById('firebase-appcheck-broker-url').value.trim() }); }
   catch (error) { result = { ok: false, error: error.message }; }
   showToast(result.ok ? 'success' : 'error', result.ok ? 'Email account configuration saved' : 'Configuration could not be saved', result.error || 'Firebase email sign-in is ready.');
   refreshEmailAccountStatus();
@@ -4647,7 +4562,8 @@ async function restoreAccountVault() {
     queueAccountProjectRestores(result.projects || []);
     const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
     renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
-    showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
+    const savedAt = result.updatedAt ? ` This copy was saved ${new Date(result.updatedAt).toLocaleString()}.` : '';
+    showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}.${savedAt} ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
   } else showToast('error', 'Account vault restore failed', result.error);
   document.getElementById('account-vault-passphrase').value = '';
   refreshAccountVaultStatus(); refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
@@ -4661,7 +4577,8 @@ function applyRestoredVaultResult(result) {
   const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
   renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
   refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
-  return `${result.restoredApiKeyCount} API key(s) restored. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`;
+  const savedAt = result.updatedAt ? ` This copy was saved ${new Date(result.updatedAt).toLocaleString()}.` : '';
+  return `${result.restoredApiKeyCount} API key(s) restored.${savedAt} ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`;
 }
 
 async function exportAirGappedVault() {

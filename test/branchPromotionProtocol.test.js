@@ -40,6 +40,16 @@ test('failed promotion remediates only on development and retries all gates', ()
   assert.match(remediation, /NEXUS_REPAIR_REF/);
 });
 
+test('promotion pushes are authenticated even though checkout does not persist credentials', () => {
+  const promotion = read('scripts/promoteTestedDevelopment.js');
+  assert.match(promotion, /function pushAuthenticated\(refspec, options = \{\}\)/);
+  assert.match(promotion, /AUTHORIZATION: basic \$\{Buffer\.from\(`x-access-token:\$\{token\}`\)\.toString\('base64'\)\}/);
+  assert.match(promotion, /http\.https:\/\/github\.com\/\.extraheader=\$\{header\}/);
+  assert.match(promotion, /pushAuthenticated\('HEAD:Development-branch', \{ inherit:true \}\)/);
+  assert.match(promotion, /pushAuthenticated\(`\$\{developmentSha\}:refs\/heads\/main`, \{ inherit:true \}\)/);
+  assert.doesNotMatch(promotion, /\bgit\(\['push'/);
+});
+
 test('branch integrity accepts ancestry or an exact squash-promoted Development tree', () => {
   const workflow = read('.github/workflows/branch-integrity.yml');
   assert.match(workflow, /git merge-base --is-ancestor "\$main_sha" "\$development_sha"/);

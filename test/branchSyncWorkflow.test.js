@@ -47,10 +47,18 @@ test('branch synchronization is serialized and can be run manually', () => {
   assert.match(workflow, /cancel-in-progress: false/);
 });
 
-test('ordinary pushes still run validation gates without moving either branch', () => {
+test('ordinary pushes validate without branch movement except bounded failed-Crucible repair', () => {
   const integrity = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'branch-integrity.yml'), 'utf8');
   const crucible = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'the-crucible.yml'), 'utf8');
   const audit = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release-audit.yml'), 'utf8');
   for (const gate of [integrity, crucible, audit]) assert.match(gate, /push:/);
-  for (const gate of [integrity, crucible, audit]) assert.doesNotMatch(gate, /git push/);
+  for (const gate of [integrity, audit]) assert.doesNotMatch(gate, /git push/);
+
+  const repairJob = crucible.match(/\r?\n  autonomous-repair:\r?\n([\s\S]*)$/)?.[1] || '';
+  assert.ok(repairJob, 'Crucible branch writes must be isolated to autonomous-repair');
+  assert.match(repairJob, /needs\.crucible\.result == 'failure'/);
+  assert.match(repairJob, /github\.ref == 'refs\/heads\/Development-branch'/);
+  assert.match(repairJob, /git push origin HEAD:Development-branch/);
+  assert.doesNotMatch(repairJob, /refs\/heads\/main|git push[^\n]*(--force|-f\b)/);
+  assert.equal((crucible.match(/git push/g) || []).length, 1, 'only the bounded autonomous repair may push');
 });

@@ -857,78 +857,6 @@ ipcMain.handle('open-external', (_event, { url }) => {
   return { ok: true };
 });
 
-// --- Gemini API key: stored encrypted at rest via Electron's safeStorage ---
-ipcMain.handle('save-gemini-key', async (_event, { key }) => {
-  const cfg = loadConfig();
-  if (safeStorage.isEncryptionAvailable()) {
-    cfg.geminiKeyEnc = safeStorage.encryptString(key).toString('base64');
-  } else {
-    // Fallback for systems without OS-level encryption available.
-    cfg.geminiKeyPlain = key;
-  }
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-ipcMain.handle('has-gemini-key', () => {
-  const cfg = loadConfig();
-  return Boolean(cfg.geminiKeyEnc || cfg.geminiKeyPlain);
-});
-
-ipcMain.handle('clear-gemini-key', async () => {
-  const cfg = loadConfig();
-  delete cfg.geminiKeyEnc;
-  delete cfg.geminiKeyPlain;
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-function getGeminiKey() {
-  const cfg = loadConfig();
-  if (cfg.geminiKeyEnc && safeStorage.isEncryptionAvailable()) {
-    return safeStorage.decryptString(Buffer.from(cfg.geminiKeyEnc, 'base64'));
-  }
-  return cfg.geminiKeyPlain || null;
-}
-
-// --- OpenAI API key: same encrypted-at-rest pattern as Gemini/NIM. Added so
-// Nexus's own AI Assist tooling (and its metrics/cost/guardrail tracking)
-// stays usable if/when a project's own AI assistant migrates providers -
-// e.g. Smoke Stack's CharGPT is on Gemini today, but if it (or any project)
-// moves to OpenAI, Nexus already supports it as a first-class provider
-// rather than that being a gap discovered later. ---
-ipcMain.handle('save-openai-key', async (_event, { key }) => {
-  const cfg = loadConfig();
-  if (safeStorage.isEncryptionAvailable()) {
-    cfg.openaiKeyEnc = safeStorage.encryptString(key).toString('base64');
-  } else {
-    cfg.openaiKeyPlain = key;
-  }
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-ipcMain.handle('has-openai-key', () => {
-  const cfg = loadConfig();
-  return Boolean(cfg.openaiKeyEnc || cfg.openaiKeyPlain);
-});
-
-ipcMain.handle('clear-openai-key', async () => {
-  const cfg = loadConfig();
-  delete cfg.openaiKeyEnc;
-  delete cfg.openaiKeyPlain;
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-function getOpenAiKey() {
-  const cfg = loadConfig();
-  if (cfg.openaiKeyEnc && safeStorage.isEncryptionAvailable()) {
-    return safeStorage.decryptString(Buffer.from(cfg.openaiKeyEnc, 'base64'));
-  }
-  return cfg.openaiKeyPlain || null;
-}
-
 ipcMain.handle('save-gcp-project', async (_event, { projectId }) => {
   const cfg = loadConfig();
   cfg.gcpProjectId = projectId;
@@ -1012,13 +940,13 @@ const NIM_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const NIM_MODEL = 'qwen/qwen3-coder-next';
 
 // --- Live AI-metrics auto-instrumentation --------------------------------
-// Every real AI call Nexus itself makes (NIM, Gemini) is timed and recorded
+// Every real AI call Nexus itself makes is timed and recorded
 // here automatically, so the AI Tools metrics dashboard has real data
 // without anything having to call aiMetrics.recordMetric() by hand. Falls
 // back to Nexus's own userData folder (the same place nexus-config.json
 // lives) when no project folder is open yet - so calls that happen before a
 // project exists (project generation) or that aren't tied to one project
-// (the general Ask Gemini box, changelog generation) still get recorded
+// (for example, changelog generation) still get recorded
 // instead of silently dropped. Recording is best-effort: a metrics-write
 // failure never affects the actual AI call's result.
 const NEXUS_GLOBAL_METRICS_DIR = app.getPath('userData');
@@ -1127,7 +1055,7 @@ ipcMain.handle('provider-discovery:import-environment', async (_event, { env }) 
   const value = allowed ? process.env[allowed.env] : null;
   if (!allowed || !value) return { ok:false, error:'That environment key is no longer available.' };
   const cfg = loadConfig();
-  const storageKey = allowed.provider === 'nim' ? 'nimKey' : allowed.provider === 'openai' ? 'openaiKey' : allowed.provider === 'gemini' ? 'geminiKey' : `${allowed.provider}ApiKey`;
+  const storageKey = allowed.provider === 'nim' ? 'nimKey' : `${allowed.provider}ApiKey`;
   setEncryptedConfigValue(cfg, storageKey, value); await saveConfig(cfg);
   return { ok:true, provider:allowed.provider, name:allowed.name };
 });
@@ -1271,12 +1199,12 @@ ipcMain.handle('save-constitution', (_event, { folder, content }) => {
   }
 });
 
-// --- Shared Gemini call, used only by the general "Ask Gemini" box now ---
+// --- Nexus-owned Gemini call. The credential is injected by the build. ---
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
 async function callGemini(prompt, meta = {}) {
-  const key = getGeminiKey();
-  if (!key) return { ok: false, error: 'No Gemini API key saved yet.' };
+  const key = String(process.env.NEXUS_GEMINI_API_KEY || '').trim();
+  if (!key) return { ok: false, error: 'Nexus Gemini is not configured in this build.' };
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
 
@@ -1309,52 +1237,6 @@ async function callGemini(prompt, meta = {}) {
 
 ipcMain.handle('gemini-ask', async (_event, { prompt, folder }) => {
   const result = await callGemini(prompt, { folder, tag: 'ask-gemini' });
-  if (!result.ok) return result;
-  return { ok: true, text: result.text || '(empty response)' };
-});
-
-// --- Shared OpenAI call, used only by the general "Ask OpenAI" box for now -
-// same shape as callGemini/callNim (real timing, real metrics recording,
-// real error surfacing, no fabricated fallback text if the call fails). ---
-const OPENAI_MODEL = 'gpt-4o-mini';
-
-async function callOpenAI(prompt, meta = {}) {
-  const key = getOpenAiKey();
-  if (!key) return { ok: false, error: 'No OpenAI API key saved yet.' };
-
-  const startedAt = Date.now();
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const errMsg = data?.error?.message || `HTTP ${res.status}`;
-      recordAiCallMetric({ folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: false, error: errMsg });
-      return { ok: false, error: errMsg };
-    }
-    const text = data?.choices?.[0]?.message?.content || '';
-    recordAiCallMetric({
-      folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: true,
-      tokensIn: data?.usage?.prompt_tokens, tokensOut: data?.usage?.completion_tokens,
-    });
-    return { ok: true, text };
-  } catch (err) {
-    recordAiCallMetric({ folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: false, error: err.message });
-    return { ok: false, error: err.message };
-  }
-}
-
-ipcMain.handle('openai-ask', async (_event, { prompt, folder }) => {
-  const result = await callOpenAI(prompt, { folder, tag: 'ask-openai' });
   if (!result.ok) return result;
   return { ok: true, text: result.text || '(empty response)' };
 });
@@ -3603,9 +3485,8 @@ ipcMain.handle('export-secrets-to-env', (_event, { folder, projectUid }) => {
     return { ok: false, error: err.message };
   }
 });
-// GitHub personal access token: same encrypted-at-rest pattern as the
-// Gemini/NIM keys (see save-gemini-key above) - never stored in plaintext
-// when OS-level encryption is available.
+// GitHub personal access token: encrypted at rest via Electron safeStorage;
+// it is never stored in plaintext when OS-level encryption is available.
 ipcMain.handle('save-github-token', async (_event, { token }) => {
   const cfg = loadConfig();
   if (safeStorage.isEncryptionAvailable()) {
@@ -3686,7 +3567,16 @@ function firebaseAccountConfiguration() {
     apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY || cfg.firebaseWebApiKey || publisherConfig.firebaseWebApiKey,
     projectId: process.env.NEXUS_FIREBASE_PROJECT_ID || cfg.firebaseProjectId || publisherConfig.firebaseProjectId,
     storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET || cfg.firebaseStorageBucket || publisherConfig.firebaseStorageBucket,
+    appCheckBrokerUrl: process.env.NEXUS_FIREBASE_APPCHECK_BROKER_URL || cfg.firebaseAppCheckBrokerUrl || publisherConfig.firebaseAppCheckBrokerUrl,
   };
+}
+
+// Best-effort: resolves to null (never throws) when App Check isn't configured
+// or the broker fails, so real Firebase traffic is never blocked by it.
+async function currentAppCheckToken(configuration) {
+  if (!configuration.appCheckBrokerUrl) return null;
+  try { return await require('./appCheckBroker').getAppCheckToken(configuration.appCheckBrokerUrl); }
+  catch { return null; }
 }
 
 function storeFirebaseSession(cfg, tokens, profile = {}) {
@@ -3708,8 +3598,9 @@ async function establishNexusProviderAccount(providerId, credential, credentialT
   if (!configuration.apiKey || !configuration.projectId) return { unified:false, reason:'Configure the Nexus Firebase account project to use provider sign-in.' };
   require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
   const existing = await getFirebaseSession().catch(() => null);
-  const tokens = await require('./firebaseAccountClient').signInWithProvider(configuration.apiKey, { providerId, credential, credentialType, idToken:existing?.idToken || null });
-  const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken);
+  const appCheckToken = await currentAppCheckToken(configuration);
+  const tokens = await require('./firebaseAccountClient').signInWithProvider(configuration.apiKey, { providerId, credential, credentialType, idToken:existing?.idToken || null, appCheckToken });
+  const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken, appCheckToken);
   const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile);
   cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), providerId])]; await saveConfig(cfg);
   return { unified:true, linked:Boolean(existing), uid:profile.uid, email:profile.email || null, providers:cfg.nexusLinkedProviders };
@@ -3719,15 +3610,16 @@ async function getFirebaseSession({ requireVerified = false, refreshProfile = fa
   const cfg = loadConfig();
   const configuration = firebaseAccountConfiguration();
   require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
+  const appCheckToken = await currentAppCheckToken(configuration);
   let idToken = encryptedConfigValue(cfg, 'firebaseIdToken');
   if (!idToken || Number(cfg.firebaseTokenExpiresAt || 0) <= Date.now() + 60_000) {
     const refreshToken = encryptedConfigValue(cfg, 'firebaseRefreshToken');
     if (!refreshToken) return null;
-    const refreshed = await require('./firebaseAccountClient').refreshSession(configuration.apiKey, refreshToken);
+    const refreshed = await require('./firebaseAccountClient').refreshSession(configuration.apiKey, refreshToken, appCheckToken);
     storeFirebaseSession(cfg, refreshed); idToken = refreshed.idToken;
   }
   if (refreshProfile || requireVerified || !cfg.firebaseUid) {
-    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, idToken);
+    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, idToken, appCheckToken);
     storeFirebaseSession(cfg, { idToken, refreshToken: encryptedConfigValue(cfg, 'firebaseRefreshToken'), expiresIn: Math.max(60, Math.floor((Number(cfg.firebaseTokenExpiresAt || 0) - Date.now()) / 1000)) }, profile);
   }
   await saveConfig(cfg);
@@ -3742,12 +3634,13 @@ async function requireLinkedNexusProvider(providerId, label) {
   return session;
 }
 
-ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey, storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET ? '' : value.storageBucket }; });
+ipcMain.handle('email-account:configuration', () => { const value = firebaseAccountConfiguration(); return { ok: true, configured: Boolean(value.apiKey && value.projectId), projectId: process.env.NEXUS_FIREBASE_PROJECT_ID ? '' : value.projectId, apiKey: process.env.NEXUS_FIREBASE_WEB_API_KEY ? '' : value.apiKey, storageBucket: process.env.NEXUS_FIREBASE_STORAGE_BUCKET ? '' : value.storageBucket, appCheckBrokerUrl: process.env.NEXUS_FIREBASE_APPCHECK_BROKER_URL ? '' : (value.appCheckBrokerUrl || '') }; });
 ipcMain.handle('email-account:configure', async (_event, value = {}) => {
-  const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim(); const storageBucket = String(value.storageBucket || '').trim();
+  const apiKey = String(value.apiKey || '').trim(); const projectId = String(value.projectId || '').trim(); const storageBucket = String(value.storageBucket || '').trim(); const appCheckBrokerUrl = String(value.appCheckBrokerUrl || '').trim();
   require('./firebaseAccountClient').requireConfiguration(apiKey, projectId);
   if (storageBucket && !/^[a-z0-9._-]+$/.test(storageBucket)) throw new Error('Enter a valid Firebase Storage bucket name.');
-  const cfg = loadConfig(); cfg.firebaseWebApiKey = apiKey; cfg.firebaseProjectId = projectId; cfg.firebaseStorageBucket = storageBucket; await saveConfig(cfg); return { ok: true };
+  if (appCheckBrokerUrl && !/^https:\/\//.test(appCheckBrokerUrl)) throw new Error('The App Check broker URL must be an https:// Firebase Hosting URL.');
+  const cfg = loadConfig(); cfg.firebaseWebApiKey = apiKey; cfg.firebaseProjectId = projectId; cfg.firebaseStorageBucket = storageBucket; cfg.firebaseAppCheckBrokerUrl = appCheckBrokerUrl; await saveConfig(cfg); return { ok: true };
 });
 ipcMain.handle('email-account:sign-up', async (_event, value = {}) => {
   try {
@@ -3755,9 +3648,10 @@ ipcMain.handle('email-account:sign-up', async (_event, value = {}) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
     if (password.length < 8) throw new Error('Use a password with at least 8 characters.');
     const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
-    const tokens = await require('./firebaseAccountClient').signUp(configuration.apiKey, email, password);
+    const appCheckToken = await currentAppCheckToken(configuration);
+    const tokens = await require('./firebaseAccountClient').signUp(configuration.apiKey, email, password, appCheckToken);
     const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, { uid: tokens.localId, email, emailVerified: false }); cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), 'password'])]; await saveConfig(cfg);
-    await require('./firebaseAccountClient').sendVerification(configuration.apiKey, tokens.idToken);
+    await require('./firebaseAccountClient').sendVerification(configuration.apiKey, tokens.idToken, appCheckToken);
     return { ok: true, email, emailVerified: false };
   } catch (error) { return { ok: false, error: error.message }; }
 });
@@ -3765,8 +3659,9 @@ ipcMain.handle('email-account:sign-in', async (_event, value = {}) => {
   try {
     const email = String(value.email || '').trim().toLowerCase(); const password = String(value.password || '');
     const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId);
-    const tokens = await require('./firebaseAccountClient').signIn(configuration.apiKey, email, password);
-    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken);
+    const appCheckToken = await currentAppCheckToken(configuration);
+    const tokens = await require('./firebaseAccountClient').signIn(configuration.apiKey, email, password, appCheckToken);
+    const profile = await require('./firebaseAccountClient').lookupAccount(configuration.apiKey, tokens.idToken, appCheckToken);
     const cfg = loadConfig(); storeFirebaseSession(cfg, tokens, profile); cfg.nexusLinkedProviders = [...new Set([...(cfg.nexusLinkedProviders || []), 'password'])]; await saveConfig(cfg);
     return { ok: true, email: profile.email, emailVerified: profile.emailVerified };
   } catch (error) { return { ok: false, error: error.message }; }
@@ -3775,8 +3670,8 @@ ipcMain.handle('email-account:status', async () => {
   try { const session = await getFirebaseSession({ refreshProfile: true }); return { ok: true, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(session), email: session?.email || null, emailVerified: session?.emailVerified === true }; }
   catch (error) { const cfg = loadConfig(); return { ok: false, configured: Boolean(firebaseAccountConfiguration().apiKey && firebaseAccountConfiguration().projectId), signedIn: Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), email: cfg.firebaseEmail || null, emailVerified: cfg.firebaseEmailVerified === true, error: error.message }; }
 });
-ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
-ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase()); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('email-account:resend-verification', async () => { try { const session = await getFirebaseSession(); if (!session) throw new Error('Sign in with email first.'); await require('./firebaseAccountClient').sendVerification(session.configuration.apiKey, session.idToken, await currentAppCheckToken(session.configuration)); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
+ipcMain.handle('email-account:reset-password', async (_event, value = {}) => { try { const configuration = firebaseAccountConfiguration(); require('./firebaseAccountClient').requireConfiguration(configuration.apiKey, configuration.projectId); await require('./firebaseAccountClient').sendPasswordReset(configuration.apiKey, String(value.email || '').trim().toLowerCase(), await currentAppCheckToken(configuration)); return { ok: true }; } catch (error) { return { ok: false, error: error.message }; } });
 ipcMain.handle('email-account:sign-out', async () => {
   const cfg = loadConfig();
   clearFirebaseSession(cfg);
@@ -3900,7 +3795,7 @@ async function getGoogleAccessToken() {
 
 ipcMain.handle('oauth:status', () => { const cfg = loadConfig(); return { ok: true, github: Boolean(getGithubToken()), google: Boolean(encryptedConfigValue(cfg, 'googleRefreshToken') || encryptedConfigValue(cfg, 'googleAccessToken')), wordpress:Boolean(encryptedConfigValue(cfg, 'wordpressAccessToken')), wordpressProfile:cfg.wordpressProfile || null, nexusAccount:Boolean(encryptedConfigValue(cfg, 'firebaseRefreshToken')), nexusEmail:cfg.firebaseEmail || null, linkedProviders:cfg.nexusLinkedProviders || [] }; });
 
-const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiKey', 'glmApiKey', 'deepseekApiKey'];
+const ACCOUNT_VAULT_SECRET_KEYS = ['nimKey', 'kimiApiKey', 'deepseekApiKey'];
 const ACCOUNT_VAULT_PREFERENCE_KEYS = new Set([
   'nexus_workspace_col_fraction', 'nexus_workspace_row_fraction',
   'nexus_github_auto_sync_enabled', 'nexus_github_auto_sync_seconds',
@@ -4000,7 +3895,7 @@ async function saveEncryptedAccountVault(encrypted, providers) {
     try {
       const session = await getFirebaseSession({ requireVerified: true });
       if (!session) results.email = { ok: false, error: 'Sign in with a verified email account first.' };
-      else { await require('./firebaseAccountClient').saveAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken, encryptedVault: encrypted }); results.email = { ok: true }; }
+      else { await require('./firebaseAccountClient').saveAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken, encryptedVault: encrypted, appCheckToken: await currentAppCheckToken(session.configuration) }); results.email = { ok: true }; }
     } catch (error) { results.email = { ok: false, error: error.message }; }
   }
   return results;
@@ -4053,7 +3948,7 @@ ipcMain.handle('account-vault:restore', async (_event, value = {}) => {
     if (token) { try { await requireLinkedNexusProvider('github.com', 'GitHub'); const vault = await require('./githubClient').loadAccountVaultGist(token); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `GitHub: ${error.message}` }); } }
     const googleToken = await requireLinkedNexusProvider('google.com', 'Google').then(() => getGoogleAccessToken()).catch((error) => { candidates.push({ error:`Google: ${error.message}` }); return null; });
     if (googleToken) { try { const vault = await require('./googleDriveClient').loadAccountVaultFile(googleToken); if (vault) candidates.push(vault); } catch (error) { candidates.push({ error: `Google: ${error.message}` }); } }
-    try { const session = await getFirebaseSession({ requireVerified: true }); if (session) { const vault = await require('./firebaseAccountClient').loadAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken }); if (vault) candidates.push(vault); } } catch (error) { candidates.push({ error: `Email account: ${error.message}` }); }
+    try { const session = await getFirebaseSession({ requireVerified: true }); if (session) { const vault = await require('./firebaseAccountClient').loadAccountVault({ apiKey: session.configuration.apiKey, projectId: session.configuration.projectId, uid: session.uid, idToken: session.idToken, appCheckToken: await currentAppCheckToken(session.configuration) }); if (vault) candidates.push(vault); } } catch (error) { candidates.push({ error: `Email account: ${error.message}` }); }
     const available = candidates.filter((item) => item.content).sort((a, b) => Date.parse(b.modifiedTime || 0) - Date.parse(a.modifiedTime || 0));
     if (!available.length) return { ok: false, error: candidates.map((item) => item.error).filter(Boolean).join(' ') || 'No Nexus account vault was found in the connected accounts.' };
     const payload = require('./accountVault').decryptVault(available[0].content, value.passphrase);

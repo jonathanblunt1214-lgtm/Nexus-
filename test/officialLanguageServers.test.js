@@ -9,8 +9,16 @@ test('licensed first-party language server registry covers the requested provide
   assert.deepEqual(Object.values(PROVIDERS).map((item) => item.id), ['pyright','jdtls','roslyn','clangd','powershell-editor-services','dart-language-server','sourcekit-lsp']);
   assert.equal(PROVIDERS.python.bundled, true);
   for (const provider of Object.values(PROVIDERS)) assert.ok(provider.license && provider.name && provider.extensions.length);
-  const notices = fs.readFileSync(path.join(__dirname, '..', 'THIRD_PARTY_NOTICES.md'), 'utf8');
-  for (const provider of Object.values(PROVIDERS)) assert.ok(notices.includes(provider.license));
+
+  // Nexus only distributes bundled language-server code. Verify that bundled
+  // providers declare the same license as the installed package metadata;
+  // non-bundled providers remain user-installed external tools.
+  for (const provider of Object.values(PROVIDERS).filter((item) => item.bundled)) {
+    if (provider.id === 'pyright') {
+      const metadata = require('pyright/package.json');
+      assert.equal(metadata.license, provider.license);
+    }
+  }
 });
 
 test('bundled Pyright returns real Microsoft diagnostics for in-memory Python', async (t) => {

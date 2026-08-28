@@ -51,3 +51,20 @@ test('scheduled maintenance only ever checks out main and runs The Crucible week
   assert.match(workflow, /npm run repository:maintain[\s\S]*npm run release:crucible/);
   assert.match(crucible, /repositoryClutterAudit\.js/);
 });
+
+
+test('daily audit honors governed Crucible clutter exceptions without allowing duplicates globally', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-governed-clutter-'));
+  git(root, ['init']);
+  git(root, ['config', 'user.name', 'Nexus Test']);
+  git(root, ['config', 'user.email', 'nexus@example.test']);
+  fs.mkdirSync(path.join(root, 'governingDocuments', 'native'), { recursive:true });
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), 'same governance\n');
+  fs.writeFileSync(path.join(root, 'governingDocuments', 'native', 'AGENTS.md'), 'same governance\n');
+  fs.writeFileSync(path.join(root, '.thecrucible.json'), JSON.stringify({ clutter:{ allow:[{ path:'governingDocuments/native/AGENTS.md', expires:'2099-01-01' }], allowDuplicateContent:false } }));
+  git(root, ['add', '.']);
+  assert.equal(auditRepository({ root }).findings.length, 0);
+  fs.writeFileSync(path.join(root, 'COPY.md'), 'same governance\n');
+  git(root, ['add', 'COPY.md']);
+  assert.match(auditRepository({ root }).findings.map((item) => item.type).join(' '), /duplicate tracked content/);
+});

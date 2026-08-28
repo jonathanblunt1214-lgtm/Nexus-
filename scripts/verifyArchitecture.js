@@ -37,7 +37,7 @@ for (const check of checks) {
 
 const requiredFiles = [
   ['.thecrucible.json', 'external repository verification configuration'],
-  ['.github/workflows/the-crucible.yml', 'pinned read-only Crucible status gate'],
+  ['.github/workflows/the-crucible.yml', 'pinned Crucible status gate with bounded failure repair'],
   ['inventoryWorker.js', 'background inventory scanning'],
   ['atomicWrite.js', 'crash-safe registry persistence'],
   ['astEngine.js', 'Tree-sitter structural parsing'],
@@ -185,11 +185,21 @@ for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','plugi
 
 const crucibleWorkflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'the-crucible.yml'), 'utf8');
 const crucibleRef = '9d52a29bade03027cb523dd3aa0dd629cecb31a1';
+const topLevelPermissions = /permissions:\s*\n\s*contents: read\s*\n\s*issues: write\s*\n\s*pull-requests: read/.test(crucibleWorkflow);
+const repairJob = crucibleWorkflow.match(/\n  autonomous-repair:\n([\s\S]*)$/)?.[1] || '';
+const repairIsBounded = /needs\.crucible\.result == 'failure'/.test(repairJob) &&
+  /github\.ref == 'refs\/heads\/Development-branch'/.test(repairJob) &&
+  /permissions:\s*\n\s*contents: write\s*\n\s*actions: write\s*\n\s*models: read/.test(repairJob) &&
+  /git push origin HEAD:Development-branch/.test(repairJob) &&
+  !/refs\/heads\/main|git push[^\n]*(--force|-f\b)/.test(repairJob);
 if (!crucibleWorkflow.includes(`The-Crucible/.github/workflows/the-crucible.yml@${crucibleRef}`) ||
     !crucibleWorkflow.includes(`core_ref: ${crucibleRef}`) ||
-    /contents: write|pull-requests: write|secrets:\s*inherit/.test(crucibleWorkflow)) {
+    !topLevelPermissions ||
+    !repairIsBounded ||
+    (crucibleWorkflow.match(/contents: write/g) || []).length !== 1 ||
+    /pull-requests: write|secrets:\s*inherit/.test(crucibleWorkflow)) {
   failures += 1;
-  console.error('[FAIL] The Crucible integration must remain commit-pinned, read-only, and free of inherited secrets.');
+  console.error('[FAIL] The Crucible integration must remain commit-pinned and read-only except for its bounded Development-only failure repair job.');
 }
 
 if (failures > 0) {
