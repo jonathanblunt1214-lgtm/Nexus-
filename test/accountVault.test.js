@@ -100,6 +100,19 @@ test('account vault automatically syncs every 15 minutes until the Nexus user si
   assert.match(html, /closing and reopening the app[\s\S]*until you sign out/);
 });
 
+test('restoring the account vault tells the user how old the restored copy actually is', () => {
+  const fs = require('fs');
+  const main = fs.readFileSync(require.resolve('../main'), 'utf8');
+  const renderer = fs.readFileSync(require.resolve('../renderer'), 'utf8');
+  assert.match(main, /updatedAt: payload\.updatedAt \|\| available\[0\]\.modifiedTime, \.\.\.restored/);
+  assert.match(main, /updatedAt: payload\.updatedAt \|\| null, \.\.\.\(await applyAccountVaultPayload\(payload\)\)/);
+  assert.match(renderer, /result\.updatedAt \? ` This copy was saved \$\{new Date\(result\.updatedAt\)\.toLocaleString\(\)\}\.` : ''/);
+  const restoreFn = renderer.match(/async function restoreAccountVault\(\)[\s\S]*?\n}/)[0];
+  const airgapSummaryFn = renderer.match(/function applyRestoredVaultResult\(result\)[\s\S]*?\n}/)[0];
+  assert.match(restoreFn, /savedAt/);
+  assert.match(airgapSummaryFn, /savedAt/);
+});
+
 test('projects are optionally account-linked by safe metadata and restorable source references', () => {
   const fs = require('fs');
   const main = fs.readFileSync(require.resolve('../main'), 'utf8');

@@ -4648,7 +4648,8 @@ async function restoreAccountVault() {
     queueAccountProjectRestores(result.projects || []);
     const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
     renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
-    showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
+    const savedAt = result.updatedAt ? ` This copy was saved ${new Date(result.updatedAt).toLocaleString()}.` : '';
+    showToast('success', 'Account vault restored', `${result.restoredApiKeyCount} API key(s) restored from ${result.source}.${savedAt} ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`);
   } else showToast('error', 'Account vault restore failed', result.error);
   document.getElementById('account-vault-passphrase').value = '';
   refreshAccountVaultStatus(); refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
@@ -4662,7 +4663,8 @@ function applyRestoredVaultResult(result) {
   const missing = (result.plugins || []).filter((plugin) => plugin.enabled).map((plugin) => `${plugin.id}${plugin.version ? `@${plugin.version}` : ''}`);
   renderGitHubAutoSyncSettings(); scheduleGitHubAutoSync();
   refreshGeminiStatus(); refreshNimStatus(); refreshOpenAiStatus();
-  return `${result.restoredApiKeyCount} API key(s) restored. ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`;
+  const savedAt = result.updatedAt ? ` This copy was saved ${new Date(result.updatedAt).toLocaleString()}.` : '';
+  return `${result.restoredApiKeyCount} API key(s) restored.${savedAt} ${missing.length ? `${missing.length} enabled plug-in(s) are listed for signed reinstall.` : 'No plug-ins need reinstalling.'}`;
 }
 
 async function exportAirGappedVault() {
