@@ -32,6 +32,19 @@ function removeTopLevelFunctions(text, fileName, predicate) {
   return { text: removeRanges(text, ranges), removedNames };
 }
 
+function removeTopLevelVariables(text, fileName, names) {
+  const sf = sourceFile(text, fileName);
+  const ranges = [];
+  for (const statement of sf.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    const declared = statement.declarationList.declarations
+      .map((declaration) => ts.isIdentifier(declaration.name) ? declaration.name.text : null)
+      .filter(Boolean);
+    if (declared.some((name) => names.has(name))) ranges.push([statement.getFullStart(), statement.end]);
+  }
+  return removeRanges(text, ranges);
+}
+
 function removeTopLevelIpcHandlers(text, fileName, channels) {
   const sf = sourceFile(text, fileName);
   const ranges = [];
@@ -84,18 +97,21 @@ function removeHtmlCardByLabel(text, prefix) {
 }
 
 // main.js: physically remove user-managed Gemini/OpenAI credential IPC and the
-// retired Ask OpenAI route. Keep Ask Gemini, but make it consume only the
-// Nexus-owned build credential.
+// retired Ask OpenAI implementation. Keep Ask Gemini, but make it consume only
+// the Nexus-owned build credential.
 let main = read('main.js');
 main = removeTopLevelIpcHandlers(main, 'main.js', new Set([
   'save-gemini-key', 'has-gemini-key', 'clear-gemini-key',
   'save-openai-key', 'has-openai-key', 'clear-openai-key', 'openai-ask',
 ]));
-({ text: main } = removeTopLevelFunctions(main, 'main.js', (name) => name === 'getGeminiKey' || name === 'getOpenaiKey'));
+({ text: main } = removeTopLevelFunctions(main, 'main.js', (name) =>
+  name === 'getGeminiKey' || name === 'getOpenAiKey' || name === 'getOpenaiKey' || name === 'callOpenAI'));
+main = removeTopLevelVariables(main, 'main.js', new Set(['OPENAI_MODEL']));
 const legacyGeminiLookup = "const key = getGeminiKey();\n  if (!key) return { ok: false, error: 'No Gemini API key saved yet.' };";
 if (!main.includes(legacyGeminiLookup)) throw new Error('Legacy Gemini key lookup was not found in main.js.');
 main = main.replace(legacyGeminiLookup, "const key = String(process.env.NEXUS_GEMINI_API_KEY || '').trim();\n  if (!key) return { ok: false, error: 'Nexus Gemini is not configured in this build.' };");
 main = main.replace('// --- Gemini API key: stored encrypted at rest via Electron\'s safeStorage ---\n', '');
+main = main.replace('// GitHub personal access token: same encrypted-at-rest pattern as the\n// Gemini/NIM keys (see save-gemini-key above) - never stored in plaintext\n// when OS-level encryption is available.', '// GitHub personal access token: encrypted at rest via Electron safeStorage;\n// it is never stored in plaintext when OS-level encryption is available.');
 write('main.js', main);
 
 // preload.js: remove the credential-management bridge and all OpenAI bridge
@@ -151,7 +167,8 @@ const targets = ['main.js', 'preload.js', 'renderer.js', 'index.html', 'bootstra
 const forbidden = /save-gemini-key|has-gemini-key|clear-gemini-key|save-openai-key|has-openai-key|clear-openai-key|openai-ask|Gemini API Key|OpenAI API Key|Ask OpenAI/;
 for (const file of targets) {
   const content = read(file);
-  if (forbidden.test(content)) throw new Error(`Retired AI settings text still exists in ${file}.`);
+  const match = content.match(forbidden);
+  if (match) throw new Error(`Retired AI settings text still exists in ${file}: ${match[0]}`);
 }
 if (/Ask Gemini/.test(read('index.html'))) throw new Error('Ask Gemini still exists in Settings HTML.');
 
