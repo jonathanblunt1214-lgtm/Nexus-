@@ -2,8 +2,6 @@ const ENVIRONMENT_KEYS = Object.freeze([
   { env:'NVIDIA_API_KEY', provider:'nim', name:'NVIDIA NIM' },
   { env:'MOONSHOT_API_KEY', provider:'kimi', name:'Kimi / Moonshot' },
   { env:'KIMI_API_KEY', provider:'kimi', name:'Kimi / Moonshot' },
-  { env:'ZAI_API_KEY', provider:'glm', name:'Z.ai GLM' },
-  { env:'ZHIPUAI_API_KEY', provider:'glm', name:'Z.ai GLM' },
   { env:'DEEPSEEK_API_KEY', provider:'deepseek', name:'DeepSeek' },
   { env:'OPENAI_API_KEY', provider:'openai', name:'OpenAI' },
   { env:'GEMINI_API_KEY', provider:'gemini', name:'Google Gemini' },
