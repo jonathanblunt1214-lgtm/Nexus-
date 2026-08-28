@@ -24,12 +24,6 @@ jobs:
       weekly_maintenance: ${{ github.event.schedule == '47 4 * * 0' }}
       dependency_review: true
 
-  # main's branch protection requires a status check literally named
-  # "The Crucible". A job that calls a reusable workflow (like "crucible"
-  # above) instead posts "<this job's name> / <called job's name>" - a
-  # GitHub Actions naming rule, not something the caller can override. This
-  # job carries no logic of its own: it only reflects the crucible job's
-  # real result under the exact name branch protection expects.
   report:
     name: The Crucible
     needs: crucible
@@ -49,11 +43,11 @@ jobs:
           github.ref == 'refs/heads/Development-branch' &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     permissions:
       contents: write
       actions: write
-      copilot-requests: write
+      models: read
     concurrency:
       group: nexus-crucible-auto-repair-development
       cancel-in-progress: false
@@ -112,35 +106,34 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Try deterministic Nexus repair first
-        id: deterministic
         shell: bash
         run: |
-          set -uo pipefail
           set +e
           node scripts/selfRepairCommit.js --apply --no-report
+          exit 0
+
+      - name: Determine whether AI repair is still required
+        id: unresolved
+        shell: bash
+        run: |
+          set +e
+          npm run release:crucible > /tmp/nexus-crucible-recheck.log 2>&1
           status=$?
           set -e
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "needs_ai=true" >> "$GITHUB_OUTPUT"
-          else
+          tail -n 200 /tmp/nexus-crucible-recheck.log || true
+          if [ "$status" -eq 0 ]; then
             echo "needs_ai=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_ai=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "deterministic_status=$status" >> "$GITHUB_OUTPUT"
 
-      - name: Install GitHub Copilot CLI for general repair
-        if: steps.deterministic.outputs.needs_ai == 'true'
-        run: npm install -g @github/copilot
-
-      - name: Repair unresolved Crucible failure with Copilot
-        if: steps.deterministic.outputs.needs_ai == 'true'
+      - name: Repair unresolved Crucible failure with GitHub Models
+        if: steps.unresolved.outputs.needs_ai == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           FAILED_SHA: ${{ github.sha }}
           ATTEMPT: ${{ steps.attempt.outputs.number }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          copilot --yolo -p "You are the autonomous Nexus Development repair agent. The Crucible failed on Development-branch at commit ${FAILED_SHA}. Work only in this checked-out repository and do not commit or push; the workflow will do that after verification. First read AGENTS.md, AI-CONFLICTS.json, AI-HANDOFF.json, and DEVLOG.md. Preserve all repository governance. Never touch main, never create another branch, never weaken tests, security checks, Crucible configuration, branch rules, or governance to make a failure pass. Reproduce the actual failure locally with npm run release:crucible and any narrower commands needed, inspect the relevant source and tests, and fix the root cause in application/test/build code as appropriate. If repository-file-manifest.json becomes stale after legitimate edits, refresh it with npm run inventory:update. This is autonomous repair attempt ${ATTEMPT}/3. Keep changes narrowly scoped to the actual Crucible failure and leave the working tree containing the repair when done."
+        run: node scripts/githubModelsRepairAgent.js
 
       - name: Refresh inventory after repair edits
         shell: bash
@@ -155,7 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           if git diff --quiet && git diff --cached --quiet; then
-            echo "Crucible failed and neither deterministic repair nor Copilot produced a code change."
+            echo "Crucible failed and autonomous repair produced no repository change."
             exit 1
           fi
           npm run inventory:verify
