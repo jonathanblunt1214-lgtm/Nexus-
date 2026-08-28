@@ -47,7 +47,8 @@ async function askWithNexusGemini(prompt) {
 
 // The legacy main process already owns encrypted provider persistence. Wrap
 // only the coding-provider and project-owned service channels that remain
-// part of Nexus's supported Settings/runtime surface.
+// part of Nexus's supported Settings/runtime surface. Build numbering is also
+// captured here so a new source commit receives its number automatically once.
 function installCodingModelProviderIpcUpgrade() {
   const securedHandle = ipcMain.handle.bind(ipcMain);
   const handlers = new Map();
@@ -61,6 +62,7 @@ function installCodingModelProviderIpcUpgrade() {
     'save-gcp-project',
     'get-gcp-project',
     'gemini-ask',
+    'build-number:approve',
   ]);
 
   ipcMain.handle = (channel, listener) => {
@@ -120,7 +122,15 @@ function installCodingModelProviderIpcUpgrade() {
     return securedHandle(channel, listener);
   };
 
-  return () => { ipcMain.handle = securedHandle; };
+  const restore = () => { ipcMain.handle = securedHandle; };
+  restore.autoAssignBuild = async () => {
+    const assignHandler = handlers.get('build-number:approve');
+    if (!assignHandler) return null;
+    // buildNumber.js makes this call idempotent for the current commit, so
+    // retries and repeated launches do not burn extra build numbers.
+    return assignHandler(null, { approved:true, automatic:true });
+  };
+  return restore;
 }
 
 function installCodingModelProviderUiUpgrade() {
@@ -159,6 +169,15 @@ function installCodingModelProviderUiUpgrade() {
         removeCard('Ask Gemini');
         removeCard('OpenAI API Key');
         removeCard('Ask OpenAI');
+
+        // Build numbering is automatic now. There is no user approval step.
+        document.getElementById('approve-build-number-btn')?.remove();
+        const buildNext = document.getElementById('approved-build-next');
+        const buildCard = buildNext?.closest('.card');
+        if (buildCard) {
+          const helper = Array.from(buildCard.querySelectorAll('p.muted.small')).at(-1);
+          if (helper) helper.textContent = 'Build numbers are assigned automatically once per new Nexus source commit. Re-opening or retrying the same commit does not increment again. 1.0.0 remains reserved for public launch.';
+        }
 
         const discovery = cardByLabelPrefix('Safe Provider Discovery');
         if (!discovery || discovery.dataset.hostedKeysReady === 'true') return;
@@ -267,11 +286,8 @@ const restoreIpcHandle = installCodingModelProviderIpcUpgrade();
 require('./main.js');
 
 // Permanently retire the user-managed Gemini-key and OpenAI surfaces from the
-// active Nexus runtime. The legacy main process may still contain historical
-// implementation text, but there is no registered IPC route that can save,
-// read, clear, or call those retired integrations. Ask Gemini is the one
-// supported Gemini route and was replaced above with the Nexus-owned build
-// credential path.
+// active Nexus runtime. Ask Gemini remains the Nexus-owned build-credential
+// route but is not exposed in Settings.
 for (const channel of [
   'save-gemini-key',
   'has-gemini-key',
@@ -281,5 +297,18 @@ for (const channel of [
   'clear-openai-key',
   'openai-ask',
 ]) ipcMain.removeHandler(channel);
+
+// Assign the build only after the main process has initialized config and the
+// window has finished loading. The commit-keyed state makes this safe to retry.
+app.on('browser-window-created', (_event, window) => {
+  window.webContents.once('did-finish-load', async () => {
+    try {
+      await restoreIpcHandle.autoAssignBuild?.();
+      await window.webContents.executeJavaScript(`typeof loadBuildInfoAndCheckUpdates === 'function' ? loadBuildInfoAndCheckUpdates() : undefined`);
+    } catch (error) {
+      console.error('[Nexus] Automatic build-number assignment failed:', error.message);
+    }
+  });
+});
 
 restoreIpcHandle();
