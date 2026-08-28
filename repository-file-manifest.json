@@ -873,8 +873,8 @@
     {
       "path": ".github/workflows/commit-self-repair-apply.yml",
       "type": ".yml",
-      "size": 1974,
-      "sha256": "58ba2f2efe562a1515d4ae75c8a41734aaeffd8c49d1d4da92278420a2ee6fe9"
+      "size": 2491,
+      "sha256": "82e1a033818833b140eb088c172e215f70528a088435e0d520c3981fa6b33728"
     },
     {
       "path": ".github/workflows/commit-self-repair.yml",
