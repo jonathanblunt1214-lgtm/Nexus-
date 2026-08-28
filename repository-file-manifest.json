@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 231,
+  "fileCount": 229,
   "types": {
     ".json": 11,
-    ".md": 19,
+    ".md": 17,
     ".cjs": 1,
     "[no extension]": 3,
     ".yml": 11,
@@ -927,8 +927,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 3487,
-      "sha256": "26ecb040d12a96840ad48b9594c988f6aa2ae971b0042ed0081f0795620d432e"
+      "size": 4993,
+      "sha256": "f84ffd384a5697110731961bae86c99de333a9b9531f5091fec6d172ad7475d6"
     },
     {
       "path": "AGENTS.md",
@@ -947,12 +947,6 @@
       "type": ".json",
       "size": 3625,
       "sha256": "ccd4717a1241d18fa89c78d1eb5877425a196a45c20e0b9f2fc36abacb2fa527"
-    },
-    {
-      "path": "AI_IMPROVEMENT_FRAMEWORK.md",
-      "type": ".md",
-      "size": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "CLAUDE.md",
@@ -995,12 +989,6 @@
       "type": ".bat",
       "size": 2389,
       "sha256": "3b249ee72ce685cd1d3f3ab1cb67806989eae51e873eae8877f652ae107e1093"
-    },
-    {
-      "path": "THIRD_PARTY_NOTICES.md",
-      "type": ".md",
-      "size": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "accountVault.js",
@@ -1431,8 +1419,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5565,
-      "sha256": "9a60020f0949d5f2f091ca429a68440625fe5a802f89b985a3825a06556af90d"
+      "size": 5533,
+      "sha256": "cb6fac326449560cc0742c41815273d788beeae95713e6adce844ad786efacba"
     },
     {
       "path": "pipelineEngine.js",
@@ -1557,8 +1545,8 @@
     {
       "path": "providerDiscovery.js",
       "type": ".js",
-      "size": 1457,
-      "sha256": "a8ec63c7b1aae06e6604d243672f7bd92d66347231c8798617fdbf173c975feb"
+      "size": 699,
+      "sha256": "1db913dbe0aa5f22816e44ba77a0d72c4ffc7c40e521fefe5b44bf6a455131e3"
     },
     {
       "path": "publisherConfig.js",
@@ -2061,8 +2049,8 @@
     {
       "path": "test/providerDiscovery.test.js",
       "type": ".js",
-      "size": 1420,
-      "sha256": "684a708317a955e1d5089c5cc8947c2a6ffa783103a444ce20198d172bb42da4"
+      "size": 1441,
+      "sha256": "aeb4e059b2feb1b963b84265f52a3fa33aa95577dd0766717f36856a8832eaf9"
     },
     {
       "path": "test/repositoryMaintenance.test.js",
