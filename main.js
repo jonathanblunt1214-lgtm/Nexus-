@@ -320,7 +320,9 @@ function setupPopupAllowlist() {
   app.on('web-contents-created', (_event, contents) => {
     if (contents.getType() === 'window') {
       contents.on('will-navigate', (event, url) => {
-        if (url !== pathToFileURL(path.join(__dirname, 'index.html')).href) event.preventDefault();
+        const nexusAppUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
+        if (url === nexusAppUrl || isAllowedPopupUrl(url)) return;
+        event.preventDefault();
       });
     }
     if (contents.getType() !== 'webview') return;
