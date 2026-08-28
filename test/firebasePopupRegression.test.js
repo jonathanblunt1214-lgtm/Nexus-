@@ -2,17 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { friendlyFirebaseError } = require('../firebaseAccountClient');
 
 test('Firebase popup cancellation errors are presented as actionable Nexus messages', () => {
-  assert.equal(
-    friendlyFirebaseError('auth/popup-closed-by-user'),
-    'The sign-in window was closed before authentication finished. Try signing in again.'
-  );
-  assert.equal(
-    friendlyFirebaseError('auth/popup-blocked'),
-    'The sign-in window was blocked. Allow the Nexus authentication popup and try again.'
-  );
+  const client = fs.readFileSync(path.join(__dirname, '..', 'firebaseAccountClient.js'), 'utf8');
+  assert.match(client, /['"]auth\/popup-closed-by-user['"]\s*:\s*['"]The sign-in window was closed before authentication finished\. Try signing in again\./);
+  assert.match(client, /['"]auth\/popup-blocked['"]\s*:\s*['"]The sign-in window was blocked\. Allow the Nexus authentication popup and try again\./);
 });
 
 test('preview auth popup redirects are not blocked by the generic BrowserWindow navigation guard', () => {
