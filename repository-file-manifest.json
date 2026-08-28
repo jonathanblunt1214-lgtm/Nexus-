@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 226,
+  "fileCount": 229,
   "types": {
     ".json": 10,
-    ".md": 15,
+    ".md": 18,
     ".cjs": 1,
     "[no extension]": 3,
     ".yml": 11,
@@ -1278,6 +1278,24 @@
       "type": ".json",
       "size": 3625,
       "sha256": "ccd4717a1241d18fa89c78d1eb5877425a196a45c20e0b9f2fc36abacb2fa527"
+    },
+    {
+      "path": "governingDocuments/native/CLAUDE.md",
+      "type": ".md",
+      "size": 2254,
+      "sha256": "286e5b8d5cf507586c3e7cfc304a2314eb43194a4489201a27b22f3503e6b807"
+    },
+    {
+      "path": "governingDocuments/native/CONSTITUTION.md",
+      "type": ".md",
+      "size": 934,
+      "sha256": "3438c9900ea90d0345cb0c838811d4d5d18551e9bb55f87feb949113580fbb87"
+    },
+    {
+      "path": "governingDocuments/native/DEVLOG.md",
+      "type": ".md",
+      "size": 2219,
+      "sha256": "695f586e8780524200fa9eeec6624391edc127326c01ee05e0ea747a8b8b9de9"
     },
     {
       "path": "governingDocuments/required-check-rollout.md",
