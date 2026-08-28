@@ -928,8 +928,8 @@
     {
       "path": "AGENTS.md",
       "type": ".md",
-      "size": 3436,
-      "sha256": "67cd41e3f766e48b4f59b953c55505e76b24bcf72d614921b34d6e6595c683ef"
+      "size": 4649,
+      "sha256": "f2977e86e789b88831bb2ef8f81ec67b939e0a46f96b355f1da717960f6adc92"
     },
     {
       "path": "AI-CONFLICTS.json",
@@ -940,8 +940,8 @@
     {
       "path": "AI-HANDOFF.json",
       "type": ".json",
-      "size": 2841,
-      "sha256": "24afb9ba53b69f0a689d696e46e69efe760645399cd63b9c8cefffd71baa6fcb"
+      "size": 3625,
+      "sha256": "ccd4717a1241d18fa89c78d1eb5877425a196a45c20e0b9f2fc36abacb2fa527"
     },
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
