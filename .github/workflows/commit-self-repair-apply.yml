@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   repair-development:
@@ -42,12 +43,14 @@ jobs:
           NEXUS_REPAIR_ROOT: ${{ github.workspace }}/target
         run: node trusted/scripts/selfRepairCommit.js --apply --trusted-static --no-report
       - name: Commit approved deterministic repairs
+        id: commit
         working-directory: target
         shell: bash
         run: |
           set -euo pipefail
           if git diff --quiet; then
             echo "Commit already satisfies deterministic Nexus invariants."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -55,7 +58,18 @@ jobs:
           git add .github/workflows repository-file-manifest.json
           if git diff --cached --quiet; then
             echo "No approved repair files changed."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "Automatically repair commit invariants"
           git push origin HEAD:Development-branch
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch Crucible on repaired Development HEAD
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run the-crucible.yml --repo "$GITHUB_REPOSITORY" --ref Development-branch
