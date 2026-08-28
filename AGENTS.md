@@ -25,6 +25,15 @@ These rules apply to Claude, Codex, Gemini, Copilot, and every other automated a
 - At `2026-08-29 08:43:34 EDT`, this permission expires automatically. After expiration, no external system, including The Crucible, has write access under this exception; any further external write requires new explicit authorization from the repository owner.
 - Crucible-originated governing documents remain subject to normal repository integrity and conflict checks; if a real concurrent-edit conflict exists, record it in `AI-CONFLICTS.json` rather than silently overwriting another agent's work.
 
+## Native-governance assimilation after Crucible injection
+
+- As soon as a Crucible-injected `governingDocuments/` tree exists on `Development-branch`, begin assimilating Nexus's native AI-governance documents into that tree.
+- Native governance documents for this purpose are `AGENTS.md`, `AI-HANDOFF.json`, `AI-CONFLICTS.json`, `CLAUDE.md`, `DEVLOG.md`, and `CONSTITUTION.md`.
+- Copy these documents into `governingDocuments/native/`; do not move or delete the root copies merely because assimilation has started.
+- Preserve Crucible-injected files as the Crucible baseline. When native and Crucible governance cover the same subject, reconcile them by incorporating compatible Nexus-specific rules into the governing-document structure without erasing Crucible-originated requirements.
+- If a native rule and a Crucible rule genuinely conflict and cannot both be preserved, do not silently pick a winner or overwrite either source. Record the conflict in `AI-CONFLICTS.json` and leave both source documents intact until the conflict is resolved.
+- Assimilation is an internal Nexus write performed after injection; it does not extend the external-write window or grant any new external actor write authority.
+
 ## Agent communication policy
 
 - Every attended progress or completion check-in to the repository owner must open with a timestamp in the exact form `YYYY-MM-DD HH:MM:SS EDT/EST` (e.g. `2026-08-28 08:10:42 EDT`).
