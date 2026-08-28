@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 220,
+  "fileCount": 223,
   "types": {
     ".json": 8,
-    ".md": 11,
+    ".md": 14,
     ".cjs": 1,
     "[no extension]": 3,
     ".yml": 11,
@@ -1248,6 +1248,24 @@
       "type": ".js",
       "size": 2559,
       "sha256": "5213201d47631ae4de841622fc8c9cbaa45b4c604ff781f23aff0c906c214959"
+    },
+    {
+      "path": "governingDocuments/agent-progress-policy.md",
+      "type": ".md",
+      "size": 3155,
+      "sha256": "df561081a2b443efbd6ea1b4798c1da9ca2006fa1aff7015113b88ed1905dcba"
+    },
+    {
+      "path": "governingDocuments/ai-conflict-resolution.md",
+      "type": ".md",
+      "size": 1979,
+      "sha256": "23a66954d804da914e601ecd599e49147547949edb7636dfbc0db8264bbe82ff"
+    },
+    {
+      "path": "governingDocuments/required-check-rollout.md",
+      "type": ".md",
+      "size": 1667,
+      "sha256": "82ae8eb6bea398e60b4089bffc6202a417c64ffc12418609940feb419099ff4a"
     },
     {
       "path": "index.html",
