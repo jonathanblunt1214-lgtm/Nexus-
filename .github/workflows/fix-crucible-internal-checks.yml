@@ -1,0 +1,43 @@
+name: One-time Crucible Internal Check Repair
+
+on:
+  push:
+    branches: [Development-branch]
+    paths:
+      - '.github/workflows/fix-crucible-internal-checks.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: Development-branch
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply repairs
+        run: node scripts/fixCrucibleInternalChecks.js
+      - name: Verify targeted checks
+        run: |
+          node --test test/updaterIntegration.test.js test/repositoryMaintenance.test.js
+          node scripts/repositoryClutterAudit.js
+      - name: Remove one-time repair files and refresh inventory
+        run: |
+          rm scripts/fixCrucibleInternalChecks.js
+          rm .github/workflows/fix-crucible-internal-checks.yml
+          npm run inventory:update
+          npm run inventory:verify
+      - name: Commit repaired Development state
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add renderer.js scripts/repositoryClutterAudit.js test/repositoryMaintenance.test.js repository-file-manifest.json scripts/fixCrucibleInternalChecks.js .github/workflows/fix-crucible-internal-checks.yml
+          git commit -m 'Fix Crucible internal updater and clutter checks'
+          git push origin HEAD:Development-branch
