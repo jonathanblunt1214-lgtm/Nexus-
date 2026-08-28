@@ -1575,8 +1575,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 273997,
-      "sha256": "13369e532ddf78381737413316c885bc1fceef7b80a5ea6cc99135e7f92ac635"
+      "size": 274055,
+      "sha256": "c3e9efd1a694c4f3e47ca16dc867e58f6adf76770ea0b78af9876aa3e72d2a88"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1665,8 +1665,8 @@
     {
       "path": "scripts/repositoryClutterAudit.js",
       "type": ".js",
-      "size": 2418,
-      "sha256": "88f7c2129b00f5a5183e56fc30cbbb738ef2e20327f4a20c06feaf7afd245886"
+      "size": 3010,
+      "sha256": "60ad6cab7fd05cbc186d0df927741cd8bfc451f6511dc639f86000e51d2b63c2"
     },
     {
       "path": "scripts/repositoryMaintenance.js",
@@ -2055,8 +2055,8 @@
     {
       "path": "test/repositoryMaintenance.test.js",
       "type": ".js",
-      "size": 2961,
-      "sha256": "901a072dec6ffdb4726b5b001d20fc4a438020b65412560263d006881aa54b17"
+      "size": 4057,
+      "sha256": "354e15ae10c5a3da40628dfa4b77c5eb7a5cebedb4a73bede7dd203fccae4f8c"
     },
     {
       "path": "test/repositoryPrivacy.test.js",

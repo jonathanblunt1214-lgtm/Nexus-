@@ -1,4 +1,5 @@
 const { execFileSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
@@ -14,12 +15,27 @@ function git(args, options = {}) {
   return execFileSync('git', args, { cwd:options.root || root, encoding:'utf8', windowsHide:true }).trim();
 }
 
+function loadGovernedClutterAllow(cwd) {
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(cwd, '.thecrucible.json'), 'utf8'));
+    const now = Date.now();
+    return new Set((config.clutter?.allow || [])
+      .filter((entry) => entry && typeof entry.path === 'string')
+      .filter((entry) => !entry.expires || Date.parse(`${entry.expires}T23:59:59Z`) >= now)
+      .map((entry) => entry.path));
+  } catch {
+    return new Set();
+  }
+}
+
 function auditRepository(options = {}) {
   const cwd = options.root || root;
+  const allowed = loadGovernedClutterAllow(cwd);
   const files = git(['ls-files', '-z'], { root:cwd }).split('\0').filter(Boolean);
   const findings = [];
   const hashes = new Map();
   for (const file of files) {
+    if (allowed.has(file)) continue;
     const size = Number(git(['cat-file', '-s', `:${file}`], { root:cwd }));
     if (size === 0) findings.push({ type:'empty tracked file', path:file });
     if (CLUTTER_PATH.test(file)) findings.push({ type:'generated or temporary path', path:file });
@@ -49,4 +65,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { CLUTTER_PATH, OBSOLETE_PATHS, auditRepository };
+module.exports = { CLUTTER_PATH, OBSOLETE_PATHS, loadGovernedClutterAllow, auditRepository };

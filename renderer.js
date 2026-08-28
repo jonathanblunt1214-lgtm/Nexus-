@@ -4006,6 +4006,8 @@ function renderReleaseUpdateStatus(status) {
   else message.innerText = status.message || 'Check GitHub Releases for a newer version of Nexus.';
 }
 
+window.nexus.onUpdaterStatus(renderReleaseUpdateStatus);
+
 async function checkForReleaseUpdate() {
   try {
     const status = await window.nexus.getUpdaterStatus();
