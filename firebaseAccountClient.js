@@ -6,6 +6,7 @@ function requireConfiguration(apiKey, projectId) {
 }
 
 function friendlyFirebaseError(code) {
+  const normalizedCode = String(code || '').trim();
   const messages = {
     EMAIL_EXISTS: 'An account already exists for this email address.',
     EMAIL_NOT_FOUND: 'No Nexus account was found for this email address.',
@@ -17,8 +18,11 @@ function friendlyFirebaseError(code) {
     WEAK_PASSWORD: 'Choose a stronger password with at least six characters.',
     TOKEN_EXPIRED: 'Your Nexus email session expired. Sign in again.',
     INVALID_ID_TOKEN: 'Your Nexus email session is invalid. Sign in again.',
+    'auth/popup-closed-by-user': 'The sign-in window was closed before authentication finished. Try signing in again.',
+    'auth/cancelled-popup-request': 'A newer sign-in attempt replaced the previous sign-in window. Continue with the newest window.',
+    'auth/popup-blocked': 'The sign-in window was blocked. Allow the Nexus authentication popup and try again.',
   };
-  return messages[code] || `Firebase account request failed: ${code || 'unknown error'}`;
+  return messages[normalizedCode] || `Firebase account request failed: ${normalizedCode || 'unknown error'}`;
 }
 
 async function firebaseJson(url, body, options = {}) {
@@ -88,4 +92,4 @@ async function loadAccountVault({ apiKey, projectId, uid, idToken, appCheckToken
   return content ? { content, modifiedTime: data.fields?.updatedAt?.timestampValue || data.updateTime, source: 'email' } : null;
 }
 
-module.exports = { requireConfiguration, signUp, signIn, signInWithProvider, sendVerification, sendPasswordReset, lookupAccount, refreshSession, saveAccountVault, loadAccountVault };
+module.exports = { requireConfiguration, friendlyFirebaseError, signUp, signIn, signInWithProvider, sendVerification, sendPasswordReset, lookupAccount, refreshSession, saveAccountVault, loadAccountVault };

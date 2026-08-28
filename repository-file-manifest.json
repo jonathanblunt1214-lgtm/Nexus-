@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 230,
+  "fileCount": 231,
   "types": {
     ".json": 11,
     ".md": 17,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 172,
+    ".js": 173,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -1059,8 +1059,8 @@
     {
       "path": "appCheckBroker.js",
       "type": ".js",
-      "size": 4745,
-      "sha256": "8477e18e36066ba8f878be97c0fa28667f092343f5eaa823dc269915bbfa29a9"
+      "size": 5047,
+      "sha256": "f794bbe6b7a637f0b9b744a23e32ab1b21e3e1d5b99ffc70b7fdcc0aa6b81fb8"
     },
     {
       "path": "appCheckBrokerPreload.js",
@@ -1191,8 +1191,8 @@
     {
       "path": "firebaseAccountClient.js",
       "type": ".js",
-      "size": 6216,
-      "sha256": "66a880bf9c327628f346fe5f24be21b01bd4ed2813e8d17d5d4a061861c22a66"
+      "size": 6678,
+      "sha256": "1a8b436c2664f13cb92351ea553fe5d9e2c8fdffcb5a4a3e983ff64f820d3e5d"
     },
     {
       "path": "firestore.rules",
@@ -1377,8 +1377,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 216662,
-      "sha256": "013ca587250b8f5eac34473fef0c5f00f7c767e244b5320c1886b7cc2d05c514"
+      "size": 216745,
+      "sha256": "88eca177e404d14bfe5733b04f0d958328c20189b5a9fdcc15863a932149079f"
     },
     {
       "path": "memoryEngine.js",
@@ -1883,6 +1883,12 @@
       "type": ".js",
       "size": 8795,
       "sha256": "ad33d3a63f996e892d7c09d54bef76559de13a6f959cc96cce690cf8a9804d84"
+    },
+    {
+      "path": "test/firebasePopupRegression.test.js",
+      "type": ".js",
+      "size": 1194,
+      "sha256": "a87f63b04770c5f2e783ac6fa007dd4779e9d319459bf090a01fea3deadc2e7e"
     },
     {
       "path": "test/gameProjectDetector.test.js",
