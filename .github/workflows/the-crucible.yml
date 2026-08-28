@@ -49,10 +49,11 @@ jobs:
           github.ref == 'refs/heads/Development-branch' &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: write
       actions: write
+      copilot-requests: write
     concurrency:
       group: nexus-crucible-auto-repair-development
       cancel-in-progress: false
@@ -110,19 +111,67 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Apply deterministic Nexus repair
-        run: node scripts/selfRepairCommit.js --apply --no-report
+      - name: Try deterministic Nexus repair first
+        id: deterministic
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          node scripts/selfRepairCommit.js --apply --no-report
+          status=$?
+          set -e
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "needs_ai=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_ai=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "deterministic_status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Install GitHub Copilot CLI for general repair
+        if: steps.deterministic.outputs.needs_ai == 'true'
+        run: npm install -g @github/copilot
+
+      - name: Repair unresolved Crucible failure with Copilot
+        if: steps.deterministic.outputs.needs_ai == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FAILED_SHA: ${{ github.sha }}
+          ATTEMPT: ${{ steps.attempt.outputs.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          copilot --yolo -p "You are the autonomous Nexus Development repair agent. The Crucible failed on Development-branch at commit ${FAILED_SHA}. Work only in this checked-out repository and do not commit or push; the workflow will do that after verification. First read AGENTS.md, AI-CONFLICTS.json, AI-HANDOFF.json, and DEVLOG.md. Preserve all repository governance. Never touch main, never create another branch, never weaken tests, security checks, Crucible configuration, branch rules, or governance to make a failure pass. Reproduce the actual failure locally with npm run release:crucible and any narrower commands needed, inspect the relevant source and tests, and fix the root cause in application/test/build code as appropriate. If repository-file-manifest.json becomes stale after legitimate edits, refresh it with npm run inventory:update. This is autonomous repair attempt ${ATTEMPT}/3. Keep changes narrowly scoped to the actual Crucible failure and leave the working tree containing the repair when done."
+
+      - name: Refresh inventory after repair edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            npm run inventory:update
+          fi
 
       - name: Verify repaired repository state
         shell: bash
         run: |
           set -euo pipefail
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "Crucible failed and neither deterministic repair nor Copilot produced a code change."
+            exit 1
+          fi
           npm run inventory:verify
           node scripts/checkSyntax.js
           node scripts/verifyArchitecture.js
           node scripts/privacyRetryGate.js
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "Crucible failed but Nexus has no safe deterministic repair to commit. Failing closed."
+          npm run release:crucible
+
+      - name: Recheck Development head before push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin Development-branch
+          current="$(git rev-parse origin/Development-branch)"
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "Development advanced during repair from $GITHUB_SHA to $current; refusing to overwrite concurrent work."
             exit 1
           fi
 
