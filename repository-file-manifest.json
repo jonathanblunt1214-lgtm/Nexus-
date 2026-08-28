@@ -885,8 +885,8 @@
     {
       "path": ".github/workflows/one-shot-firebase-popup-fix.yml",
       "type": ".yml",
-      "size": 3185,
-      "sha256": "50b1abb47fac599f82e0b0a011893cdb38a6e6a6bb68b408b67f0abd80a14037"
+      "size": 2839,
+      "sha256": "ba557f2dd03d2d3317ac2afd540f6fe981b6e4f7fa0ff2af42c9a8f653f2d19f"
     },
     {
       "path": ".github/workflows/promote-development-to-main.yml",
