@@ -28,3 +28,21 @@ test('coding provider settings save, activate, and reuse the NVIDIA key path', (
   assert.match(bootstrap, /option\[value=\\"glm\\"\]/);
   assert.doesNotMatch(renderer, /ApiKeyEnc|access_token/);
 });
+
+test('safe provider discovery owns hosted keys and removes obsolete global settings', () => {
+  const bootstrap = fs.readFileSync(require.resolve('../bootstrap'), 'utf8');
+  assert.match(bootstrap, /safe-provider-key-' \+ provider\.id/);
+  assert.match(bootstrap, /\{ id:'nim', label:'NVIDIA NIM'/);
+  assert.match(bootstrap, /\{ id:'kimi', label:'Kimi'/);
+  assert.match(bootstrap, /\{ id:'deepseek', label:'DeepSeek'/);
+  assert.match(bootstrap, /Save & Activate/);
+  assert.match(bootstrap, /removeCard\('NVIDIA NIM API Key'\)/);
+  assert.match(bootstrap, /removeCard\('GCP \/ Firebase Project ID'\)/);
+  assert.match(bootstrap, /removeCard\('Gemini API Key'\)/);
+  assert.match(bootstrap, /removeCard\('OpenAI API Key'\)/);
+  assert.match(bootstrap, /removeCard\('Ask OpenAI'\)/);
+  assert.match(bootstrap, /publisherConfig\.firebaseProjectId/);
+  assert.match(bootstrap, /NEXUS_GEMINI_API_KEY/);
+  assert.match(bootstrap, /OpenAI Settings integration has been removed from Nexus/);
+  assert.doesNotMatch(bootstrap, /AIzaSy[A-Za-z0-9_-]{20,}/);
+});
