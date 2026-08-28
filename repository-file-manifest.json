@@ -946,8 +946,8 @@
     {
       "path": "AI_IMPROVEMENT_FRAMEWORK.md",
       "type": ".md",
-      "size": 7124,
-      "sha256": "f0372096e3cacc1dad8aa54e1acb281226778ee9541fc53f10a930907ad9c4ef"
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "CLAUDE.md",
@@ -994,8 +994,8 @@
     {
       "path": "THIRD_PARTY_NOTICES.md",
       "type": ".md",
-      "size": 1141,
-      "sha256": "e8782caf120732aaa8cad71e78ffcb8502e31582e0af67b07c66ad8e9d0449f2"
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "path": "accountVault.js",
