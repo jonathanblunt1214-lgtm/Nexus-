@@ -99,3 +99,11 @@ test('Firestore rules isolate verified users to their own bounded vault document
   assert.match(rules, /hasOnly\(\['encryptedVault', 'updatedAt', 'schemaVersion'\]\)/);
   assert.match(rules, /size\(\) <= 2097152/);
 });
+
+test('Firebase deployment config publishes only the reviewed repository rules', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'firebase.json'), 'utf8'));
+  assert.deepEqual(config, {
+    firestore: { rules: 'firestore.rules' },
+    storage: { rules: 'storage.rules' }
+  });
+});

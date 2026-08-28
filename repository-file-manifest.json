@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 210,
+  "fileCount": 211,
   "types": {
-    ".json": 5,
+    ".json": 6,
     ".md": 10,
     ".cjs": 1,
     "[no extension]": 3,
@@ -948,8 +948,8 @@
     {
       "path": "FIREBASE_SETUP.md",
       "type": ".md",
-      "size": 1910,
-      "sha256": "4aa01bb6a4501ffd5ea163ecdb52188e718671a23eab561d660c9d511951cb15"
+      "size": 2158,
+      "sha256": "a9e787bd6bca6031e811c385771fe3034397f9a8453e4399afa7451552cd7050"
     },
     {
       "path": "README.md",
@@ -1136,6 +1136,12 @@
       "type": ".js",
       "size": 3246,
       "sha256": "e814f8d35373efdc10c0b02f84328384e361200a136a9dc67b497e488b224300"
+    },
+    {
+      "path": "firebase.json",
+      "type": ".json",
+      "size": 105,
+      "sha256": "d224b75385b451433e5c59bdbf0cc147697fbe88e773c11dab44f3b71e3e8a74"
     },
     {
       "path": "firebaseAccountClient.js",
@@ -1746,8 +1752,8 @@
     {
       "path": "test/firebaseAccountClient.test.js",
       "type": ".js",
-      "size": 7080,
-      "sha256": "af9e8c0b9edd8050212cc5fe161bc13dcd3ff1a45b7fee35101d2c33b7c5c3ef"
+      "size": 7392,
+      "sha256": "eedd9c4f619bf34cd2c7038bcae75ef30af21251eda739ff7b1c553a0f0ef8ac"
     },
     {
       "path": "test/gameProjectDetector.test.js",

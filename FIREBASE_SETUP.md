@@ -12,6 +12,8 @@ Nexus uses Firebase Authentication for email/password identity and Cloud Firesto
 6. In **Project settings → General**, copy the project ID, Web API key, and Storage bucket name.
 7. In Nexus, open **Settings → Connected Services → Account provider configuration**, enter those values, and save.
 
+The repository includes `firebase.json`, so both reviewed rulesets can be deployed together with `firebase deploy --only firestore:rules,storage --project <project-id>`. Always review the target project and pending rules changes before deploying.
+
 Packaged builds can instead provide `NEXUS_FIREBASE_PROJECT_ID` and `NEXUS_FIREBASE_WEB_API_KEY` at build/runtime configuration. The Firebase Web API key identifies the Firebase project; it is not a user password or an administrative credential. Firestore rules are the authorization boundary and must be deployed exactly as reviewed.
 
 ## Account behavior
