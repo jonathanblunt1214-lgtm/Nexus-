@@ -21,14 +21,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 8
-      - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-        with:
-          node-version: '24'
-          package-manager-cache: false
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Apply narrow popup navigation repair
+      - name: Patch, regression-test, self-delete, and push
         shell: bash
         run: |
           set -euo pipefail
@@ -46,26 +39,16 @@ jobs:
           fs.writeFileSync(file, source.replace(before, after));
           NODE
           rm .github/workflows/one-shot-firebase-popup-fix.yml
-          node scripts/selfRepairCommit.js --apply --no-report
           node --check main.js
           node --test test/firebasePopupRegression.test.js
-          npm run inventory:verify
-      - name: Push repaired Development state
-        shell: bash
-        run: |
-          set -euo pipefail
           git fetch origin Development-branch
           current="$(git rev-parse origin/Development-branch)"
           if [ "$current" != "$GITHUB_SHA" ]; then
-            echo "Development advanced from $GITHUB_SHA to $current; refusing stale write. A fresh run will handle the new head."
+            echo "Development advanced from $GITHUB_SHA to $current; refusing stale write."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add main.js repository-file-manifest.json .github/workflows/one-shot-firebase-popup-fix.yml
-          if git diff --cached --quiet; then
-            echo "No repair changes remain."
-            exit 0
-          fi
+          git add main.js .github/workflows/one-shot-firebase-popup-fix.yml
           git commit -m "Fix Firebase auth popup navigation"
           git push origin HEAD:Development-branch
