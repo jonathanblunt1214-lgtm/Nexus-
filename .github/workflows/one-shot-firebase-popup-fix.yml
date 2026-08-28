@@ -34,27 +34,22 @@ jobs:
           set -euo pipefail
           node <<'NODE'
           const fs = require('fs');
-          const path = 'main.js';
-          const source = fs.readFileSync(path, 'utf8');
-          const before = `    if (contents.getType() === 'window') {
-              contents.on('will-navigate', (event, url) => {
-                if (url !== pathToFileURL(path.join(__dirname, 'index.html')).href) event.preventDefault();
-              });
-            }
-          `;
-          const after = `    if (contents.getType() === 'window') {
+          const file = 'main.js';
+          const source = fs.readFileSync(file, 'utf8');
+          const guard = /if \(contents\.getType\(\) === 'window'\) \{\r?\n\s*contents\.on\('will-navigate', \(event, url\) => \{\r?\n\s*if \(url !== pathToFileURL\(path\.join\(__dirname, 'index\.html'\)\)\.href\) event\.preventDefault\(\);\r?\n\s*\}\);\r?\n\s*\}/;
+          const replacement = `if (contents.getType() === 'window') {
               contents.on('will-navigate', (event, url) => {
                 const nexusAppUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
                 if (url === nexusAppUrl || isAllowedPopupUrl(url)) return;
                 event.preventDefault();
               });
-            }
-          `;
-          if (!source.includes(before)) {
-            console.error('Expected popup navigation guard was not found; refusing an ambiguous repair.');
+            }`;
+          const matches = source.match(new RegExp(guard.source, 'g')) || [];
+          if (matches.length !== 1) {
+            console.error(`Expected exactly one popup navigation guard, found ${matches.length}; refusing an ambiguous repair.`);
             process.exit(1);
           }
-          fs.writeFileSync(path, source.replace(before, after));
+          fs.writeFileSync(file, source.replace(guard, replacement));
           NODE
           rm .github/workflows/one-shot-firebase-popup-fix.yml
           node scripts/selfRepairCommit.js --apply --no-report
