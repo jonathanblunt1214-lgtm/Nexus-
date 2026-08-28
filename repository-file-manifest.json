@@ -1857,8 +1857,8 @@
     {
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
-      "size": 2509,
-      "sha256": "0a4c01f4fb7d30ba505eadfae8da27c8956339ab4547601dfea75893897ead58"
+      "size": 3028,
+      "sha256": "342f44b56625e038967e63c555572d0e869a37e11f828b662cdf897e2f1087e8"
     },
     {
       "path": "test/debugAdapter.test.js",
