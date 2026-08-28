@@ -1644,28 +1644,7 @@ Type "help" for tips.
         <div id="provider-discovery-results" class="suggestions-list" style="margin-top:8px;"></div>
       </div>
 
-      <div class="card">
-        <label class="label">Gemini API Key — powers the "Ask Gemini" box below</label>
-        <div class="form-row">
-          <input type="password" id="gemini-api-key" placeholder="Paste your Gemini API key">
-          <button class="btn" onclick="saveGeminiKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearGeminiKey()">Clear</button>
-        </div>
-        <p class="muted small" id="gemini-status" style="margin-top:8px;">No key saved yet.</p>
-      </div>
-
-      <div class="card">
-        <label class="label">OpenAI API Key — powers the "Ask OpenAI" box below</label>
-        <p class="muted small">Not required for anything else in Nexus (Gemini and NVIDIA NIM power the rest) - this exists so Nexus's own AI tooling, metrics, and cost tracking stay usable if a project you're working on (or its own AI assistant) migrates to OpenAI.</p>
-        <div class="form-row" style="margin-top:8px;">
-          <input type="password" id="openai-api-key" placeholder="Paste your OpenAI API key">
-          <button class="btn" onclick="saveOpenaiKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearOpenaiKey()">Clear</button>
-        </div>
-        <p class="muted small" id="openai-status" style="margin-top:8px;">No key saved yet.</p>
-      </div>
-
-      <div class="card">
+                  <div class="card">
         <label class="label">GCP / Firebase Project ID</label>
         <div class="form-row">
           <input type="text" id="gcp-project-id" placeholder="my-firebase-project">
@@ -1685,24 +1664,7 @@ Type "help" for tips.
         </div>
       </div>
 
-      <div class="card">
-        <label class="label">Ask Gemini (real API call)</label>
-        <div class="form-row">
-          <input type="text" id="gemini-prompt" placeholder="Ask something…">
-          <button class="btn" onclick="askGemini()">Send</button>
-        </div>
-        <pre id="gemini-response" class="response-box"></pre>
-      </div>
-
-      <div class="card">
-        <label class="label">Ask OpenAI (real API call)</label>
-        <div class="form-row">
-          <input type="text" id="openai-prompt" placeholder="Ask something…">
-          <button class="btn" onclick="askOpenAi()">Send</button>
-        </div>
-        <pre id="openai-response" class="response-box"></pre>
-      </div>
-    </div>
+                </div>
 
     <!-- PROJECT CONFIG: secrets + services -->
     <!-- Per-project config panel - hidden here by default, physically moved

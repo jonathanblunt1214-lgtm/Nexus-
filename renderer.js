@@ -2474,26 +2474,6 @@ async function askCodingModel() {
   box.innerText = result.ok ? result.text : `Error: ${result.error}`;
 }
 
-async function saveGeminiKey() {
-  const key = document.getElementById('gemini-api-key').value.trim();
-  if (!key) return;
-  await window.nexus.saveGeminiKey(key);
-  document.getElementById('gemini-api-key').value = '';
-  refreshGeminiStatus();
-}
-
-async function clearGeminiKey() {
-  await window.nexus.clearGeminiKey();
-  refreshGeminiStatus();
-}
-
-async function refreshGeminiStatus() {
-  const has = await window.nexus.hasGeminiKey();
-  document.getElementById('gemini-status').innerText = has
-    ? 'A key is saved (encrypted on disk).'
-    : 'No key saved yet.';
-}
-
 async function saveNimKey() {
   const key = document.getElementById('nim-api-key').value.trim();
   if (!key) return;
@@ -2565,44 +2545,6 @@ async function importNexusSetupUI() {
 async function saveGcpProject() {
   const id = document.getElementById('gcp-project-id').value.trim();
   await window.nexus.saveGcpProject(id);
-}
-
-async function askGemini() {
-  const prompt = document.getElementById('gemini-prompt').value.trim();
-  if (!prompt) return;
-  const box = document.getElementById('gemini-response');
-  box.innerText = 'Asking Gemini…';
-  const result = await window.nexus.geminiAsk(prompt, activeProjectFolder());
-  box.innerText = result.ok ? result.text : `Error: ${result.error}`;
-}
-
-async function saveOpenaiKey() {
-  const key = document.getElementById('openai-api-key').value.trim();
-  if (!key) return;
-  await window.nexus.saveOpenaiKey(key);
-  document.getElementById('openai-api-key').value = '';
-  refreshOpenAiStatus();
-}
-
-async function clearOpenaiKey() {
-  await window.nexus.clearOpenaiKey();
-  refreshOpenAiStatus();
-}
-
-async function refreshOpenAiStatus() {
-  const has = await window.nexus.hasOpenaiKey();
-  document.getElementById('openai-status').innerText = has
-    ? 'A key is saved (encrypted on disk).'
-    : 'No key saved yet.';
-}
-
-async function askOpenAi() {
-  const prompt = document.getElementById('openai-prompt').value.trim();
-  if (!prompt) return;
-  const box = document.getElementById('openai-response');
-  box.innerText = 'Asking OpenAI…';
-  const result = await window.nexus.openaiAsk(prompt, activeProjectFolder());
-  box.innerText = result.ok ? result.text : `Error: ${result.error}`;
 }
 
 // ---------- AI Code Assist ----------
@@ -4169,36 +4111,6 @@ setInterval(async () => {
     showToast('info', `${result.behindCount} update(s) available`, 'Click the build badge in the header to review and pull.');
   }
 }, 10 * 60 * 1000);
-
-(async function init() {
-  renderProjects();
-  updatePrompt();
-  refreshGeminiStatus();
-  refreshNimStatus();
-  refreshGitHubStatus();
-  refreshOAuthServices();
-  const accountVaultState = await window.nexus.accountVaultStatus();
-  if (accountVaultState.autoSyncEnabled) scheduleAccountVaultAutoSync();
-  refreshAccountVaultStatus();
-  loadOAuthConfiguration();
-  loadEmailAccountConfiguration();
-  refreshEmailAccountStatus();
-  refreshPluginMarketplace();
-  refreshLanguageServices();
-  loadNexusProfile();
-  refreshOpenAiStatus();
-  renderGitHubAutoSyncSettings();
-  scheduleGitHubAutoSync();
-  const gcp = await window.nexus.getGcpProject();
-  if (gcp) document.getElementById('gcp-project-id').value = gcp;
-
-  await loadBuildInfoAndCheckUpdates();
-
-  renderReleaseUpdateStatus(await window.nexus.getUpdaterStatus());
-  window.nexus.onUpdaterStatus(renderReleaseUpdateStatus);
-
-  updateActivityDot();
-})();
 let googleDriveFiles = [];
 
 async function loadOAuthConfiguration() {

@@ -26,25 +26,6 @@ function isAuthorizedProjectRoot(projectRoot) {
   return listProjects().some((project) => canonicalProjectPath(project.localPath) === candidate);
 }
 
-async function askWithNexusGemini(prompt) {
-  const key = String(process.env.NEXUS_GEMINI_API_KEY || '').trim();
-  if (!key) return { ok:false, error:'Nexus Gemini is not configured in this build.' };
-  const model = 'gemini-1.5-flash';
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ contents:[{ parts:[{ text:String(prompt || '') }] }] }),
-    });
-    const data = await response.json();
-    if (!response.ok) return { ok:false, error:data?.error?.message || `Gemini HTTP ${response.status}` };
-    const text = (data?.candidates?.[0]?.content?.parts || []).map((part) => part?.text || '').join('');
-    return { ok:true, text:text || '(empty response)' };
-  } catch (error) {
-    return { ok:false, error:error.message };
-  }
-}
-
 // The legacy main process already owns encrypted provider persistence. Wrap
 // only the coding-provider and project-owned service channels that remain
 // part of Nexus's supported Settings/runtime surface. Build numbering is also
@@ -61,7 +42,6 @@ function installCodingModelProviderIpcUpgrade() {
     'coding-models:select',
     'save-gcp-project',
     'get-gcp-project',
-    'gemini-ask',
     'build-number:approve',
   ]);
 
@@ -113,11 +93,6 @@ function installCodingModelProviderIpcUpgrade() {
       return securedHandle(channel, () => ({ ok:false, error:'The Nexus Firebase project is application-owned. Configure Firebase per project instead of changing Nexus Settings.' }));
     }
 
-    // Ask Gemini remains an internal Nexus service. It never consumes a
-    // user-entered/saved Gemini key; the build injects NEXUS_GEMINI_API_KEY.
-    if (channel === 'gemini-ask') {
-      return securedHandle(channel, async (_event, payload = {}) => askWithNexusGemini(payload.prompt));
-    }
 
     return securedHandle(channel, listener);
   };
@@ -165,10 +140,6 @@ function installCodingModelProviderUiUpgrade() {
         // lives with the other hosted coding providers below.
         removeCard('NVIDIA NIM API Key');
         removeCard('GCP / Firebase Project ID');
-        removeCard('Gemini API Key');
-        removeCard('Ask Gemini');
-        removeCard('OpenAI API Key');
-        removeCard('Ask OpenAI');
 
         // Build numbering is automatic now. There is no user approval step.
         document.getElementById('approve-build-number-btn')?.remove();
@@ -285,18 +256,6 @@ installCodingModelProviderUiUpgrade();
 const restoreIpcHandle = installCodingModelProviderIpcUpgrade();
 require('./main.js');
 
-// Permanently retire the user-managed Gemini-key and OpenAI surfaces from the
-// active Nexus runtime. Ask Gemini remains the Nexus-owned build-credential
-// route but is not exposed in Settings.
-for (const channel of [
-  'save-gemini-key',
-  'has-gemini-key',
-  'clear-gemini-key',
-  'save-openai-key',
-  'has-openai-key',
-  'clear-openai-key',
-  'openai-ask',
-]) ipcMain.removeHandler(channel);
 
 // Assign the build only after the main process has initialized config and the
 // window has finished loading. The commit-keyed state makes this safe to retry.

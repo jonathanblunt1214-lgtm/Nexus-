@@ -857,78 +857,6 @@ ipcMain.handle('open-external', (_event, { url }) => {
   return { ok: true };
 });
 
-// --- Gemini API key: stored encrypted at rest via Electron's safeStorage ---
-ipcMain.handle('save-gemini-key', async (_event, { key }) => {
-  const cfg = loadConfig();
-  if (safeStorage.isEncryptionAvailable()) {
-    cfg.geminiKeyEnc = safeStorage.encryptString(key).toString('base64');
-  } else {
-    // Fallback for systems without OS-level encryption available.
-    cfg.geminiKeyPlain = key;
-  }
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-ipcMain.handle('has-gemini-key', () => {
-  const cfg = loadConfig();
-  return Boolean(cfg.geminiKeyEnc || cfg.geminiKeyPlain);
-});
-
-ipcMain.handle('clear-gemini-key', async () => {
-  const cfg = loadConfig();
-  delete cfg.geminiKeyEnc;
-  delete cfg.geminiKeyPlain;
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-function getGeminiKey() {
-  const cfg = loadConfig();
-  if (cfg.geminiKeyEnc && safeStorage.isEncryptionAvailable()) {
-    return safeStorage.decryptString(Buffer.from(cfg.geminiKeyEnc, 'base64'));
-  }
-  return cfg.geminiKeyPlain || null;
-}
-
-// --- OpenAI API key: same encrypted-at-rest pattern as Gemini/NIM. Added so
-// Nexus's own AI Assist tooling (and its metrics/cost/guardrail tracking)
-// stays usable if/when a project's own AI assistant migrates providers -
-// e.g. Smoke Stack's CharGPT is on Gemini today, but if it (or any project)
-// moves to OpenAI, Nexus already supports it as a first-class provider
-// rather than that being a gap discovered later. ---
-ipcMain.handle('save-openai-key', async (_event, { key }) => {
-  const cfg = loadConfig();
-  if (safeStorage.isEncryptionAvailable()) {
-    cfg.openaiKeyEnc = safeStorage.encryptString(key).toString('base64');
-  } else {
-    cfg.openaiKeyPlain = key;
-  }
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-ipcMain.handle('has-openai-key', () => {
-  const cfg = loadConfig();
-  return Boolean(cfg.openaiKeyEnc || cfg.openaiKeyPlain);
-});
-
-ipcMain.handle('clear-openai-key', async () => {
-  const cfg = loadConfig();
-  delete cfg.openaiKeyEnc;
-  delete cfg.openaiKeyPlain;
-  await saveConfig(cfg);
-  return { ok: true };
-});
-
-function getOpenAiKey() {
-  const cfg = loadConfig();
-  if (cfg.openaiKeyEnc && safeStorage.isEncryptionAvailable()) {
-    return safeStorage.decryptString(Buffer.from(cfg.openaiKeyEnc, 'base64'));
-  }
-  return cfg.openaiKeyPlain || null;
-}
-
 ipcMain.handle('save-gcp-project', async (_event, { projectId }) => {
   const cfg = loadConfig();
   cfg.gcpProjectId = projectId;
@@ -1275,8 +1203,8 @@ ipcMain.handle('save-constitution', (_event, { folder, content }) => {
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
 async function callGemini(prompt, meta = {}) {
-  const key = getGeminiKey();
-  if (!key) return { ok: false, error: 'No Gemini API key saved yet.' };
+  const key = String(process.env.NEXUS_GEMINI_API_KEY || '').trim();
+  if (!key) return { ok: false, error: 'Nexus Gemini is not configured in this build.' };
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
 
@@ -1309,52 +1237,6 @@ async function callGemini(prompt, meta = {}) {
 
 ipcMain.handle('gemini-ask', async (_event, { prompt, folder }) => {
   const result = await callGemini(prompt, { folder, tag: 'ask-gemini' });
-  if (!result.ok) return result;
-  return { ok: true, text: result.text || '(empty response)' };
-});
-
-// --- Shared OpenAI call, used only by the general "Ask OpenAI" box for now -
-// same shape as callGemini/callNim (real timing, real metrics recording,
-// real error surfacing, no fabricated fallback text if the call fails). ---
-const OPENAI_MODEL = 'gpt-4o-mini';
-
-async function callOpenAI(prompt, meta = {}) {
-  const key = getOpenAiKey();
-  if (!key) return { ok: false, error: 'No OpenAI API key saved yet.' };
-
-  const startedAt = Date.now();
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const errMsg = data?.error?.message || `HTTP ${res.status}`;
-      recordAiCallMetric({ folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: false, error: errMsg });
-      return { ok: false, error: errMsg };
-    }
-    const text = data?.choices?.[0]?.message?.content || '';
-    recordAiCallMetric({
-      folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: true,
-      tokensIn: data?.usage?.prompt_tokens, tokensOut: data?.usage?.completion_tokens,
-    });
-    return { ok: true, text };
-  } catch (err) {
-    recordAiCallMetric({ folder: meta.folder, model: OPENAI_MODEL, tag: meta.tag || 'ask-openai', startedAt, ok: false, error: err.message });
-    return { ok: false, error: err.message };
-  }
-}
-
-ipcMain.handle('openai-ask', async (_event, { prompt, folder }) => {
-  const result = await callOpenAI(prompt, { folder, tag: 'ask-openai' });
   if (!result.ok) return result;
   return { ok: true, text: result.text || '(empty response)' };
 });
@@ -3603,9 +3485,8 @@ ipcMain.handle('export-secrets-to-env', (_event, { folder, projectUid }) => {
     return { ok: false, error: err.message };
   }
 });
-// GitHub personal access token: same encrypted-at-rest pattern as the
-// Gemini/NIM keys (see save-gemini-key above) - never stored in plaintext
-// when OS-level encryption is available.
+// GitHub personal access token: encrypted at rest via Electron safeStorage;
+// it is never stored in plaintext when OS-level encryption is available.
 ipcMain.handle('save-github-token', async (_event, { token }) => {
   const cfg = loadConfig();
   if (safeStorage.isEncryptionAvailable()) {

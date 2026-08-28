@@ -76,6 +76,11 @@
     },
     {
       "source": "bootstrap.js",
+      "reference": "./publisherConfig",
+      "resolved": "publisherConfig.js"
+    },
+    {
+      "source": "bootstrap.js",
       "reference": "./ipcSecurity",
       "resolved": "ipcSecurity.js"
     },
@@ -1096,8 +1101,8 @@
     {
       "path": "bootstrap.js",
       "type": ".js",
-      "size": 1598,
-      "sha256": "87034abad642502e7412276650cfd93f05c02cfab6ed0619ffaef43a089402e7"
+      "size": 12683,
+      "sha256": "5413dd1d57c028f425526c22858288dcbc324ff4169847673515a770521ef76d"
     },
     {
       "path": "build-installer.bat",
@@ -1108,8 +1113,8 @@
     {
       "path": "buildNumber.js",
       "type": ".js",
-      "size": 1726,
-      "sha256": "8a9f16cb6efb7b2332ab8347698adf3c2e31356fb77ff430444f7a2e84dff3ed"
+      "size": 2448,
+      "sha256": "59d6ebdd4d36a03617e958fd3902a3ac8d9624e84631ddb541ed99567353d85e"
     },
     {
       "path": "changelogGenerator.js",
@@ -1132,8 +1137,8 @@
     {
       "path": "codingModelProviders.js",
       "type": ".js",
-      "size": 2312,
-      "sha256": "f0d82b8b49705bd532cf349a5bcf4ed55f504d2726faa4a023134c29ceaf3d99"
+      "size": 2181,
+      "sha256": "56289cf3bd28e754c2513c64d713cd376cccc5fbcc5de480619c43d0171a805c"
     },
     {
       "path": "complianceMonitor.js",
@@ -1318,8 +1323,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 134341,
-      "sha256": "1e5ee13832fa26b5818f48bed91f1b423c561ec6a5a2840ea8c46822e131f829"
+      "size": 132315,
+      "sha256": "6de8b51c8c70e132d64bb84f5bf8f32a8ab42c074c6ae1d4a7ebae2968ab987c"
     },
     {
       "path": "inventoryWorker.js",
@@ -1384,8 +1389,8 @@
     {
       "path": "main.js",
       "type": ".js",
-      "size": 220995,
-      "sha256": "283b65edd26d29ed0ce98a234726a4183b1c60a15b08f3bebf3f6bcf76e91f2b"
+      "size": 216822,
+      "sha256": "667f40738e243e564309bb4fb53db6d024e84bac62abe6380cc40bdc173e824f"
     },
     {
       "path": "memoryEngine.js",
@@ -1486,8 +1491,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28991,
-      "sha256": "48729d8a12a456e3e152845c3863e236fc45efab7a4197b6e647339b9860e6f0"
+      "size": 28508,
+      "sha256": "05c210a4826762695f1b833464e138b67a37c81aad5913cd486d88169b38abb8"
     },
     {
       "path": "projectCloner.js",
@@ -1552,8 +1557,8 @@
     {
       "path": "providerDiscovery.js",
       "type": ".js",
-      "size": 1708,
-      "sha256": "fcd17517cbff7c4cc41e0363853b5971e35cf238bac13fd4d4434dc8f4e58c1e"
+      "size": 1588,
+      "sha256": "cd7e2b4983a8680467ec993b51e635ec00f0d47078a0d64dcc39dc61aff40013"
     },
     {
       "path": "publisherConfig.js",
@@ -1582,8 +1587,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 276791,
-      "sha256": "d6e697b98c5e6d574f0709cb06b3581f723cdbb18969d94903a8ecef3ecfafa6"
+      "size": 273997,
+      "sha256": "13369e532ddf78381737413316c885bc1fceef7b80a5ea6cc99135e7f92ac635"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1834,8 +1839,8 @@
     {
       "path": "test/buildNumber.test.js",
       "type": ".js",
-      "size": 2393,
-      "sha256": "1dfb87b417fc9f19eefb04ec0511e1a13b87ed2ef213738bdbc8e1e31883e9b1"
+      "size": 3211,
+      "sha256": "052a36f76f1afe00d8253a07e2c8060d93e6a4b4fc1f7e460783164c486b8644"
     },
     {
       "path": "test/codeChecker.test.js",
@@ -1852,8 +1857,8 @@
     {
       "path": "test/codingModelProviders.test.js",
       "type": ".js",
-      "size": 1429,
-      "sha256": "c0e565abf5ef8a0c39113fc34b87d3f334880f570c3029b5b17d762e2725475a"
+      "size": 2443,
+      "sha256": "83e2f9d608bdb78d1c05e538a55d2d7a7a2eefbeca281124c2dffd32c8d153f6"
     },
     {
       "path": "test/crucibleIntegration.test.js",
@@ -2056,8 +2061,8 @@
     {
       "path": "test/providerDiscovery.test.js",
       "type": ".js",
-      "size": 1325,
-      "sha256": "c84f3083a3978cd5170f41f9a92ddcfbc40e5bd711de6ef1019cdc630c9c90d7"
+      "size": 1406,
+      "sha256": "bf85e6a5a9512cebe288ed99a11694fadedf99ab47b209aef1e383119c30d11f"
     },
     {
       "path": "test/repositoryMaintenance.test.js",
