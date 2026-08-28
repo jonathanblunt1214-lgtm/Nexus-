@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 230,
+  "fileCount": 231,
   "types": {
     ".json": 11,
     ".md": 17,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 172,
+    ".js": 173,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -1191,8 +1191,8 @@
     {
       "path": "firebaseAccountClient.js",
       "type": ".js",
-      "size": 6216,
-      "sha256": "66a880bf9c327628f346fe5f24be21b01bd4ed2813e8d17d5d4a061861c22a66"
+      "size": 6694,
+      "sha256": "3e97bd9749c0024d4c83fc3818ccaf43a271ca0cf24fbee71db2ff8727912eb5"
     },
     {
       "path": "firestore.rules",
@@ -1883,6 +1883,12 @@
       "type": ".js",
       "size": 8795,
       "sha256": "ad33d3a63f996e892d7c09d54bef76559de13a6f959cc96cce690cf8a9804d84"
+    },
+    {
+      "path": "test/firebasePopupRegression.test.js",
+      "type": ".js",
+      "size": 1194,
+      "sha256": "a87f63b04770c5f2e783ac6fa007dd4779e9d319459bf090a01fea3deadc2e7e"
     },
     {
       "path": "test/gameProjectDetector.test.js",
