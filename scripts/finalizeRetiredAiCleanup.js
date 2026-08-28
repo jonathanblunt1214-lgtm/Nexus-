@@ -16,6 +16,10 @@ main = main.replace(
   "const storageKey = allowed.provider === 'nim' ? 'nimKey' : allowed.provider === 'openai' ? 'openaiKey' : allowed.provider === 'gemini' ? 'geminiKey' : `${allowed.provider}ApiKey`;",
   "const storageKey = allowed.provider === 'nim' ? 'nimKey' : `${allowed.provider}ApiKey`;"
 );
+main = main.replace(
+  "const ACCOUNT_VAULT_SECRET_KEYS = ['geminiKey', 'openaiKey', 'nimKey', 'kimiApiKey', 'glmApiKey', 'deepseekApiKey'];",
+  "const ACCOUNT_VAULT_SECRET_KEYS = ['nimKey', 'kimiApiKey', 'deepseekApiKey'];"
+);
 main = main
   .replace('// Every real AI call Nexus itself makes (NIM, Gemini) is timed and recorded', '// Every real AI call Nexus itself makes is timed and recorded')
   .replace('// (the general Ask Gemini box, changelog generation) still get recorded', '// (for example, changelog generation) still get recorded')
@@ -25,14 +29,13 @@ write('main.js', main);
 let testFile = read('test/providerDiscovery.test.js');
 const oldAssertion = "  assert.doesNotMatch(JSON.stringify(ENVIRONMENT_KEYS), /ZAI|ZHIPU|z\\.ai|GLM/i);";
 const newAssertion = "  assert.doesNotMatch(JSON.stringify(ENVIRONMENT_KEYS), /ZAI|ZHIPU|z\\.ai|GLM|OPENAI|GEMINI/i);";
-if (!testFile.includes(oldAssertion)) throw new Error('Expected provider-discovery assertion not found.');
-testFile = testFile.replace(oldAssertion, newAssertion);
+if (testFile.includes(oldAssertion)) testFile = testFile.replace(oldAssertion, newAssertion);
 write('test/providerDiscovery.test.js', testFile);
 
 const forbiddenDiscovery = /OPENAI_API_KEY|GEMINI_API_KEY|provider:'openai'|provider:'gemini'/i;
 if (forbiddenDiscovery.test(read('providerDiscovery.js'))) throw new Error('Retired OpenAI/Gemini discovery entries remain.');
-if (/allowed\.provider === 'openai'|allowed\.provider === 'gemini'|openaiKey|geminiKey/.test(read('main.js'))) {
-  throw new Error('Retired OpenAI/Gemini provider-import branches remain in main.js.');
+if (/allowed\.provider === 'openai'|allowed\.provider === 'gemini'|openaiKey|geminiKey|glmApiKey/.test(read('main.js'))) {
+  throw new Error('Retired OpenAI/Gemini/GLM provider or account-vault key branches remain in main.js.');
 }
 for (const file of ['main.js','preload.js','renderer.js','index.html','bootstrap.js']) {
   const text = read(file);
