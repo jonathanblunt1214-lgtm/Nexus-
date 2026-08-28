@@ -45,9 +45,9 @@ async function askWithNexusGemini(prompt) {
   }
 }
 
-// The legacy main process already owns encrypted config persistence. Wrap the
-// provider/settings IPC registrations so the visible Settings surface has one
-// coherent source of truth without rewriting the large legacy main process.
+// The legacy main process already owns encrypted provider persistence. Wrap
+// only the coding-provider and project-owned service channels that remain
+// part of Nexus's supported Settings/runtime surface.
 function installCodingModelProviderIpcUpgrade() {
   const securedHandle = ipcMain.handle.bind(ipcMain);
   const handlers = new Map();
@@ -60,14 +60,7 @@ function installCodingModelProviderIpcUpgrade() {
     'coding-models:select',
     'save-gcp-project',
     'get-gcp-project',
-    'save-gemini-key',
-    'has-gemini-key',
-    'clear-gemini-key',
     'gemini-ask',
-    'save-openai-key',
-    'has-openai-key',
-    'clear-openai-key',
-    'openai-ask',
   ]);
 
   ipcMain.handle = (channel, listener) => {
@@ -111,8 +104,6 @@ function installCodingModelProviderIpcUpgrade() {
       });
     }
 
-    // Nexus's Firebase project is application-owned. Keep the legacy IPC
-    // readable for compatibility, but prevent Settings from overriding it.
     if (channel === 'get-gcp-project') {
       return securedHandle(channel, () => publisherConfig.firebaseProjectId || '');
     }
@@ -120,23 +111,10 @@ function installCodingModelProviderIpcUpgrade() {
       return securedHandle(channel, () => ({ ok:false, error:'The Nexus Firebase project is application-owned. Configure Firebase per project instead of changing Nexus Settings.' }));
     }
 
-    // Gemini is a Nexus-owned service. Its credential must be injected into
-    // the app/build environment, never committed to this public repository or
-    // pasted into Settings by an end user.
-    if (channel === 'has-gemini-key') {
-      return securedHandle(channel, () => Boolean(String(process.env.NEXUS_GEMINI_API_KEY || '').trim()));
-    }
-    if (channel === 'save-gemini-key' || channel === 'clear-gemini-key') {
-      return securedHandle(channel, () => ({ ok:false, error:'Gemini is managed by the Nexus build, not by user Settings.' }));
-    }
+    // Ask Gemini remains an internal Nexus service. It never consumes a
+    // user-entered/saved Gemini key; the build injects NEXUS_GEMINI_API_KEY.
     if (channel === 'gemini-ask') {
       return securedHandle(channel, async (_event, payload = {}) => askWithNexusGemini(payload.prompt));
-    }
-
-    // OpenAI's old user-key/Ask OpenAI surface is retired from Nexus.
-    if (channel === 'has-openai-key') return securedHandle(channel, () => false);
-    if (channel === 'save-openai-key' || channel === 'clear-openai-key' || channel === 'openai-ask') {
-      return securedHandle(channel, () => ({ ok:false, error:'OpenAI Settings integration has been removed from Nexus.' }));
     }
 
     return securedHandle(channel, listener);
@@ -145,9 +123,6 @@ function installCodingModelProviderIpcUpgrade() {
   return () => { ipcMain.handle = securedHandle; };
 }
 
-// Normalize the provider/settings UI after the legacy document loads. This
-// keeps one hosted-key area under Safe Provider Discovery, removes retired
-// global cloud settings, and leaves project-owned configuration with projects.
 function installCodingModelProviderUiUpgrade() {
   app.on('browser-window-created', (_event, window) => {
     window.webContents.on('did-finish-load', () => {
@@ -175,10 +150,13 @@ function installCodingModelProviderUiUpgrade() {
         const cardByLabelPrefix = (prefix) => cards.find((card) => (card.querySelector('.label')?.textContent || '').trim().startsWith(prefix));
         const removeCard = (prefix) => cardByLabelPrefix(prefix)?.remove();
 
-        // The standalone NIM card is folded into Safe Provider Discovery.
+        // These are no longer Settings concerns. Gemini is application-owned,
+        // OpenAI is retired, Firebase is application/project owned, and NIM
+        // lives with the other hosted coding providers below.
         removeCard('NVIDIA NIM API Key');
         removeCard('GCP / Firebase Project ID');
         removeCard('Gemini API Key');
+        removeCard('Ask Gemini');
         removeCard('OpenAI API Key');
         removeCard('Ask OpenAI');
 
@@ -287,4 +265,21 @@ global.nexusAssertTrustedIpcSender = assertTrustedSender;
 installCodingModelProviderUiUpgrade();
 const restoreIpcHandle = installCodingModelProviderIpcUpgrade();
 require('./main.js');
+
+// Permanently retire the user-managed Gemini-key and OpenAI surfaces from the
+// active Nexus runtime. The legacy main process may still contain historical
+// implementation text, but there is no registered IPC route that can save,
+// read, clear, or call those retired integrations. Ask Gemini is the one
+// supported Gemini route and was replaced above with the Nexus-owned build
+// credential path.
+for (const channel of [
+  'save-gemini-key',
+  'has-gemini-key',
+  'clear-gemini-key',
+  'save-openai-key',
+  'has-openai-key',
+  'clear-openai-key',
+  'openai-ask',
+]) ipcMain.removeHandler(channel);
+
 restoreIpcHandle();
