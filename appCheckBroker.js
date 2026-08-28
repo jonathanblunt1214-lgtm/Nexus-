@@ -17,7 +17,6 @@
 // proceed without the X-Firebase-AppCheck header, exactly as Nexus behaves
 // today. This module never blocks real Firebase traffic on its own account.
 
-const { BrowserWindow, session, ipcMain } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -50,6 +49,11 @@ async function fetchFreshToken(brokerUrl) {
   const origin = originOf(brokerUrl);
   if (!origin || !/^https:$/.test(new URL(brokerUrl).protocol)) throw new Error('Configure a valid HTTPS App Check broker URL first.');
 
+  // Electron is intentionally loaded only when a configured broker actually
+  // needs a BrowserWindow. This keeps the optional broker importable in
+  // headless verification environments that install dependencies with
+  // --ignore-scripts and therefore do not download Electron's runtime binary.
+  const { BrowserWindow, session, ipcMain } = require('electron');
   const partitionName = `appcheck-broker-${crypto.randomBytes(8).toString('hex')}`;
   const brokerSession = session.fromPartition(partitionName);
   brokerSession.webRequest.onHeadersReceived((details, callback) => {
