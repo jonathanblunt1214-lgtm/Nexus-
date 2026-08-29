@@ -1,4 +1,9 @@
-# Nexus 1.0.2
+# Nexus 1.0.3
+
+- Restored a dedicated, visibly reachable Updates section in Settings & Keys.
+- Routed the always-visible build badge and command palette to the real GitHub Releases updater instead of the separate source-update path.
+- Kept update checks, downloads, progress, release notes, and Restart & Update behind the existing narrow renderer-to-preload updater bridge.
+- Fixed the Windows line-ending portability bug that could make the architecture gate reject a valid Crucible workflow.
 
 - Added deterministic clutter auditing to The Crucible, scheduled that audit for both branches every 24 hours, and added weekly history-preserving Git integrity verification and object repacking followed by The Crucible.
 - Set the dedicated approved-build sequence to propose `0.0.03` next, then increment it predictably within the pre-launch line; `1.0.0` is explicitly reserved for the real public launch and is never reached by automatic build-number rollover.
