@@ -1,0 +1,18 @@
+{
+  "id": "the-crucible",
+  "name": "The Crucible",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.js",
+  "minNexusVersion": "1.0.3",
+  "capabilities": [
+    "ui:slot",
+    "telemetry:emit"
+  ],
+  "slots": [
+    "project-actions",
+    "inspector-panel",
+    "command-palette"
+  ],
+  "description": "Adds The Crucible as an optional Nexus governance and release-gate plugin. It surfaces Crucible project actions, governance status, and command-palette guidance without granting the plugin arbitrary process or filesystem access."
+}
