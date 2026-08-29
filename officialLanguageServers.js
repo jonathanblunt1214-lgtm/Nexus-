@@ -21,6 +21,43 @@ function fileUri(filePath) { return pathToFileURL(path.resolve(filePath)).href; 
 function providerFor(filePath) { const ext = path.extname(filePath || '').toLowerCase(); const provider = Object.values(PROVIDERS).find((item) => item.extensions.includes(ext)) || null; if (provider?.id !== 'clangd') return provider; const languageId = ext === '.m' ? 'objective-c' : ext === '.mm' ? 'objective-cpp' : ext === '.c' || ext === '.h' ? 'c' : 'cpp'; return { ...provider, languageId }; }
 function serviceData(folder, name) { const id = crypto.createHash('sha256').update(path.resolve(folder)).digest('hex').slice(0, 16); const target = path.join(os.tmpdir(), 'nexus-language-services', id, name); fs.mkdirSync(target, { recursive:true }); return target; }
 
+function commandOnPath(command) {
+  const value = String(command || '').trim();
+  if (!value) return false;
+  if (path.isAbsolute(value) || value.includes('/') || value.includes('\\')) return fs.existsSync(value);
+  const dirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  const ext = path.extname(value);
+  const extensions = process.platform === 'win32'
+    ? (ext ? [''] : String(process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean))
+    : [''];
+  return dirs.some((dir) => extensions.some((suffix) => {
+    const candidate = path.join(dir, value + suffix);
+    try { return fs.statSync(candidate).isFile(); } catch { return false; }
+  }));
+}
+
+function languageServiceAvailability(provider) {
+  if (provider.bundled) return { configured:true, autoDetected:true, configuredSource:'bundled' };
+  const key = { 'powershell-editor-services':'powershellEditorServices', 'dart-language-server':'dart', 'sourcekit-lsp':'sourcekitLsp' }[provider.id] || provider.id;
+  if (configuredPaths[key]) return { configured:true, autoDetected:false, configuredSource:'saved-path' };
+
+  if (provider.id === 'powershell-editor-services') {
+    const script = process.env.NEXUS_PSES_PATH;
+    const shell = configuredPaths.pwsh || 'pwsh';
+    const detected = Boolean(script && fs.existsSync(script) && commandOnPath(shell));
+    return { configured:detected, autoDetected:detected, configuredSource:detected ? 'environment' : null };
+  }
+
+  const command = provider.id === 'jdtls' ? 'jdtls'
+    : provider.id === 'roslyn' ? (process.env.NEXUS_ROSLYN_SERVER || 'Microsoft.CodeAnalysis.LanguageServer')
+    : provider.id === 'clangd' ? 'clangd'
+    : provider.id === 'dart-language-server' ? 'dart'
+    : provider.id === 'sourcekit-lsp' ? 'sourcekit-lsp'
+    : null;
+  const detected = commandOnPath(command);
+  return { configured:detected, autoDetected:detected, configuredSource:detected ? 'path' : null };
+}
+
 function launchFor(provider, folder) {
   if (provider.id === 'pyright') {
     const script = path.join(path.dirname(require.resolve('pyright/package.json')), 'langserver.index.js');
@@ -95,8 +132,7 @@ async function runLanguageServer({ folder, filePath, content, fix = false }) {
 }
 
 async function languageServerStatus() {
-  const keys = { 'powershell-editor-services':'powershellEditorServices', 'dart-language-server':'dart', 'sourcekit-lsp':'sourcekitLsp' };
-  return Object.values(PROVIDERS).map((provider) => ({ ...provider, configured:provider.bundled || Boolean(configuredPaths[keys[provider.id] || provider.id]) }));
+  return Object.values(PROVIDERS).map((provider) => ({ ...provider, ...languageServiceAvailability(provider) }));
 }
 
-module.exports = { PROVIDERS, configureOfficialLanguageServices, providerFor, runLanguageServer, languageServerStatus, applyTextEdits, fileUri };
+module.exports = { PROVIDERS, configureOfficialLanguageServices, providerFor, runLanguageServer, languageServerStatus, applyTextEdits, fileUri, commandOnPath, languageServiceAvailability };
