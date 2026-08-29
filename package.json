@@ -119,6 +119,7 @@
       "pluginRuntime.js",
       "pluginWorker.js",
       "pluginManager.js",
+      "pluginCapabilities.js",
       "pluginSecurityScanner.js",
       "pluginMarketplaceClient.js",
       "section8Ipc.js",
