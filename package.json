@@ -59,6 +59,8 @@
     "files": [
       "bootstrapEntry.js",
       "bootstrap.js",
+      "cruciblePluginAccount.js",
+      "cruciblePluginUi.js",
       "ipcSecurity.js",
       "main.js",
       "preload.js",
@@ -123,6 +125,7 @@
       "pluginSecurityScanner.js",
       "pluginMarketplaceClient.js",
       "section8Ipc.js",
+      "plugins/the-crucible/**/*",
       "aiMetrics.js",
       "aiGuardrailTester.js",
       "aiUpgradeOrchestrator.js",
