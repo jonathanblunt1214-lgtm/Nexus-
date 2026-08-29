@@ -39,7 +39,7 @@ test('auto save and push retries GitHub authentication with the encrypted Nexus 
 
 test('official language services auto-detect commands and Settings hides unnecessary selectors', () => {
   assert.match(languageServices, /function commandOnPath\(command\)/);
-  assert.match(languageServices, /configuredSource:'path'/);
+  assert.match(languageServices, /configuredSource:detected \? 'path' : null/);
   assert.match(languageServices, /autoDetected:detected/);
   assert.match(languageServices, /process\.env\.NEXUS_PSES_PATH/);
   assert.match(bootstrap, /syncLanguageServiceControls/);
