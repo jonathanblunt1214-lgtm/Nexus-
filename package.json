@@ -2,7 +2,7 @@
   "name": "nexus-devos",
   "version": "1.0.3",
   "description": "Nexus Developer OS - a real desktop control panel for local dev projects. Now with TypeScript, React, and Vite support.",
-  "main": "bootstrap.js",
+  "main": "bootstrapEntry.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test",
@@ -57,6 +57,7 @@
       "output": "dist"
     },
     "files": [
+      "bootstrapEntry.js",
       "bootstrap.js",
       "ipcSecurity.js",
       "main.js",
