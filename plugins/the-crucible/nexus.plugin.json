@@ -1,12 +1,13 @@
 {
   "id": "the-crucible",
   "name": "The Crucible",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "apiVersion": 1,
   "entry": "index.js",
   "minNexusVersion": "1.0.3",
   "capabilities": [
     "ui:slot",
+    "workspace:write",
     "telemetry:emit"
   ],
   "slots": [
@@ -14,5 +15,5 @@
     "inspector-panel",
     "command-palette"
   ],
-  "description": "Adds The Crucible as an optional Nexus governance and release-gate plugin. It surfaces Crucible project actions, governance status, and command-palette guidance without granting the plugin arbitrary process or filesystem access."
+  "description": "Adds The Crucible as an optional Nexus governance and release-gate plugin. Auto Inject is available as an explicit opt-in project action; enabling the plugin alone does not inject or modify project files."
 }
