@@ -19,9 +19,8 @@ function accountConfiguration(cfg = {}) {
   };
 }
 
-function accountVaultUrl(projectId, uid, fieldPath = null) {
-  const base = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/nexusAccountVaults/${encodeURIComponent(uid)}`;
-  return fieldPath ? `${base}?updateMask.fieldPaths=${encodeURIComponent(fieldPath)}` : base;
+function trackingDocumentUrl(projectId, uid) {
+  return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/nexusCruciblePluginTracking/${encodeURIComponent(uid)}`;
 }
 
 async function responseJson(response, label) {
@@ -61,22 +60,27 @@ function createCruciblePluginAccountApi({ app, safeStorage }) {
   }
 
   async function loadState(auth) {
-    const response = await fetch(accountVaultUrl(auth.configuration.projectId, auth.uid), {
+    const response = await fetch(trackingDocumentUrl(auth.configuration.projectId, auth.uid), {
       headers: { Authorization: `Bearer ${auth.idToken}` },
     });
     if (response.status === 404) return normalizeTrackingState(null);
     const data = await responseJson(response, 'Crucible account tracking read');
-    const serialized = data.fields?.cruciblePluginTracking?.stringValue;
+    const serialized = data.fields?.state?.stringValue;
     if (!serialized) return normalizeTrackingState(null);
     try { return normalizeTrackingState(JSON.parse(serialized)); }
     catch { return normalizeTrackingState(null); }
   }
 
   async function saveState(auth, state) {
-    const response = await fetch(accountVaultUrl(auth.configuration.projectId, auth.uid, 'cruciblePluginTracking'), {
+    const normalized = normalizeTrackingState(state);
+    const response = await fetch(trackingDocumentUrl(auth.configuration.projectId, auth.uid), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.idToken}` },
-      body: JSON.stringify({ fields: { cruciblePluginTracking: { stringValue: JSON.stringify(normalizeTrackingState(state)) } } }),
+      body: JSON.stringify({ fields: {
+        state: { stringValue: JSON.stringify(normalized) },
+        updatedAt: { timestampValue: new Date().toISOString() },
+        schemaVersion: { integerValue: '1' },
+      } }),
     });
     await responseJson(response, 'Crucible account tracking write');
   }
@@ -113,4 +117,4 @@ function createCruciblePluginAccountApi({ app, safeStorage }) {
   };
 }
 
-module.exports = { createCruciblePluginAccountApi, projectFingerprint, normalizeTrackingState };
+module.exports = { createCruciblePluginAccountApi, projectFingerprint, normalizeTrackingState, trackingDocumentUrl };
