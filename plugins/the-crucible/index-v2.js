@@ -1,5 +1,5 @@
 const PLUGIN_NAME = 'The Crucible';
-const VERSION = '1.2.0';
+const VERSION = '0.0.1';
 const GOVERNANCE_ROOT = 'governingDocuments';
 
 function action(id, label, description, extra = {}) {
@@ -19,7 +19,7 @@ function bootstrapFiles() {
     },
     {
       path: 'governingDocuments/crucible-plugin-governance.md',
-      content: '# Crucible plugin governance\n\n- Auto Inject is opt-in and never runs merely because the plugin is installed or enabled.\n- Governance editing is scoped to `governingDocuments/`.\n- Existing files are not overwritten by Auto Inject unless overwrite is separately authorized.\n- Injection-history records are account-private and are not written into the project.\n- Project governance contents themselves remain normal project files so project-native governance can enforce them.\n',
+      content: '# Crucible plugin governance\n\n- Auto Inject is opt-in and never runs merely because the plugin is installed or enabled.\n- Governance editing is scoped to `governingDocuments/`.\n- Existing files are not overwritten by Auto Inject unless overwrite is separately authorized.\n- The list of files injected by this plugin is tracked only in the Nexus account that performed the injection, not in project-visible tracking metadata.\n- Project governance contents themselves remain normal project files so project-native governance can enforce them.\n',
     },
   ];
 }
