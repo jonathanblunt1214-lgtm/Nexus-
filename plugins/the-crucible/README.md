@@ -14,7 +14,7 @@ Governance edits are normal project files. They remain visible to the project an
 
 ## Private injection tracking
 
-When Auto Inject succeeds, the plugin records the injected file list in the Nexus account that performed the injection. The ledger is stored as an account-scoped field in that user's Nexus account-vault Firestore document and is queried through the plugin's `account:private` capability.
+When Auto Inject succeeds, the plugin records the injected file list in the Nexus account that performed the injection. The ledger is stored in `nexusCruciblePluginTracking/{userId}`, a dedicated Firestore document protected by an authenticated-UID match and verified-account rule, and is queried through the plugin's `account:private` capability.
 
 The plugin does **not** write an injection-history ledger into the project, repository, `.nexus/plugins`, or governance tree. A project collaborator therefore sees the governance files themselves but not the plugin's private injection history. The **My injection history** control only queries records belonging to the currently signed-in Nexus account.
 
