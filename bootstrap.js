@@ -177,7 +177,8 @@ function installCodingModelProviderUiUpgrade() {
         refreshButton.className = 'btn';
         refreshButton.textContent = 'Refresh provider status';
         refreshButton.style.marginTop = '8px';
-        discovery.insertBefore(refreshButton, hosted);
+        if (results) discovery.insertBefore(refreshButton, results);
+        else discovery.appendChild(refreshButton);
 
         const providers = [
           { id:'nim', label:'NVIDIA NIM', placeholder:'NVIDIA NIM API key' },
