@@ -5,7 +5,9 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const bootstrap = fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8');
+const bootstrapEntry = fs.readFileSync(path.join(root, 'bootstrapEntry.js'), 'utf8');
 const languageServices = fs.readFileSync(path.join(root, 'officialLanguageServers.js'), 'utf8');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 test('coding provider UI hides saved secrets and supports replacement without revealing them', () => {
   assert.match(bootstrap, /syncProviderCardFromState/);
@@ -45,4 +47,13 @@ test('official language services auto-detect commands and Settings hides unneces
   assert.match(bootstrap, /syncLanguageServiceControls/);
   assert.match(bootstrap, /button\.hidden = Boolean\(provider\.configured\)/);
   assert.match(bootstrap, /repeat\(auto-fit, minmax\(150px, 1fr\)\)/);
+});
+
+test('Nexus starts with no active project until the user explicitly chooses one', () => {
+  assert.equal(packageJson.main, 'bootstrapEntry.js');
+  assert.ok(packageJson.build.files.includes('bootstrapEntry.js'));
+  assert.match(bootstrapEntry, /localStorage\.removeItem\('nexus_active'\)/);
+  assert.match(bootstrapEntry, /activeProjectId = null/);
+  assert.match(bootstrapEntry, /header\.textContent = 'None'/);
+  assert.match(bootstrapEntry, /require\('\.\/bootstrap'\)/);
 });
