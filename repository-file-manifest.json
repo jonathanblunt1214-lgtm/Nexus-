@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 232,
+  "fileCount": 233,
   "types": {
     ".json": 11,
     ".md": 17,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 174,
+    ".js": 175,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -1089,8 +1089,8 @@
     {
       "path": "bootstrap.js",
       "type": ".js",
-      "size": 18603,
-      "sha256": "70678cc7bb9d54a001792c5811a16bb0992af36938ebd94ca0d3b280eda27d32"
+      "size": 35774,
+      "sha256": "ff8ec3a05d49ac4adef05772a2fd0c0125cc2748733eedfd8f2652efef422177"
     },
     {
       "path": "build-installer.bat",
@@ -1401,8 +1401,8 @@
     {
       "path": "officialLanguageServers.js",
       "type": ".js",
-      "size": 11170,
-      "sha256": "ae3ec79634e3b03dd3870a8f9ff583dde11225f746d775ef9acba5113d0c782c"
+      "size": 12967,
+      "sha256": "c68bf46a96188fe3a55c1fb350c879c5fe7b10db050378d2c15812d76c66179d"
     },
     {
       "path": "operationalDiagnostics.js",
@@ -2117,6 +2117,12 @@
       "type": ".js",
       "size": 1765,
       "sha256": "8f662e735b10ec9655be40abe7890bdc126280971d5e0a4c9f9c88b5f70ccb94"
+    },
+    {
+      "path": "test/settingsAutomationRegression.test.js",
+      "type": ".js",
+      "size": 2509,
+      "sha256": "44418c05f8017d4c4ace2a74ec21e8c5dc1715ecca8a94327a805257657c54c1"
     },
     {
       "path": "test/settingsScroll.test.js",
