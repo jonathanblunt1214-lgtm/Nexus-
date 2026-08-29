@@ -14,23 +14,12 @@ function isGovernancePath(value) {
 function bootstrapFiles() {
   return [
     {
-      path: '.nexus/crucible-auto-inject.json',
-      content: JSON.stringify({
-        schemaVersion: 2,
-        pluginId: 'the-crucible',
-        pluginVersion: VERSION,
-        mode: 'selected-auto-inject',
-        governanceRoot: GOVERNANCE_ROOT,
-        tracking: 'private Nexus account ledger; no injection ledger is stored in the project',
-      }, null, 2) + '\n',
-    },
-    {
       path: 'governingDocuments/README.md',
       content: '# The Crucible governance\n\nThis governance tree is managed by The Crucible plugin through Nexus. Every file under `governingDocuments/` can be opened and edited from the plugin configuration menu. Changes are project files and remain subject to the receiving project\'s normal review, validation, and branch rules.\n',
     },
     {
       path: 'governingDocuments/crucible-plugin-governance.md',
-      content: '# Crucible plugin governance\n\n- Auto Inject is opt-in and never runs merely because the plugin is installed or enabled.\n- Governance editing is scoped to `governingDocuments/`.\n- Existing files are not overwritten by Auto Inject unless overwrite is separately authorized.\n- The list of files injected by this plugin is tracked only in the Nexus account that performed the injection, not in project-visible tracking metadata.\n- Project governance contents themselves remain normal project files so project-native governance can enforce them.\n',
+      content: '# Crucible plugin governance\n\n- Auto Inject is opt-in and never runs merely because the plugin is installed or enabled.\n- Governance editing is scoped to `governingDocuments/`.\n- Existing files are not overwritten by Auto Inject unless overwrite is separately authorized.\n- Injection-history records are account-private and are not written into the project.\n- Project governance contents themselves remain normal project files so project-native governance can enforce them.\n',
     },
   ];
 }
