@@ -1,39 +1,37 @@
 # The Crucible — Nexus plugin
 
-This package exposes The Crucible as an optional Nexus plugin rather than hard-wiring Crucible behavior into Nexus itself.
+The Crucible is an optional Nexus plugin. Installing or enabling it does not automatically modify a project.
 
-## What it adds
+## Plugin configuration
 
-- An explicit **Auto Inject The Crucible** project action.
-- Project actions for Crucible validation and release gating.
-- An inspector-panel contribution describing Crucible integration state.
-- Command-palette descriptors for injection, validation, release-gate, and governance inspection.
-- Activation/deactivation and injection telemetry through Nexus's permitted plugin telemetry surface.
+When the plugin is enabled, Nexus exposes a **Configure governance** control. It lists every text file under the active project's `governingDocuments/` tree, lets the user open and edit any file, and allows new governance files to be created under that same tree.
 
-## Auto Inject behavior
+Governance edits are normal project files. They remain visible to the project and are subject to the project's normal source-control, review, validation, and governance rules.
 
-Auto Inject is **OFF by default**. Installing or enabling the plugin does not modify the project.
+## Auto Inject
 
-When the user explicitly selects/confirms `crucible-auto-inject`, the plugin uses Nexus's sandboxed `workspace:write` capability to add a Crucible governance bootstrap to the active project:
+**Auto Inject The Crucible** remains unchecked and off by default. The user must explicitly select it, apply the selection, and confirm the injection. Existing bootstrap files are not overwritten unless overwrite is separately authorized.
 
-- `.nexus/crucible-auto-inject.json`
-- `governingDocuments/agent-progress-policy.md`
-- `governingDocuments/templates/injection-chain-of-command.md`
+## Private injection tracking
 
-Existing files are not overwritten unless the caller separately requests `overwrite: true`. The action therefore fails closed if a receiving project already has one of these paths and overwrite was not explicitly authorized.
+When Auto Inject succeeds, the plugin records the injected file list in the Nexus account that performed the injection. The ledger is stored as an account-scoped field in that user's Nexus account-vault Firestore document and is queried through the plugin's `account:private` capability.
 
-The injected policy files are bundled from The Crucible's governing-document baseline. This bootstrap does not silently install CI workflows, mutate Git history, alter branches, add secrets, or enable a permanent monitor.
+The plugin does **not** write an injection-history ledger into the project, repository, `.nexus/plugins`, or governance tree. A project collaborator therefore sees the governance files themselves but not the plugin's private injection history. The **My injection history** control only queries records belonging to the currently signed-in Nexus account.
 
-## Security model
+If the user is not signed in, governance injection can still complete, but private tracking reports that it could not be recorded until a Nexus account is available.
 
-The plugin requests only `ui:slot`, `workspace:write`, and `telemetry:emit`. It does **not** receive arbitrary process execution, Git-write, secrets, or unrestricted network access. Nexus constrains plugin writes to relative paths inside the authorized project root, rejects path traversal and symlink escapes, limits write size/count, and uses atomic file replacement.
+## Permissions
 
-## Install in Nexus
+The plugin requests:
 
-Use Nexus's Plugins UI to import this folder. Nexus validates `nexus.plugin.json`, security-screens the package, installs it disabled, and lets the user review permissions before enabling it. Auto Inject still remains off after enablement until explicitly selected.
+- `ui:slot` for its Nexus controls.
+- `workspace:read` to list and open governance files.
+- `workspace:write` to save governance edits and perform explicitly selected Auto Inject operations.
+- `account:private` for account-scoped injection history.
+- `telemetry:emit` for bounded plugin lifecycle/action telemetry.
 
-The installed plugin can then be packaged and published through Nexus's existing plugin marketplace flow.
+Workspace paths are constrained to the authorized Nexus project and reject traversal/symlink escapes. The governance editor additionally limits edits to `governingDocuments/`.
 
-## Source
+## Source separation
 
-The Crucible itself remains a separate project. This Nexus plugin is an optional adapter/entry point and does not copy or mutate The Crucible's source repository.
+The Crucible itself remains a separate project. This Nexus plugin is an adapter and configuration surface; it does not make The Crucible part of Nexus's default runtime.
