@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 231,
+  "fileCount": 232,
   "types": {
     ".json": 11,
     ".md": 17,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 173,
+    ".js": 174,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -1089,8 +1089,8 @@
     {
       "path": "bootstrap.js",
       "type": ".js",
-      "size": 12683,
-      "sha256": "5413dd1d57c028f425526c22858288dcbc324ff4169847673515a770521ef76d"
+      "size": 18603,
+      "sha256": "70678cc7bb9d54a001792c5811a16bb0992af36938ebd94ca0d3b280eda27d32"
     },
     {
       "path": "build-installer.bat",
@@ -1851,8 +1851,8 @@
     {
       "path": "test/codingModelProviders.test.js",
       "type": ".js",
-      "size": 2443,
-      "sha256": "83e2f9d608bdb78d1c05e538a55d2d7a7a2eefbeca281124c2dffd32c8d153f6"
+      "size": 2628,
+      "sha256": "406ac38ca2e432debb006fffaec604868186d9dea0044f330964a628c2935030"
     },
     {
       "path": "test/crucibleIntegration.test.js",
@@ -2081,6 +2081,12 @@
       "type": ".js",
       "size": 2515,
       "sha256": "85ab19f1d7cc7e952edff813a110afceabb6f4b82b44a29465c87eba75ef0a2b"
+    },
+    {
+      "path": "test/safeProviderDiscoveryUi.test.js",
+      "type": ".js",
+      "size": 1348,
+      "sha256": "905393cec68adb2f2622de7dea58498118295549eae42190a67a0ce9d3637f4e"
     },
     {
       "path": "test/secretScanner.test.js",
