@@ -9,6 +9,7 @@ const ALLOWED_CAPABILITIES = new Set([
   'network:request',
   'ui:slot',
   'telemetry:emit',
+  'account:private',
 ]);
 const ALLOWED_SLOTS = new Set([
   'sidebar',
