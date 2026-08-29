@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { PluginManager } = require('./pluginManager');
+const { createPluginCapabilityHandlers } = require('./pluginCapabilities');
 
 function normalizeProjectRoot(value) {
   if (typeof value !== 'string' || !value.trim()) throw new Error('projectRoot is required');
@@ -13,7 +14,11 @@ function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot,
   if (!ipcMain || typeof ipcMain.handle !== 'function') throw new Error('ipcMain.handle is required');
   if (typeof isAuthorizedProjectRoot !== 'function') throw new Error('isAuthorizedProjectRoot is required');
   const managers = new Map();
-  const makeManager = managerFactory || ((projectRoot) => new PluginManager({ projectRoot, requireSigned: true }));
+  const makeManager = managerFactory || ((projectRoot) => new PluginManager({
+    projectRoot,
+    requireSigned: true,
+    capabilityHandlers: createPluginCapabilityHandlers(projectRoot),
+  }));
 
   function getManager(projectRoot) {
     const root = normalizeProjectRoot(projectRoot);
