@@ -3,7 +3,11 @@ const { spawn } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const workerCount = Math.max(2, Math.min(4, Number(process.env.NEXUS_STRESS_WORKERS) || 4));
-const timeoutMs = Math.max(60_000, Number(process.env.NEXUS_CRUCIBLE_TIMEOUT_MS) || 240_000);
+// Heavy workers stop new work after 210 seconds, then verify and remove thousands
+// of temporary files. Keep a separate process deadline so slower hosted runners
+// have enough time to finish that required cleanup instead of being killed while
+// the workload itself has already succeeded.
+const timeoutMs = Math.max(240_000, Number(process.env.NEXUS_CRUCIBLE_TIMEOUT_MS) || 360_000);
 
 function runProcess(label, args, env = {}) {
   return new Promise((resolve, reject) => {
@@ -27,7 +31,7 @@ function runProcess(label, args, env = {}) {
 }
 
 async function main() {
-  console.log(`[Crucible] Running every release check together for up to four minutes: ${workerCount} complete test suites, ${workerCount} adaptive project workloads, architecture, release, privacy, inventory, and clutter verification.`);
+  console.log(`[Crucible] Running every release check together for up to six minutes: ${workerCount} complete test suites, ${workerCount} adaptive project workloads, architecture, release, privacy, inventory, and clutter verification.`);
   console.log(`[Crucible] Each workload processes ${Number(process.env.NEXUS_HEAVY_FILES) || 5000} files and repeats verified save, checker, index, and build cycles for as long as the time box allows.`);
   const jobs = [];
   for (let index = 1; index <= workerCount; index += 1) {

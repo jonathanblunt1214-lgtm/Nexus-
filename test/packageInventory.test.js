@@ -39,7 +39,9 @@ test('every release is blocked until the concurrent heavy-load stress gate passe
   assert.match(workload, /checkCode/);
   assert.match(workload, /Parallel builds produced different artifacts/);
   assert.match(stress, /could not spawn/);
-  assert.match(stress, /NEXUS_CRUCIBLE_TIMEOUT_MS\) \|\| 240_000/);
+  assert.match(stress, /NEXUS_CRUCIBLE_TIMEOUT_MS\) \|\| 360_000/);
+  assert.match(stress, /Math\.max\(240_000,/);
+  assert.match(stress, /up to six minutes/);
   assert.match(workload, /NEXUS_CRUCIBLE_WORKLOAD_MS/);
   assert.match(workload, /Date\.now\(\) \+ 30_000 < deadline/);
   for (const gate of ['verifyArchitecture.js','releaseAudit.js','privacyRetryGate.js','verifyRepositoryInventory.js','repositoryClutterAudit.js']) assert.match(stress, new RegExp(gate.replace('.', '\\.')));

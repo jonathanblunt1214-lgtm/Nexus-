@@ -1647,8 +1647,8 @@
     {
       "path": "scripts/releaseStressGate.js",
       "type": ".js",
-      "size": 3774,
-      "sha256": "1c569b48ad701e33f1828c7a25c29a222dc17bb77b6e079ec55b6a33b818bf26"
+      "size": 4066,
+      "sha256": "e6a7565fa0dc4cf943c99c29e6377300280736459949563cdc33bc11be00c8c3"
     },
     {
       "path": "scripts/remediateDevelopmentForPromotion.js",
@@ -1971,8 +1971,8 @@
     {
       "path": "test/packageInventory.test.js",
       "type": ".js",
-      "size": 4715,
-      "sha256": "87d7182ea7f67948518e636f8eb25cd341923ed545e57162c9b6ca79cb85bbef"
+      "size": 4807,
+      "sha256": "b30b03a8166e188d69f1c423c48a7e171571ba028b502756a08332ba007ef73e"
     },
     {
       "path": "test/pluginManager.test.js",
