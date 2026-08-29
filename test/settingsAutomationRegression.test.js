@@ -11,7 +11,7 @@ test('coding provider UI hides saved secrets and supports replacement without re
   assert.match(bootstrap, /syncProviderCardFromState/);
   assert.match(bootstrap, /Boolean\(current\?\.configured\)/);
   assert.match(bootstrap, /Configured · key hidden/);
-  assert.match(bootstrap, /data-provider-replace-key/);
+  assert.match(bootstrap, /providerReplaceKey/);
   assert.match(bootstrap, /key\.style\.display = 'none'/);
   assert.match(bootstrap, /key\.value = ''/);
 });
