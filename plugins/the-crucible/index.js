@@ -407,16 +407,19 @@ async function readWorkspaceText(path) {
   return String(result?.content || '');
 }
 
+function undeclaredBranchRelationships() {
+  return { ok: true, declared: false, manifestPath: BRANCH_LINK_MANIFEST, schemaVersion: 1, canonicalReferences: [], pairedRelationships: [] };
+}
+
 async function readBranchRelationships() {
-  try {
-    const parsed = JSON.parse(await readWorkspaceText(BRANCH_LINK_MANIFEST));
+  return readWorkspaceText(BRANCH_LINK_MANIFEST).then((content) => JSON.parse(content)).then((parsed) => {
     return { ok: true, declared: true, manifestPath: BRANCH_LINK_MANIFEST, ...classifyBranchLinks(parsed) };
-  } catch (error) {
+  }, (error) => {
     if (/not found/i.test(String(error?.message || ''))) {
-      return { ok: true, declared: false, manifestPath: BRANCH_LINK_MANIFEST, schemaVersion: 1, canonicalReferences: [], pairedRelationships: [] };
+      return undeclaredBranchRelationships();
     }
     return { ok: false, declared: true, manifestPath: BRANCH_LINK_MANIFEST, error: String(error?.message || error) };
-  }
+  });
 }
 
 async function readLocalGovernance(payload) {

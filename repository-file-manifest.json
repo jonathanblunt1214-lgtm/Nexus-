@@ -977,8 +977,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 4993,
-      "sha256": "f84ffd384a5697110731961bae86c99de333a9b9531f5091fec6d172ad7475d6"
+      "size": 5436,
+      "sha256": "28fea6da42430d7d05411e5f165d35d17e8ee9aaa9de3f6d3ba2042aa2e9955d"
     },
     {
       "path": "AGENTS.md",
@@ -1013,8 +1013,8 @@
     {
       "path": "DEVLOG.md",
       "type": ".md",
-      "size": 2972,
-      "sha256": "339e0fb09398b83076c52c5813598acf93dac9dd7beb665787570a946a8fc22e"
+      "size": 3206,
+      "sha256": "cdba5edb76d55b3858223d723c8555bd053b93ab9edfc4d1fda707b0e5a866fe"
     },
     {
       "path": "FIREBASE_SETUP.md",
@@ -1565,8 +1565,8 @@
     {
       "path": "plugins/the-crucible/index.js",
       "type": ".js",
-      "size": 45763,
-      "sha256": "b2f8c8efa19e58194cbddd1c561b14ecbbaea871b66e76cf6f209b7bdd6c77ab"
+      "size": 45872,
+      "sha256": "c989e881703edcafaa6f3a19d1ceb228d2478d2a67f5590ed8727bee1d55ca7c"
     },
     {
       "path": "plugins/the-crucible/nexus.plugin.json",

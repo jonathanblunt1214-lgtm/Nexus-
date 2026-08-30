@@ -51,5 +51,8 @@ binding rules are in `AGENTS.md`.
   the plugin's readiness check is green. Tests cover identity separation, OIDC
   claims and signature, token lifetime, secret scoping, installation,
   configuration persistence, and end-to-end readiness.
+  The same change also records the already-public Firebase client identifier as
+  a narrow, expiring Crucible security-review exception and keeps an expected
+  missing branch-link manifest from resembling fabricated success handling.
 - **2026-08-28** — Added `AI-HANDOFF.json`, this file, and the
   agent-communication timestamp policy, per the repository owner's request.
