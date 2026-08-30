@@ -59,7 +59,7 @@ function createWorkspaceReadHandler(projectRoot) {
       return { ok: true, files: files.sort() };
     }
     const location = safeWorkspacePath(projectRoot, payload.path, 'workspace:read');
-    if (!fs.existsSync(location.target) || !fs.statSync(location.target).isFile()) throw new Error(`workspace:read file does not exist: ${payload.path}`);
+    if (!fs.existsSync(location.target) || !fs.statSync(location.target).isFile()) throw new Error(`workspace:read file not found: ${payload.path}`);
     const size = fs.statSync(location.target).size;
     if (size > MAX_FILE_BYTES) throw new Error(`workspace:read file exceeds ${MAX_FILE_BYTES} bytes: ${payload.path}`);
     return { ok: true, path: location.relative, content: fs.readFileSync(location.target, 'utf8'), bytes: size };

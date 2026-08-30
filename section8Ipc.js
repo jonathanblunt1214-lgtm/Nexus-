@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { PluginManager } = require('./pluginManager');
 const { createPluginCapabilityHandlers } = require('./pluginCapabilities');
+const { CrucibleLearningIdentity } = require('./crucibleLearningIdentity');
 
 function normalizeProjectRoot(value) {
   if (typeof value !== 'string' || !value.trim()) throw new Error('projectRoot is required');
@@ -10,15 +11,25 @@ function normalizeProjectRoot(value) {
   return fs.realpathSync(root);
 }
 
-function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot, selectPluginFolder } = {}) {
+function registerSection8Ipc({ ipcMain, managerFactory, identityProviderFactory, isAuthorizedProjectRoot, selectPluginFolder } = {}) {
   if (!ipcMain || typeof ipcMain.handle !== 'function') throw new Error('ipcMain.handle is required');
   if (typeof isAuthorizedProjectRoot !== 'function') throw new Error('isAuthorizedProjectRoot is required');
   const managers = new Map();
-  const makeManager = managerFactory || ((projectRoot) => new PluginManager({
-    projectRoot,
-    requireSigned: true,
-    capabilityHandlers: createPluginCapabilityHandlers(projectRoot),
-  }));
+  const identities = new Map();
+  const provisioned = new Set();
+  const identityFor = (projectRoot) => {
+    if (!identities.has(projectRoot)) identities.set(projectRoot, identityProviderFactory ? identityProviderFactory(projectRoot) : new CrucibleLearningIdentity(projectRoot));
+    return identities.get(projectRoot);
+  };
+  const makeManager = managerFactory || ((projectRoot) => {
+    const identity = identityFor(projectRoot);
+    return new PluginManager({
+      projectRoot,
+      requireSigned: true,
+      capabilityHandlers: createPluginCapabilityHandlers(projectRoot),
+      slotPayloadDecorator: (pluginId, slot, payload) => identity.decorate(pluginId, slot, payload),
+    });
+  });
 
   function getManager(projectRoot) {
     const root = normalizeProjectRoot(projectRoot);
@@ -61,8 +72,32 @@ function registerSection8Ipc({ ipcMain, managerFactory, isAuthorizedProjectRoot,
     if (typeof slot !== 'string' || !slot) throw new Error('slot is required');
     return getManager(projectRoot).invokeSlot(slot, payload || {});
   });
+  ipcMain.handle('plugins:crucible-provision', async (_event, { projectRoot } = {}) => {
+    const manager = getManager(projectRoot);
+    const root = normalizeProjectRoot(projectRoot);
+    const identity = identityFor(root);
+    if (!provisioned.has(root)) {
+      manager.discover();
+      const existing = manager.list().find((item) => item.id === 'the-crucible');
+      if (existing?.status === 'ACTIVE') await manager.disable('the-crucible');
+      manager.installBundledFromFolder(path.join(__dirname, 'plugins', 'the-crucible'));
+      await manager.enable('the-crucible');
+      provisioned.add(root);
+    }
+    const read = async (actionId) => {
+      const result = await manager.invokeSlot('project-actions', { actionId });
+      const crucible = result.find((item) => item.pluginId === 'the-crucible');
+      if (!crucible?.ok) throw new Error(crucible?.error || 'The Crucible plugin did not respond.');
+      return crucible.value;
+    };
+    let readiness = await read('crucible-learning-readiness');
+    if (!readiness.ready) await read('crucible-learning-configure');
+    readiness = await read('crucible-learning-readiness');
+    if (!readiness.ready) throw new Error('The Crucible secure-learning readiness gate did not become ready.');
+    return { ok: true, ready: true, plugin: manager.list().find((item) => item.id === 'the-crucible'), identity: identity.publicStatus(), readiness };
+  });
 
-  return { managers, getManager };
+  return { managers, identities, provisioned, getManager };
 }
 
 module.exports = { registerSection8Ipc, normalizeProjectRoot };

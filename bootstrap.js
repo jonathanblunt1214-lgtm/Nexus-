@@ -5,6 +5,7 @@ const { execFile } = require('child_process');
 const { app, ipcMain, webContents, dialog, safeStorage } = require('electron');
 const { registerSection7Ipc } = require('./section7Ipc');
 const { registerSection8Ipc } = require('./section8Ipc');
+const { CrucibleLearningIdentity } = require('./crucibleLearningIdentity');
 const { listProjects } = require('./projectRegistry');
 const publisherConfig = require('./publisherConfig');
 const { createSenderValidator, secureIpcHandlers } = require('./ipcSecurity');
@@ -38,6 +39,26 @@ function readStoredGithubToken() {
   } catch {
     return null;
   }
+}
+
+function crucibleIdentityProvider(projectRoot) {
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('OS encryption is required for trusted Crucible OIDC identity.');
+  const configPath = path.join(app.getPath('userData'), 'crucible-learning-identities.json');
+  let cfg = {};
+  try { cfg = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+  const fingerprint = require('crypto').createHash('sha256').update(canonicalProjectPath(projectRoot)).digest('hex');
+  const encrypted = cfg.identities?.[fingerprint];
+  let material = null;
+  if (encrypted) material = JSON.parse(safeStorage.decryptString(Buffer.from(encrypted, 'base64')));
+  const identity = new CrucibleLearningIdentity(projectRoot, material);
+  if (!encrypted) {
+    cfg.identities = { ...(cfg.identities || {}), [fingerprint]: safeStorage.encryptString(JSON.stringify(identity.exportMaterial())).toString('base64') };
+    const temp = `${configPath}.crucible-${process.pid}-${Date.now()}.tmp`;
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(temp, `${JSON.stringify(cfg, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
+    fs.renameSync(temp, configPath);
+  }
+  return identity;
 }
 
 function runGitProcess(folder, args, env = process.env) {
@@ -675,6 +696,7 @@ registerSection7Ipc({ ipcMain, webContents, authorizeRuntime: (folder) => isAuth
 registerSection8Ipc({
   ipcMain,
   isAuthorizedProjectRoot,
+  identityProviderFactory: crucibleIdentityProvider,
   selectPluginFolder: async () => {
     const selection = await dialog.showOpenDialog({ title: 'Choose a Nexus plug-in folder to screen', properties: ['openDirectory', 'dontAddToRecent'] });
     return selection.canceled ? null : selection.filePaths[0];

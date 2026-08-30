@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { webcrypto } = require('crypto');
+const { TextEncoder, TextDecoder } = require('util');
 const { parentPort, workerData } = require('worker_threads');
 
 const { manifest, pluginRoot, timeoutMs, startupTimeoutMs } = workerData;
@@ -64,6 +66,11 @@ function loadPlugin() {
     }),
     setTimeout,
     clearTimeout,
+    crypto: webcrypto,
+    TextEncoder,
+    TextDecoder,
+    btoa: (value) => Buffer.from(value, 'binary').toString('base64'),
+    atob: (value) => Buffer.from(value, 'base64').toString('binary'),
   });
   sandbox.globalThis = sandbox;
   const context = vm.createContext(sandbox, {

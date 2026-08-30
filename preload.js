@@ -295,6 +295,7 @@ contextBridge.exposeInMainWorld('nexus', {
   pluginsSlots: (projectRoot) => ipcRenderer.invoke('plugins:slots', { projectRoot }),
   pluginsHealth: (projectRoot) => ipcRenderer.invoke('plugins:health', { projectRoot }),
   pluginsInvokeSlot: (projectRoot, slot, payload) => ipcRenderer.invoke('plugins:invoke-slot', { projectRoot, slot, payload }),
+  pluginsCrucibleProvision: (projectRoot) => ipcRenderer.invoke('plugins:crucible-provision', { projectRoot }),
 
   // Section 7: local-preview vision and isolated runtime debugging only.
   visionCapturePreview: (webContentsId, rect) => ipcRenderer.invoke('vision:capture-preview', { webContentsId, rect }),

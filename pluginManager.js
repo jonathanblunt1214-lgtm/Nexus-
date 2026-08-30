@@ -51,6 +51,7 @@ class PluginManager {
     trustedPublicKeys = [],
     requireSigned = true,
     allowUnsignedDevelopment = false,
+    slotPayloadDecorator = null,
     runtime,
   }) {
     if (!projectRoot) throw new Error('projectRoot is required');
@@ -61,6 +62,7 @@ class PluginManager {
     this.trustedPublicKeys = trustedPublicKeys;
     this.requireSigned = requireSigned;
     this.allowUnsignedDevelopment = allowUnsignedDevelopment;
+    this.slotPayloadDecorator = slotPayloadDecorator;
     this.runtime = runtime || new PluginRuntime({ capabilityHandlers });
     this.ledger = new PluginAuditLedger({ projectRoot: this.projectRoot });
     this.registry = new Map();
@@ -161,6 +163,36 @@ class PluginManager {
     return { ok: true, plugin: this.registry.get(manifest.id) ? this.publicRecord(this.registry.get(manifest.id)) : null, report };
   }
 
+  installBundledFromFolder(sourceFolder) {
+    const source = fs.realpathSync(path.resolve(sourceFolder));
+    const raw = JSON.parse(fs.readFileSync(path.join(source, 'nexus.plugin.json'), 'utf8'));
+    const manifest = validatePluginManifest(raw, { nexusVersion: this.nexusVersion });
+    if (manifest.id !== 'the-crucible') throw new Error('Bundled provisioning is restricted to The Crucible plugin.');
+    if (!fs.existsSync(path.join(source, manifest.entry))) throw new Error('The bundled Crucible entry file is missing.');
+    fs.mkdirSync(this.pluginsRoot, { recursive: true });
+    const destination = path.join(this.pluginsRoot, manifest.id);
+    const staging = path.join(this.pluginsRoot, `.bundled-${crypto.randomUUID()}`);
+    const backup = path.join(this.pluginsRoot, `.previous-${crypto.randomUUID()}`);
+    try {
+      fs.cpSync(source, staging, { recursive: true, errorOnExist: true });
+      if (fs.existsSync(destination)) fs.renameSync(destination, backup);
+      fs.renameSync(staging, destination);
+      fs.rmSync(backup, { recursive: true, force: true });
+    } catch (error) {
+      fs.rmSync(staging, { recursive: true, force: true });
+      if (!fs.existsSync(destination) && fs.existsSync(backup)) fs.renameSync(backup, destination);
+      throw error;
+    }
+    const digest = hashPluginDirectory(destination);
+    const state = this.loadState();
+    state.screened = { ...(state.screened || {}), [manifest.id]: digest };
+    state.disabled = [...new Set([...(state.disabled || []), manifest.id])];
+    this.saveState(state);
+    this.audit(manifest.id, 'PLUGIN_BUNDLED_INSTALLED', { version: manifest.version, digest });
+    this.discover();
+    return this.publicRecord(this.registry.get(manifest.id));
+  }
+
   createMarketplacePackage(pluginId) {
     this.discover();
     const record = this.registry.get(pluginId);
@@ -240,7 +272,8 @@ class PluginManager {
     const results = [];
     for (const pluginId of ids) {
       try {
-        const value = await this.runtime.invokeSlot(pluginId, slot, payload, (code, metadata) => this.audit(pluginId, code, metadata));
+        const decorated = this.slotPayloadDecorator ? await this.slotPayloadDecorator(pluginId, slot, payload) : payload;
+        const value = await this.runtime.invokeSlot(pluginId, slot, decorated, (code, metadata) => this.audit(pluginId, code, metadata));
         results.push({ pluginId, ok: true, value });
       } catch (error) {
         const record = this.registry.get(pluginId);

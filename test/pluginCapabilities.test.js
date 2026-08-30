@@ -25,7 +25,7 @@ test('workspace read lists and reads governance files without following symlinks
   fs.writeFileSync(path.join(root, 'governingDocuments', 'nested', 'b.md'), 'b', 'utf8');
   const read = createWorkspaceReadHandler(root);
   const listed = await read({ operation: 'list', path: 'governingDocuments' });
-  assert.deepEqual(listed.files, ['governingDocuments/a.md', path.join('governingDocuments', 'nested', 'b.md')].sort());
+  assert.deepEqual(listed.files, [path.join('governingDocuments', 'a.md'), path.join('governingDocuments', 'nested', 'b.md')].sort());
   const file = await read({ operation: 'read', path: 'governingDocuments/a.md' });
   assert.equal(file.content, 'a');
 });

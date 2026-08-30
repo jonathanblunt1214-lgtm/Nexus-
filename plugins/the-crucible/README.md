@@ -1,37 +1,37 @@
 # The Crucible — Nexus plugin
 
-The Crucible is an optional Nexus plugin. Installing or enabling it does not automatically modify a project.
+This branch is the standalone Nexus plugin package for The Crucible. Plugin files live at the branch root; there is no extra `plugins/the-crucible/` wrapper because this branch contains only plugin-related material.
 
-## Plugin configuration
+## Canonical-source rule
 
-When the plugin is enabled, Nexus exposes a **Configure governance** control. It lists every text file under the active project's `governingDocuments/` tree, lets the user open and edit any file, and allows new governance files to be created under that same tree.
+Shared Crucible governance is **not copied into this branch**. The default `main` branch of `jonathanblunt1214-lgtm/The-Crucible` is the canonical source for shared policy and reference material. The plugin exposes links to those canonical files and, when **Auto Inject** is explicitly selected and confirmed, writes only `governingDocuments/CRUCIBLE-REFERENCES.json` into the target project.
 
-Governance edits are normal project files. They remain visible to the project and are subject to the project's normal source-control, review, validation, and governance rules.
+That reference manifest points back to the canonical `main` files. Project-specific governance can then be added as a local overlay under `governingDocuments/` without forking or duplicating shared Crucible policy text.
 
-## Auto Inject
+## Behavior
 
-**Auto Inject The Crucible** remains unchecked and off by default. The user must explicitly select it, apply the selection, and confirm the injection. Existing bootstrap files are not overwritten unless overwrite is separately authorized.
+The plugin is optional and disabled until the Nexus user installs and enables it. Auto Inject is off by default and requires explicit selection plus confirmation. Installing or enabling the plugin alone does not modify a project.
 
-## Private injection tracking
+The plugin requests only Nexus UI-slot, workspace read/write, and telemetry capabilities. It does not request Git write, shell/process execution, secrets, arbitrary filesystem access, or unrestricted network access.
 
-When Auto Inject succeeds, the plugin records the injected file list in the Nexus account that performed the injection. The ledger is stored in `nexusCruciblePluginTracking/{userId}`, a dedicated Firestore document protected by an authenticated-UID match and verified-account rule, and is queried through the plugin's `account:private` capability.
+## Scientific learning
 
-The plugin does **not** write an injection-history ledger into the project, repository, `.nexus/plugins`, or governance tree. A project collaborator therefore sees the governance files themselves but not the plugin's private injection history. The **My injection history** control only queries records belonging to the currently signed-in Nexus account.
+Version 0.3.0 provides project-isolated scientific learning under `governingDocuments/.crucible-learning/<projectId>/`. Before the first item of training evidence can be accepted, `crucible-learning-configure` must validate and bind the project ID, trusted RS256 OIDC configuration, exact OIDC subject, and supplied ephemeral transport key. `crucible-learning-readiness` reports whether that setup is complete. Candidate evidence is rejected until readiness is true; after setup it is strictly validated and always enters as `Insufficient Evidence`. Separate actions declare a falsifiable hypothesis, record a bounded controlled experiment, confirm causal isolation, record independent verification, promote verified knowledge, retrieve records, quarantine/reject evidence, and roll back a knowledge version.
 
-If the user is not signed in, governance injection can still complete, but private tracking reports that it could not be recorded until a Nexus account is available.
+Promotion is fail-closed. Raw telemetry, correlations, retrieval, repeated observations, guesses, incomplete observations, untested hypotheses, and one-off repairs can never promote. Verification must match the exact tested property and experiment boundary. Conflicts with active verified knowledge are classified as `Crucible Issue` and quarantined instead of overwriting knowledge. Retrieval returns records but never satisfies a proof gate.
 
-## Permissions
+Plugin telemetry contains only non-evidentiary action metadata and is never read by the learning state machine. Weekly exchange uses the Nexus sandbox's standard Web Crypto implementation for trusted RS256 OIDC verification, HKDF-SHA256 project-key derivation, and AES-256-GCM authenticated encryption. The trusted public OIDC policy and a SHA-256 commitment to the ephemeral key are persisted; the key and token are never persisted or emitted. Every later transport action must prove it received the configured key and a fresh OIDC token matching the stored trust policy. Exact issuer, audience, repository, development ref, project, token lifetime, week, and OIDC-subject bindings fail closed.
 
-The plugin requests:
+Hosted compatibility verification compares the plugin's states, mandatory gates, and prohibited-promotion kinds with canonical `main` and fails if the adapter drifts, while retaining the sandbox's no-`require`, no-process runtime boundary.
 
-- `ui:slot` for its Nexus controls.
-- `workspace:read` to list and open governance files.
-- `workspace:write` to save governance edits and perform explicitly selected Auto Inject operations.
-- `account:private` for account-scoped injection history.
-- `telemetry:emit` for bounded plugin lifecycle/action telemetry.
+## Canonical references
 
-Workspace paths are constrained to the authorized Nexus project and reject traversal/symlink escapes. The governance editor additionally limits edits to `governingDocuments/`.
+The reference manifest points at the default branch for shared material including `AGENTS.md`, `README.md`, AI conflict and required-check templates, agent boundaries, and the injection prerequisite/monitoring/native-validation/credential templates. These files stay in one canonical location instead of being duplicated in the plugin branch and every receiving repository.
 
-## Source separation
+## Project-specific overrides
 
-The Crucible itself remains a separate project. This Nexus plugin is an adapter and configuration surface; it does not make The Crucible part of Nexus's default runtime.
+Use the plugin configuration surface to create, edit, move, or delete project-specific text under `governingDocuments/`. Shared canonical documents should remain references unless a local copy is mechanically required by the project or a deliberate project-specific override is needed.
+
+## Verification
+
+Run `npm test` and `npm run verify` from this branch. Nexus still performs its own security screening before a plugin can be installed or published through the Nexus marketplace flow.
