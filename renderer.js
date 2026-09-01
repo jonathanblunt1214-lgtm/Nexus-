@@ -4408,7 +4408,11 @@ async function refreshPluginSecurityList() {
   const panel = document.getElementById('plugin-security-list');
   if (!folder) { panel.innerHTML = '<p class="muted small">Open a project to view its plug-ins.</p>'; return; }
   let plugins = [];
-  try { plugins = await window.nexus.pluginsScan(folder); } catch (error) { panel.innerHTML = `<p class="muted small">${escapeHtml(error.message)}</p>`; return; }
+  try {
+    const readiness = await window.nexus.pluginsCrucibleProvision(folder);
+    if (!readiness?.ready) throw new Error('Crucible secure learning did not become ready.');
+    plugins = await window.nexus.pluginsScan(folder);
+  } catch (error) { panel.innerHTML = `<p class="muted small">${escapeHtml(error.message)}</p>`; return; }
   const links = accountLinkedPluginMap();
   panel.innerHTML = plugins.map((plugin) => `<div class="suggestion-item"><strong>${escapeHtml(plugin.name || plugin.id)}</strong><span class="muted small">${escapeHtml(plugin.version || '')} · ${plugin.screened ? 'Nexus screened' : plugin.signed ? 'Publisher signed' : 'Not approved'} · ${escapeHtml(plugin.status || '')}${links[plugin.id] ? ' · linked to account' : ''}</span><span class="muted small">Permissions: ${escapeHtml((plugin.capabilities || []).join(', ') || 'none')}</span><div>${plugin.status === 'ACTIVE' ? `<button class="btn tiny btn-secondary" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', false)">Disable</button>` : plugin.status !== 'REJECTED' ? `<button class="btn tiny" onclick="setPluginEnabled('${escapeHtml(plugin.id)}', true)">Enable</button>` : ''}${plugin.status !== 'REJECTED' && plugin.screened ? ` <button class="btn tiny btn-secondary" onclick="publishPluginToMarketplace('${escapeHtml(plugin.id)}')">Publish</button> ${links[plugin.id] ? `<button class="btn tiny btn-secondary" onclick="unlinkPluginFromAccount('${escapeHtml(plugin.id)}')">Unlink from account</button>` : `<button class="btn tiny btn-secondary" onclick="linkPluginToAccount('${escapeHtml(plugin.id)}')">Link to account</button>`}` : ''}</div></div>`).join('') || '<p class="muted small">No plug-ins installed for this project.</p>';
 }

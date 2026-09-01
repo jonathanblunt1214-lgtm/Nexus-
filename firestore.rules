@@ -13,6 +13,21 @@ service cloud.firestore {
         && request.resource.data.encryptedVault.size() <= 2097152
         && request.resource.data.schemaVersion == 1;
     }
+    match /nexusCruciblePluginTracking/{userId} {
+      allow read: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true
+        && request.resource.data.keys().hasOnly(['state', 'updatedAt', 'schemaVersion'])
+        && request.resource.data.state is string
+        && request.resource.data.state.size() <= 1048576
+        && request.resource.data.schemaVersion == 1;
+      allow delete: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+    }
     match /pluginMarketplace/{packageId} {
       allow read: if resource.data.visibility == 'public'
         || (request.auth != null && request.auth.uid == resource.data.ownerUid);

@@ -41,5 +41,18 @@ binding rules are in `AGENTS.md`.
 
 ## Log
 
+- **2026-08-29** — Added the trusted Crucible v0.3.0 learning host. Nexus now
+  derives the learning identity from the canonical path of the workspace that
+  is actually open, generates a per-workspace RSA signing identity and random
+  transport key, encrypts private material with Electron `safeStorage`, and
+  exposes no secret-bearing configuration channel to the renderer. The plugin
+  security flow installs and enables the governed bundled plugin, performs its
+  secure configuration inside the bounded host adapter, and fails closed unless
+  the plugin's readiness check is green. Tests cover identity separation, OIDC
+  claims and signature, token lifetime, secret scoping, installation,
+  configuration persistence, and end-to-end readiness.
+  The same change also records the already-public Firebase client identifier as
+  a narrow, expiring Crucible security-review exception and keeps an expected
+  missing branch-link manifest from resembling fabricated success handling.
 - **2026-08-28** — Added `AI-HANDOFF.json`, this file, and the
   agent-communication timestamp policy, per the repository owner's request.

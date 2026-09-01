@@ -29,5 +29,12 @@
     "externalAuthority": "Assimilation is an internal Nexus write and does not extend or renew external write access."
   },
   "branchAuthoritySummary": "Plain language: ordinary AI work happens only on Development-branch. An AI does not create or use claude/*, codex/*, or other auxiliary branches, and does not touch main directly, unless the repository owner explicitly authorizes that exact branch or operation in the current conversation — and that authorization does not carry over to the next task. main only changes through the protected promote-development-to-main.yml workflow. See AGENTS.md for the full, binding rules.",
-  "lastUpdated": "2026-08-28 08:55:15 EDT"
+  "crucibleLearningHost": {
+    "pluginVersion": "0.3.0",
+    "workspaceBinding": "The canonical real path of the opened Nexus workspace is hashed into the project, repository, ref, and subject claims. ChatGPT project identifiers are not used.",
+    "identity": "Nexus generates a per-workspace RSA-2048 OIDC signing identity and a 32-byte random transport key. Private material is encrypted with Electron safeStorage outside the workspace and is never exposed through renderer IPC or written into the plugin store.",
+    "provisioning": "The plugin security view installs and enables the bundled Crucible plugin, invokes its secure configuration action, and fails closed unless the plugin reports learning readiness as green.",
+    "verification": "Automated tests cover workspace separation, OIDC signature and claims, short token lifetime, secret scoping, installation, configuration persistence, and final readiness. Hosted exact-tip CI remains required after push."
+  },
+  "lastUpdated": "2026-08-29 20:30:07 EDT"
 }

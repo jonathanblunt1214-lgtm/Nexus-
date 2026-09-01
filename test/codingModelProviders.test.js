@@ -15,7 +15,7 @@ test('offers supported coding providers without Z.ai', () => {
   assert.doesNotMatch(JSON.stringify(PROVIDERS), /z\.ai|GLM/i);
 });
 
-test('coding provider settings save, activate, and reuse the NVIDIA key path', () => {
+test('coding provider settings save, activate, reuse NVIDIA key storage, and expose only supported hosted providers', () => {
   const main = fs.readFileSync(require.resolve('../main'), 'utf8');
   const bootstrap = fs.readFileSync(require.resolve('../bootstrap'), 'utf8');
   const renderer = fs.readFileSync(require.resolve('../renderer'), 'utf8');
@@ -25,7 +25,8 @@ test('coding provider settings save, activate, and reuse the NVIDIA key path', (
   assert.match(bootstrap, /id === 'nim' \? handlers\.get\('save-nim-key'\)/);
   assert.match(bootstrap, /coding-models:select/);
   assert.match(bootstrap, /activated:true/);
-  assert.match(bootstrap, /item\.id !== 'glm'/);
+  assert.match(bootstrap, /new Set\(\['nim', 'kimi', 'deepseek'\]\)/);
+  assert.match(bootstrap, /result\.providers = result\.providers\.filter\(\(item\) => hostedProviders\.has\(item\.id\)\)/);
   assert.doesNotMatch(renderer, /ApiKeyEnc|access_token/);
 });
 

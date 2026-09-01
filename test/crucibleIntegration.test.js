@@ -46,9 +46,16 @@ test('Crucible configuration keeps execution bounded and reports through one gat
   assert.match(config.$schema, new RegExp(PINNED_CRUCIBLE_REF));
 });
 
-test('Nexus does not vendor or install The Crucible at application runtime', () => {
+test('Nexus bundles only the governed Crucible v0.3.0 plugin and provisions it through workspace-bound host identity', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   assert.equal(pkg.dependencies?.['the-crucible'], undefined);
   assert.equal(pkg.devDependencies?.['the-crucible'], undefined);
-  assert.equal((pkg.build?.files || []).some((file) => /crucible/i.test(file)), false);
+  assert.ok((pkg.build?.files || []).includes('plugins/the-crucible'));
+  assert.ok((pkg.build?.files || []).includes('crucibleLearningIdentity.js'));
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'plugins', 'the-crucible', 'nexus.plugin.json'), 'utf8'));
+  assert.equal(manifest.version, '0.3.0');
+  assert.equal(manifest.entry, 'index.js');
+  const section8 = fs.readFileSync(path.join(root, 'section8Ipc.js'), 'utf8');
+  assert.match(section8, /plugins:crucible-provision/);
+  assert.match(section8, /CrucibleLearningIdentity/);
 });

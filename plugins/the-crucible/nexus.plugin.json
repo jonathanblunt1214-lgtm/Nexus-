@@ -1,0 +1,20 @@
+{
+  "id": "the-crucible",
+  "name": "The Crucible",
+  "version": "0.3.0",
+  "apiVersion": 1,
+  "entry": "index.js",
+  "minNexusVersion": "1.0.3",
+  "capabilities": [
+    "ui:slot",
+    "workspace:read",
+    "workspace:write",
+    "telemetry:emit"
+  ],
+  "slots": [
+    "project-actions",
+    "inspector-panel",
+    "command-palette"
+  ],
+  "description": "Optional Nexus integration for The Crucible with project-isolated fail-closed scientific learning and canonical default-branch governance references."
+}

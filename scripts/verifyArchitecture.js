@@ -56,8 +56,10 @@ const requiredFiles = [
   ['pluginManifest.js', 'plugin manifest schema and compatibility validation'],
   ['pluginRuntime.js', 'killable plugin worker controller'],
   ['pluginWorker.js', 'constrained plugin VM worker'],
+  ['crucibleLearningIdentity.js', 'workspace-bound trusted Crucible OIDC identity'],
   ['pluginManager.js', 'plugin lifecycle registry, health and audit ledger'],
   ['section8Ipc.js', 'narrow plugin platform IPC bridge'],
+  ['bootstrapEntry.js', 'launch entry that installs optional plugin UI before bootstrap'],
   ['bootstrap.js', 'upgrade IPC bootstrap entrypoint'],
 ];
 
@@ -173,9 +175,10 @@ if (!/listProjects/.test(bootstrapSource) || !/isAuthorizedProjectRoot/.test(boo
 }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
-if (pkg.main !== 'bootstrap.js') {
+const bootstrapEntrySource = fs.readFileSync(path.join(__dirname, '..', 'bootstrapEntry.js'), 'utf8');
+if (pkg.main !== 'bootstrapEntry.js' || !/require\(['"]\.\/bootstrap['"]\)/.test(bootstrapEntrySource)) {
   failures += 1;
-  console.error('[FAIL] package.json must load bootstrap.js so upgrade IPC is registered before main.js.');
+  console.error('[FAIL] package.json must load bootstrapEntry.js, which must register bootstrap.js before main.js.');
 }
 for (const requiredPackageFile of ['pluginManifest.js','pluginRuntime.js','pluginWorker.js','pluginManager.js','section8Ipc.js']) {
   if ((pkg.build?.files || []).includes(requiredPackageFile)) continue;

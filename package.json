@@ -2,7 +2,7 @@
   "name": "nexus-devos",
   "version": "1.0.3",
   "description": "Nexus Developer OS - a real desktop control panel for local dev projects. Now with TypeScript, React, and Vite support.",
-  "main": "bootstrap.js",
+  "main": "bootstrapEntry.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test",
@@ -57,7 +57,10 @@
       "output": "dist"
     },
     "files": [
+      "bootstrapEntry.js",
       "bootstrap.js",
+      "cruciblePluginAccount.js",
+      "cruciblePluginUi.js",
       "ipcSecurity.js",
       "main.js",
       "preload.js",
@@ -118,9 +121,12 @@
       "pluginRuntime.js",
       "pluginWorker.js",
       "pluginManager.js",
+      "pluginCapabilities.js",
+      "crucibleLearningIdentity.js",
       "pluginSecurityScanner.js",
       "pluginMarketplaceClient.js",
       "section8Ipc.js",
+      "plugins/the-crucible",
       "aiMetrics.js",
       "aiGuardrailTester.js",
       "aiUpgradeOrchestrator.js",

@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 231,
+  "fileCount": 244,
   "types": {
-    ".json": 11,
-    ".md": 17,
+    ".json": 12,
+    ".md": 18,
     ".cjs": 1,
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 173,
+    ".js": 184,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -71,6 +71,11 @@
     },
     {
       "source": "bootstrap.js",
+      "reference": "./crucibleLearningIdentity",
+      "resolved": "crucibleLearningIdentity.js"
+    },
+    {
+      "source": "bootstrap.js",
       "reference": "./projectRegistry",
       "resolved": "projectRegistry.js"
     },
@@ -88,6 +93,21 @@
       "source": "bootstrap.js",
       "reference": "./main.js",
       "resolved": "main.js"
+    },
+    {
+      "source": "bootstrapEntry.js",
+      "reference": "./cruciblePluginAccount",
+      "resolved": "cruciblePluginAccount.js"
+    },
+    {
+      "source": "bootstrapEntry.js",
+      "reference": "./cruciblePluginUi",
+      "resolved": "cruciblePluginUi.js"
+    },
+    {
+      "source": "bootstrapEntry.js",
+      "reference": "./bootstrap",
+      "resolved": "bootstrap.js"
     },
     {
       "source": "codeChecker.js",
@@ -108,6 +128,16 @@
       "source": "complianceMonitor.js",
       "reference": "./aiGuardrailTester",
       "resolved": "aiGuardrailTester.js"
+    },
+    {
+      "source": "cruciblePluginAccount.js",
+      "reference": "./publisherConfig",
+      "resolved": "publisherConfig.js"
+    },
+    {
+      "source": "cruciblePluginAccount.js",
+      "reference": "./firebaseAccountClient",
+      "resolved": "firebaseAccountClient.js"
     },
     {
       "source": "fullStackSupport.js",
@@ -510,6 +540,16 @@
       "resolved": "pluginManager.js"
     },
     {
+      "source": "section8Ipc.js",
+      "reference": "./pluginCapabilities",
+      "resolved": "pluginCapabilities.js"
+    },
+    {
+      "source": "section8Ipc.js",
+      "reference": "./crucibleLearningIdentity",
+      "resolved": "crucibleLearningIdentity.js"
+    },
+    {
       "source": "semanticWorker.js",
       "reference": "./astEngine",
       "resolved": "astEngine.js"
@@ -568,6 +608,11 @@
       "source": "test/codingModelProviders.test.js",
       "reference": "../codingModelProviders",
       "resolved": "codingModelProviders.js"
+    },
+    {
+      "source": "test/crucibleLearningIdentity.test.js",
+      "reference": "../crucibleLearningIdentity",
+      "resolved": "crucibleLearningIdentity.js"
     },
     {
       "source": "test/debugAdapter.test.js",
@@ -653,6 +698,11 @@
       "source": "test/packageInventory.test.js",
       "reference": "../package.json",
       "resolved": "package.json"
+    },
+    {
+      "source": "test/pluginCapabilities.test.js",
+      "reference": "../pluginCapabilities",
+      "resolved": "pluginCapabilities.js"
     },
     {
       "source": "test/pluginManager.test.js",
@@ -927,8 +977,8 @@
     {
       "path": ".thecrucible.json",
       "type": ".json",
-      "size": 4993,
-      "sha256": "f84ffd384a5697110731961bae86c99de333a9b9531f5091fec6d172ad7475d6"
+      "size": 5436,
+      "sha256": "28fea6da42430d7d05411e5f165d35d17e8ee9aaa9de3f6d3ba2042aa2e9955d"
     },
     {
       "path": "AGENTS.md",
@@ -945,8 +995,8 @@
     {
       "path": "AI-HANDOFF.json",
       "type": ".json",
-      "size": 3625,
-      "sha256": "ccd4717a1241d18fa89c78d1eb5877425a196a45c20e0b9f2fc36abacb2fa527"
+      "size": 4601,
+      "sha256": "ca2ebee1bf26cc8d947a8817fcc35038c6caff70dabf9bd7cce1f6fc683a6ce6"
     },
     {
       "path": "CLAUDE.md",
@@ -963,8 +1013,8 @@
     {
       "path": "DEVLOG.md",
       "type": ".md",
-      "size": 2219,
-      "sha256": "695f586e8780524200fa9eeec6624391edc127326c01ee05e0ea747a8b8b9de9"
+      "size": 3206,
+      "sha256": "cdba5edb76d55b3858223d723c8555bd053b93ab9edfc4d1fda707b0e5a866fe"
     },
     {
       "path": "FIREBASE_SETUP.md",
@@ -1089,8 +1139,14 @@
     {
       "path": "bootstrap.js",
       "type": ".js",
-      "size": 12683,
-      "sha256": "5413dd1d57c028f425526c22858288dcbc324ff4169847673515a770521ef76d"
+      "size": 37106,
+      "sha256": "1223161afe597d66014bc10d35bb379cea905ee0b2881d1f3f85fcdca1732d78"
+    },
+    {
+      "path": "bootstrapEntry.js",
+      "type": ".js",
+      "size": 1577,
+      "sha256": "9ae3d15fe88848716d177772067e4000ed84dda905786b7598bc1cc655aadac8"
     },
     {
       "path": "build-installer.bat",
@@ -1133,6 +1189,24 @@
       "type": ".js",
       "size": 2695,
       "sha256": "ce3c1fb7d869c360d22db89fb5c12e2ecbb577a7b4b115b21f37acbca4327197"
+    },
+    {
+      "path": "crucibleLearningIdentity.js",
+      "type": ".js",
+      "size": 3724,
+      "sha256": "66c1d4a92d0200cea7091f860af914896c758979efc98d1b2e10dcf97dce4656"
+    },
+    {
+      "path": "cruciblePluginAccount.js",
+      "type": ".js",
+      "size": 5768,
+      "sha256": "1ac381549bd9b4eb174ff1428cd5745017141818ce0d1d52c86d3fd528571604"
+    },
+    {
+      "path": "cruciblePluginUi.js",
+      "type": ".js",
+      "size": 10883,
+      "sha256": "a307181013fd68ea7a02911e8bb8b6e07d28fc8bc66374cce13694b26496bbb1"
     },
     {
       "path": "debugAdapter.js",
@@ -1197,8 +1271,8 @@
     {
       "path": "firestore.rules",
       "type": ".rules",
-      "size": 2015,
-      "sha256": "044fc27eaf3e0cad3525afa263f29ac7b4fd583df2647ecd99fa4bf1a7f45849"
+      "size": 2732,
+      "sha256": "cbc8faf1489f58faba4333f8846291a943bb43d8642ec01d162567c4e249e8e4"
     },
     {
       "path": "fullStackSupport.js",
@@ -1401,8 +1475,8 @@
     {
       "path": "officialLanguageServers.js",
       "type": ".js",
-      "size": 11170,
-      "sha256": "ae3ec79634e3b03dd3870a8f9ff583dde11225f746d775ef9acba5113d0c782c"
+      "size": 12967,
+      "sha256": "c68bf46a96188fe3a55c1fb350c879c5fe7b10db050378d2c15812d76c66179d"
     },
     {
       "path": "operationalDiagnostics.js",
@@ -1419,8 +1493,8 @@
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5533,
-      "sha256": "c778b716d14eba3111ecdbed98e6390670e147e8a89c684e519832fac52abe45"
+      "size": 5726,
+      "sha256": "61cde77945d87110fdb4af477f143a475cb10acca548785ad6aec23d7a1ec596"
     },
     {
       "path": "pipelineEngine.js",
@@ -1435,16 +1509,22 @@
       "sha256": "870ee00eaebff3319cb0cdba6b5f27d4174e5d9b6193520905ceabcb283b0ef0"
     },
     {
+      "path": "pluginCapabilities.js",
+      "type": ".js",
+      "size": 5484,
+      "sha256": "4819c990da1986e9e31a6194e03233c58ee3308fee3df76c9d68ec436ad1ed77"
+    },
+    {
       "path": "pluginManager.js",
       "type": ".js",
-      "size": 12484,
-      "sha256": "779eb2fd07de5814e5991a2b747da3a751ffbf60f496cc3e6000ee8025709fa6"
+      "size": 14435,
+      "sha256": "1a7037e40a47585e42eaad15b8a2ac05d1be4c1f49d195e3b626c575a885eb17"
     },
     {
       "path": "pluginManifest.js",
       "type": ".js",
-      "size": 3181,
-      "sha256": "07a54b1a22f8c33a413df3711fa424876b399727dd9f2e5c28b660c30a4aa86b"
+      "size": 3202,
+      "sha256": "6c72200faa530bcbf8ffcc13c6edb70d3a8ef3cbd0338f917833b6dbacbb27bb"
     },
     {
       "path": "pluginMarketplaceClient.js",
@@ -1467,8 +1547,32 @@
     {
       "path": "pluginWorker.js",
       "type": ".js",
-      "size": 5449,
-      "sha256": "ae4f22aa77e47fa720236319a72ba6338425b89287cbebaad9001fe04c6b21b6"
+      "size": 5741,
+      "sha256": "f8ad972aa0bd0801c910654f8f03ee3261b10b913da6937fb5d82834021b6fc1"
+    },
+    {
+      "path": "plugins/the-crucible/README.md",
+      "type": ".md",
+      "size": 4488,
+      "sha256": "f2e69ff19367d4c64c2773e19dfc86aad5d994de822abf4834d48eae7ead8446"
+    },
+    {
+      "path": "plugins/the-crucible/index-v2.js",
+      "type": ".js",
+      "size": 6515,
+      "sha256": "151e4616f3052137e852b903910b7df9fc0a3c2075690896d7be224bfe86f615"
+    },
+    {
+      "path": "plugins/the-crucible/index.js",
+      "type": ".js",
+      "size": 45872,
+      "sha256": "c989e881703edcafaa6f3a19d1ceb228d2478d2a67f5590ed8727bee1d55ca7c"
+    },
+    {
+      "path": "plugins/the-crucible/nexus.plugin.json",
+      "type": ".json",
+      "size": 509,
+      "sha256": "7a3e2e5d2e94ce9aa91dc300740d2d79fbe271ec2123f65a99fcb0a08bda1768"
     },
     {
       "path": "portableProjectConfig.js",
@@ -1479,8 +1583,8 @@
     {
       "path": "preload.js",
       "type": ".js",
-      "size": 28508,
-      "sha256": "05c210a4826762695f1b833464e138b67a37c81aad5913cd486d88169b38abb8"
+      "size": 28620,
+      "sha256": "6ec5060d94a2317effce34141fc4368544b697e916ba8d88a9a0c1e4d888a9fc"
     },
     {
       "path": "projectCloner.js",
@@ -1575,8 +1679,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 274278,
-      "sha256": "03917f2641025fd405532908a4c2c313e58fc4498508ba161a44efdbbb9a20c3"
+      "size": 274453,
+      "sha256": "a8f5d5980ce426c14192d822d8c9fae3e9847fa7dfdedd4bb333dd2854832652"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1713,8 +1817,8 @@
     {
       "path": "scripts/verifyArchitecture.js",
       "type": ".js",
-      "size": 10984,
-      "sha256": "eea3b28eb5d93a822db14e27cfc5feaf4c0bd6cd78f2a36a8397d2e092ff300a"
+      "size": 11344,
+      "sha256": "704c9f50b49dbff0d4b6c9784cb5519a3dff0a7e2127b202072cd388be9991a8"
     },
     {
       "path": "scripts/verifyPackagedContents.js",
@@ -1749,8 +1853,8 @@
     {
       "path": "section8Ipc.js",
       "type": ".js",
-      "size": 3738,
-      "sha256": "fadbd0a07de36e1131e81b949da23c252dfef5cfb4681205f1e83e9cb569568a"
+      "size": 5932,
+      "sha256": "880ae28eff9407c726e7ca23c939ab447cbc45a3f1bbaa20a0f4b3dbdfbadc38"
     },
     {
       "path": "semanticContext.js",
@@ -1851,14 +1955,20 @@
     {
       "path": "test/codingModelProviders.test.js",
       "type": ".js",
-      "size": 2443,
-      "sha256": "83e2f9d608bdb78d1c05e538a55d2d7a7a2eefbeca281124c2dffd32c8d153f6"
+      "size": 2628,
+      "sha256": "406ac38ca2e432debb006fffaec604868186d9dea0044f330964a628c2935030"
     },
     {
       "path": "test/crucibleIntegration.test.js",
       "type": ".js",
-      "size": 3052,
-      "sha256": "29bfe0a0038639c199991aef3bcd96e1d0daaeb921d637c2ae4a70f9e00a9c2f"
+      "size": 3554,
+      "sha256": "82b118a9b0bf8cb58b89b62b11b985c9b3e376027edbf9be1c1823c9f37222f3"
+    },
+    {
+      "path": "test/crucibleLearningIdentity.test.js",
+      "type": ".js",
+      "size": 3183,
+      "sha256": "748587f98c3872091f0b7c7159121ab95fa1451a2ab397312f50774908d05c68"
     },
     {
       "path": "test/debugAdapter.test.js",
@@ -1975,6 +2085,12 @@
       "sha256": "b30b03a8166e188d69f1c423c48a7e171571ba028b502756a08332ba007ef73e"
     },
     {
+      "path": "test/pluginCapabilities.test.js",
+      "type": ".js",
+      "size": 2882,
+      "sha256": "15d71fd887f3bb4bf69478b61a047378ee3fe8553f6b6e045bdfc3d2c7e32dc8"
+    },
+    {
       "path": "test/pluginManager.test.js",
       "type": ".js",
       "size": 2311,
@@ -2083,6 +2199,12 @@
       "sha256": "85ab19f1d7cc7e952edff813a110afceabb6f4b82b44a29465c87eba75ef0a2b"
     },
     {
+      "path": "test/safeProviderDiscoveryUi.test.js",
+      "type": ".js",
+      "size": 1348,
+      "sha256": "905393cec68adb2f2622de7dea58498118295549eae42190a67a0ce9d3637f4e"
+    },
+    {
       "path": "test/secretScanner.test.js",
       "type": ".js",
       "size": 1269,
@@ -2109,8 +2231,14 @@
     {
       "path": "test/section8Ipc.test.js",
       "type": ".js",
-      "size": 1765,
-      "sha256": "8f662e735b10ec9655be40abe7890bdc126280971d5e0a4c9f9c88b5f70ccb94"
+      "size": 3075,
+      "sha256": "2fa645fefe3de40b523ebb49368efb0ac7eafdf2e899ab6d4c727cb89cc2e015"
+    },
+    {
+      "path": "test/settingsAutomationRegression.test.js",
+      "type": ".js",
+      "size": 3184,
+      "sha256": "c397dea0859af52497ed4c18f9d1320b7b3b68c3468318e7ea23abedd7886f5f"
     },
     {
       "path": "test/settingsScroll.test.js",
