@@ -72,7 +72,7 @@ test('Live Preview receives a one-time dominant default while user resizing rema
 });
 
 test('AI Code Assist is prompt-first and reuses the guarded Feature Builder planning path', () => {
-  assert.match(crucibleUi, /id=\\"nexus-ai-build-prompt\\"/);
+  assert.match(crucibleUi, /id="nexus-ai-build-prompt"/);
   assert.match(crucibleUi, /Plan & Build/);
   assert.match(crucibleUi, /featureDescription\.value = prompt/);
   assert.match(crucibleUi, /planFeature\(\)/);
