@@ -103,7 +103,6 @@ function parseJestStyleResults(jsonText) {
 
 module.exports = {
   sanitizeProjectFolderName,
-  isSafeGeneratedProjectPath,
   parseGeneratedFiles,
   detectStartCommand,
   escapeRegex,
