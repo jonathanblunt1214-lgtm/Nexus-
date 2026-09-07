@@ -1661,8 +1661,8 @@
     {
       "path": "pureLogic.js",
       "type": ".js",
-      "size": 3261,
-      "sha256": "83bff3a6d780ff395dca0a71fe0c1807c0ef173c7f6ff7727e1109e868761506"
+      "size": 3944,
+      "sha256": "b3b8c47a1c0b53fce68e4fc2ed321c48bcab4684223252b6e5771254ec2237b8"
     },
     {
       "path": "pureLogic.test.js",
