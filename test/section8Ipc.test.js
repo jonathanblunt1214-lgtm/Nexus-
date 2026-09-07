@@ -38,6 +38,7 @@ test('rejects plugin IPC for a directory that Nexus has not authorized', async (
 
 test('AI Collaboration coding-provider slot owns coding requests instead of native fallback', async () => {
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-ai-collab-')));
+  const comparable = (value) => process.platform === 'win32' ? String(value).toLowerCase() : String(value);
   const handlers = new Map();
   let nativeCalls = 0;
   const record = {
@@ -61,7 +62,7 @@ test('AI Collaboration coding-provider slot owns coding requests instead of nati
     },
   };
   const ipcMain = { handle: (name, fn) => handlers.set(name, fn) };
-  registerSection8Ipc({ ipcMain, isAuthorizedProjectRoot: (candidate) => candidate === root, managerFactory: () => manager });
+  registerSection8Ipc({ ipcMain, isAuthorizedProjectRoot: (candidate) => comparable(candidate) === comparable(root), managerFactory: () => manager });
   ipcMain.handle('coding-models:ask', async () => { nativeCalls += 1; return { ok: true, text: 'native' }; });
   const result = await handlers.get('coding-models:ask')(null, { folder: root, prompt: 'build it' });
   assert.equal(result.text, 'plugin-owned');
