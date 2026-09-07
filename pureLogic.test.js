@@ -6,7 +6,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   sanitizeProjectFolderName,
-  isSafeGeneratedProjectPath,
   parseGeneratedFiles,
   detectStartCommand,
   escapeRegex,
@@ -76,19 +75,27 @@ test('parseGeneratedFiles', async (t) => {
   });
 
   await t.test('rejects paths that can escape the generated project root', () => {
-    assert.equal(isSafeGeneratedProjectPath('src/app.js'), true);
-    assert.equal(isSafeGeneratedProjectPath('../outside.txt'), false);
-    assert.equal(isSafeGeneratedProjectPath('C:\\temp\\outside.txt'), false);
-    assert.equal(isSafeGeneratedProjectPath('/tmp/outside.txt'), false);
-    const input = [
-      '===FILE: package.json===',
-      '{"scripts":{"start":"node index.js"}}',
-      '===END FILE===',
-      '===FILE: ../outside.txt===',
-      'nope',
-      '===END FILE===',
-    ].join('\n');
-    assert.deepEqual(parseGeneratedFiles(input), []);
+    const inputs = [
+      ['../outside.txt', 'nope'],
+      ['C:\\temp\\outside.txt', 'nope'],
+      ['/tmp/outside.txt', 'nope'],
+    ];
+    for (const [unsafePath, content] of inputs) {
+      const input = [
+        '===FILE: package.json===',
+        '{"scripts":{"start":"node index.js"}}',
+        '===END FILE===',
+        `===FILE: ${unsafePath}===`,
+        content,
+        '===END FILE===',
+      ].join('\n');
+      assert.deepEqual(parseGeneratedFiles(input), []);
+    }
+  });
+
+  await t.test('accepts a normal nested generated path', () => {
+    const input = '===FILE: src/app.js===\nmodule.exports = true;\n===END FILE===';
+    assert.equal(parseGeneratedFiles(input)[0].relPath, 'src/app.js');
   });
 
   await t.test('rejects case-insensitive duplicate generated paths', () => {
