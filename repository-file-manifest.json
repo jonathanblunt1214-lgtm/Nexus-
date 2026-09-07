@@ -1661,14 +1661,14 @@
     {
       "path": "pureLogic.js",
       "type": ".js",
-      "size": 3944,
-      "sha256": "b3b8c47a1c0b53fce68e4fc2ed321c48bcab4684223252b6e5771254ec2237b8"
+      "size": 3914,
+      "sha256": "57bc650c2feb07149fd16cb89cdde21cefb569d9076ee951316539652ebae0ae"
     },
     {
       "path": "pureLogic.test.js",
       "type": ".js",
-      "size": 8583,
-      "sha256": "26e9ea0cd56d9c5cfa0f8c92b6612e5ed2282cd78a74507500be78b72770cd8f"
+      "size": 9391,
+      "sha256": "a33bfd980ce5da2d3b4324d814cd1c5a51c88665fe3bf7b0680696a584a2bb3b"
     },
     {
       "path": "release-notes.md",
@@ -2147,8 +2147,8 @@
     {
       "path": "test/projectLaunchPreflight.test.js",
       "type": ".js",
-      "size": 4810,
-      "sha256": "bd64c77f77830d32252840c7f5d75b52fd3a88ac6d83c183201c3973c4ef69c2"
+      "size": 6458,
+      "sha256": "3117e730d464c0081048f8bfd8b03a12af257e196cafa37e025b4a186629f400"
     },
     {
       "path": "test/projectPortDetection.test.js",
