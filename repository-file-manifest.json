@@ -1205,8 +1205,8 @@
     {
       "path": "cruciblePluginUi.js",
       "type": ".js",
-      "size": 10883,
-      "sha256": "a307181013fd68ea7a02911e8bb8b6e07d28fc8bc66374cce13694b26496bbb1"
+      "size": 15878,
+      "sha256": "ce062668c66d674d144f9b4a591a37702469d7c9d48be7d0ec1e6c06218e83f8"
     },
     {
       "path": "debugAdapter.js",
