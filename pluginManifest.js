@@ -17,6 +17,7 @@ const ALLOWED_SLOTS = new Set([
   'inspector-panel',
   'status-panel',
   'command-palette',
+  'coding-provider',
 ]);
 
 function parseVersion(value) {
