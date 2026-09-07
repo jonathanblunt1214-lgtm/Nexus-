@@ -3,7 +3,6 @@ const fs = require('fs');
 const { PluginManager } = require('./pluginManager');
 const { createPluginCapabilityHandlers } = require('./pluginCapabilities');
 const { CrucibleLearningIdentity } = require('./crucibleLearningIdentity');
-const { listProjects } = require('./projectRegistry');
 
 const CODING_DELEGATION_CHANNELS = new Set([
   'coding-models:ask',
@@ -33,7 +32,7 @@ function canonicalPath(value) {
   }
 }
 
-function projectRootFromPayload(payload = {}) {
+function projectRootFromPayload(payload = {}, listProjectsFactory = null) {
   const direct = payload.folder || payload.projectRoot;
   if (direct) {
     const candidate = canonicalPath(direct);
@@ -41,11 +40,12 @@ function projectRootFromPayload(payload = {}) {
   }
   const filePath = payload.filePath;
   if (!filePath) return null;
+  const listProjects = listProjectsFactory || (() => require('./projectRegistry').listProjects());
   const candidateFile = path.resolve(filePath);
+  const comparableFile = process.platform === 'win32' ? candidateFile.toLowerCase() : candidateFile;
   for (const project of listProjects()) {
     const root = canonicalPath(project.localPath);
     if (!root) continue;
-    const comparableFile = process.platform === 'win32' ? candidateFile.toLowerCase() : candidateFile;
     if (comparableFile === root || comparableFile.startsWith(`${root}${path.sep}`)) return root;
   }
   return null;
