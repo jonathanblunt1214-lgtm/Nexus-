@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const { npmScriptForCommand, referencedNodeEntrypoints, referencedLocalExecutables, planProjectLaunch, inspectProjectReadiness, readinessMessage, verifyProjectLaunchPlan } = require('../projectLaunchPreflight');
 
@@ -75,4 +76,36 @@ test('accepts the launch only after the expected build artifact exists', () => {
   assert.deepEqual(plan.actions, []);
   assert.deepEqual(verifyProjectLaunchPlan(plan), { ok:true });
   fs.rmSync(folder, { recursive:true, force:true });
+});
+
+test('representative generated project builds, verifies its artifact, and starts', () => {
+  const folder = project(
+    {
+      name:'smoke-stack-style-project',
+      private:true,
+      scripts:{ build:'node build.js', start:'node dist/server.js' },
+    },
+    {
+      'build.js':"const fs = require('fs'); fs.mkdirSync('dist', { recursive:true }); fs.writeFileSync('dist/server.js', \"console.log('NEXUS_GENERATED_PROJECT_OK');\\n\");",
+      'src/app.js':"module.exports = { name:'Smoke Stack style generated app', healthy:true };",
+      'README.md':'# Generated project\nBuilt and launched through Nexus project preflight.',
+    },
+  );
+  try {
+    const plan = planProjectLaunch(folder, 'npm start');
+    assert.deepEqual(plan.actions, [{ type:'build', args:['run', 'build'] }]);
+    assert.deepEqual(plan.missingBefore.map((item) => item.entry), ['dist/server.js']);
+
+    const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    const npmOptions = { cwd:folder, encoding:'utf8', timeout:30_000, windowsHide:true, shell:process.platform === 'win32' };
+    const built = spawnSync(npmBin, ['run', 'build'], npmOptions);
+    assert.equal(built.status, 0, built.stderr || built.stdout || built.error?.message);
+    assert.deepEqual(verifyProjectLaunchPlan(plan), { ok:true });
+
+    const started = spawnSync(npmBin, ['start'], npmOptions);
+    assert.equal(started.status, 0, started.stderr || started.stdout || started.error?.message);
+    assert.match(started.stdout, /NEXUS_GENERATED_PROJECT_OK/);
+  } finally {
+    fs.rmSync(folder, { recursive:true, force:true });
+  }
 });

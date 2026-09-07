@@ -73,6 +73,42 @@ test('parseGeneratedFiles', async (t) => {
     const result = parseGeneratedFiles(input);
     assert.equal(result[0].content, 'line1\n\nline2\n');
   });
+
+  await t.test('rejects paths that can escape the generated project root', () => {
+    const inputs = [
+      ['../outside.txt', 'nope'],
+      ['C:\\temp\\outside.txt', 'nope'],
+      ['/tmp/outside.txt', 'nope'],
+    ];
+    for (const [unsafePath, content] of inputs) {
+      const input = [
+        '===FILE: package.json===',
+        '{"scripts":{"start":"node index.js"}}',
+        '===END FILE===',
+        `===FILE: ${unsafePath}===`,
+        content,
+        '===END FILE===',
+      ].join('\n');
+      assert.deepEqual(parseGeneratedFiles(input), []);
+    }
+  });
+
+  await t.test('accepts a normal nested generated path', () => {
+    const input = '===FILE: src/app.js===\nmodule.exports = true;\n===END FILE===';
+    assert.equal(parseGeneratedFiles(input)[0].relPath, 'src/app.js');
+  });
+
+  await t.test('rejects case-insensitive duplicate generated paths', () => {
+    const input = [
+      '===FILE: src/App.js===',
+      'one',
+      '===END FILE===',
+      '===FILE: src/app.js===',
+      'two',
+      '===END FILE===',
+    ].join('\n');
+    assert.deepEqual(parseGeneratedFiles(input), []);
+  });
 });
 
 test('detectStartCommand', async (t) => {
@@ -101,10 +137,6 @@ test('escapeRegex', async (t) => {
   await t.test('escapes every regex special character', () => {
     const input = '.*+?^${}()|[]\\';
     const escaped = escapeRegex(input);
-    // The escaped string, used as a regex, should match the original
-    // literal string exactly - this is the real behavioral guarantee that
-    // matters (used by project-wide search to treat user input as a plain
-    // string, not as regex syntax).
     const pattern = new RegExp(escaped);
     assert.ok(pattern.test(input));
   });
@@ -114,7 +146,7 @@ test('escapeRegex', async (t) => {
   await t.test('a search for a literal "." only matches an actual dot, not any character', () => {
     const pattern = new RegExp(escapeRegex('a.b'));
     assert.ok(pattern.test('a.b'));
-    assert.ok(!pattern.test('axb')); // would incorrectly match if "." wasn't escaped
+    assert.ok(!pattern.test('axb'));
   });
 });
 

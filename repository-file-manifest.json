@@ -550,6 +550,11 @@
       "resolved": "crucibleLearningIdentity.js"
     },
     {
+      "source": "section8Ipc.js",
+      "reference": "./projectRegistry",
+      "resolved": "projectRegistry.js"
+    },
+    {
       "source": "semanticWorker.js",
       "reference": "./astEngine",
       "resolved": "astEngine.js"
@@ -1205,8 +1210,8 @@
     {
       "path": "cruciblePluginUi.js",
       "type": ".js",
-      "size": 10883,
-      "sha256": "a307181013fd68ea7a02911e8bb8b6e07d28fc8bc66374cce13694b26496bbb1"
+      "size": 15878,
+      "sha256": "ce062668c66d674d144f9b4a591a37702469d7c9d48be7d0ec1e6c06218e83f8"
     },
     {
       "path": "debugAdapter.js",
@@ -1523,8 +1528,8 @@
     {
       "path": "pluginManifest.js",
       "type": ".js",
-      "size": 3202,
-      "sha256": "6c72200faa530bcbf8ffcc13c6edb70d3a8ef3cbd0338f917833b6dbacbb27bb"
+      "size": 3223,
+      "sha256": "6c93834c5e50776225739e539aa4a0916834cde6236e0e378ccef0364996f009"
     },
     {
       "path": "pluginMarketplaceClient.js",
@@ -1661,14 +1666,14 @@
     {
       "path": "pureLogic.js",
       "type": ".js",
-      "size": 3261,
-      "sha256": "83bff3a6d780ff395dca0a71fe0c1807c0ef173c7f6ff7727e1109e868761506"
+      "size": 3914,
+      "sha256": "57bc650c2feb07149fd16cb89cdde21cefb569d9076ee951316539652ebae0ae"
     },
     {
       "path": "pureLogic.test.js",
       "type": ".js",
-      "size": 8583,
-      "sha256": "26e9ea0cd56d9c5cfa0f8c92b6612e5ed2282cd78a74507500be78b72770cd8f"
+      "size": 9391,
+      "sha256": "a33bfd980ce5da2d3b4324d814cd1c5a51c88665fe3bf7b0680696a584a2bb3b"
     },
     {
       "path": "release-notes.md",
@@ -1853,8 +1858,8 @@
     {
       "path": "section8Ipc.js",
       "type": ".js",
-      "size": 5932,
-      "sha256": "880ae28eff9407c726e7ca23c939ab447cbc45a3f1bbaa20a0f4b3dbdfbadc38"
+      "size": 13213,
+      "sha256": "bcb8fecc3ac62975db7ab5d434e7176b39041cc64cbe8f2f946d3addde430827"
     },
     {
       "path": "semanticContext.js",
@@ -2147,8 +2152,8 @@
     {
       "path": "test/projectLaunchPreflight.test.js",
       "type": ".js",
-      "size": 4810,
-      "sha256": "bd64c77f77830d32252840c7f5d75b52fd3a88ac6d83c183201c3973c4ef69c2"
+      "size": 6458,
+      "sha256": "3117e730d464c0081048f8bfd8b03a12af257e196cafa37e025b4a186629f400"
     },
     {
       "path": "test/projectPortDetection.test.js",
@@ -2231,14 +2236,14 @@
     {
       "path": "test/section8Ipc.test.js",
       "type": ".js",
-      "size": 3075,
-      "sha256": "2fa645fefe3de40b523ebb49368efb0ac7eafdf2e899ab6d4c727cb89cc2e015"
+      "size": 6523,
+      "sha256": "db28cddd9312ab99fcebbc37eba7e1c1d7f330460320ecb1ef201a25f963675a"
     },
     {
       "path": "test/settingsAutomationRegression.test.js",
       "type": ".js",
-      "size": 3184,
-      "sha256": "c397dea0859af52497ed4c18f9d1320b7b3b68c3468318e7ea23abedd7886f5f"
+      "size": 5643,
+      "sha256": "40fc06d82bfb73aaff26f78f94f195e764aa554b6c9ed2fd2f310cb21384802b"
     },
     {
       "path": "test/settingsScroll.test.js",

@@ -1,4 +1,95 @@
 function crucibleRendererUi() {
+  // Launch UI stabilization lives in this renderer-side upgrade module so the
+  // trusted repository repair engine can continue treating bootstrapEntry.js
+  // as a fixed security boundary.
+  try {
+    const layoutVersion = Number(localStorage.getItem('nexus_workspace_layout_version') || '0');
+    if (layoutVersion < 2) {
+      localStorage.setItem('nexus_workspace_col_fraction', '0.68');
+      localStorage.setItem('nexus_workspace_row_fraction', '0.68');
+      localStorage.setItem('nexus_workspace_layout_version', '2');
+      const grid = document.getElementById('workspace-grid');
+      if (grid) {
+        grid.style.gridTemplateColumns = '0.68fr 6px 0.32fr';
+        grid.style.gridTemplateRows = '0.68fr 6px 0.32fr';
+      }
+    }
+
+    const approveBuildButton = document.getElementById('approve-build-number-btn');
+    const manualBuildCard = approveBuildButton && approveBuildButton.closest('.card');
+    if (manualBuildCard) manualBuildCard.remove();
+
+    const providerSelect = document.getElementById('coding-model-provider');
+    if (providerSelect) {
+      const supported = new Set(['nim', 'kimi', 'deepseek']);
+      Array.from(providerSelect.options).forEach((option) => {
+        if (!supported.has(option.value)) option.remove();
+      });
+    }
+    document.querySelectorAll('button').forEach((button) => {
+      if ((button.textContent || '').trim() === 'Get Z.ai key') button.remove();
+    });
+    Array.from(document.querySelectorAll('.card')).forEach((card) => {
+      const text = card.textContent || '';
+      if (text.includes('Safe Provider Discovery') && (text.includes('Ollama') || text.includes('LM Studio'))) card.remove();
+    });
+
+    const assistBody = document.querySelector('#wp-assist .workspace-panel-body');
+    if (assistBody && !document.getElementById('nexus-ai-build-prompt')) {
+      const promptCard = document.createElement('div');
+      promptCard.className = 'card';
+      promptCard.style.flexShrink = '0';
+      promptCard.innerHTML = '<label class="label" for="nexus-ai-build-prompt">AI Build Prompt</label>' +
+        '<p class="muted small" style="margin-top:6px;">Describe what you want Nexus to build, change, or repair. Nexus plans the affected files, then uses the existing review/guardrail path before writes.</p>' +
+        '<textarea id="nexus-ai-build-prompt" rows="5" style="width:100%; margin-top:8px;" placeholder="Example: Add a responsive account settings screen with validation and tests."></textarea>' +
+        '<div class="form-row" style="margin-top:8px;"><button class="btn" id="nexus-ai-build-btn">Plan & Build</button></div>';
+      assistBody.insertBefore(promptCard, assistBody.firstChild);
+      promptCard.querySelector('#nexus-ai-build-btn').addEventListener('click', () => {
+        const prompt = promptCard.querySelector('#nexus-ai-build-prompt').value.trim();
+        if (!prompt) return;
+        if (typeof activeProjectId === 'undefined' || activeProjectId === null) {
+          if (typeof showToast === 'function') showToast('error', 'Select a project first', 'AI Build Prompt only runs against a project you explicitly selected.');
+          return;
+        }
+        const featureDescription = document.getElementById('feature-description');
+        if (!featureDescription || typeof planFeature !== 'function') {
+          if (typeof showToast === 'function') showToast('error', 'Feature Builder unavailable', 'The multi-file planning path is not ready.');
+          return;
+        }
+        featureDescription.value = prompt;
+        planFeature();
+      });
+
+      const legacyRepairCard = Array.from(assistBody.children).find((node) =>
+        node !== promptCard && node.classList && node.classList.contains('card') &&
+        (node.textContent || '').includes('Bug Fix Assist'));
+      if (legacyRepairCard) {
+        const details = document.createElement('details');
+        details.style.flexShrink = '0';
+        const summary = document.createElement('summary');
+        summary.className = 'muted small';
+        summary.textContent = 'Targeted file repair (advanced)';
+        details.appendChild(summary);
+        legacyRepairCard.replaceWith(details);
+        details.appendChild(legacyRepairCard);
+      }
+    }
+
+    if (!document.getElementById('update-check-btn')) {
+      const updateVersion = document.getElementById('update-current-version');
+      const updateCard = updateVersion && updateVersion.closest('.card');
+      if (updateCard && typeof checkForReleaseUpdate === 'function') {
+        const actions = document.createElement('div');
+        actions.className = 'form-row update-actions';
+        actions.innerHTML = '<button class="btn btn-secondary" id="update-check-btn">Check for updates</button>';
+        actions.querySelector('#update-check-btn').addEventListener('click', () => checkForReleaseUpdate());
+        updateCard.appendChild(actions);
+      }
+    }
+  } catch (error) {
+    console.error('[Nexus] Launch UI stabilization failed:', error.message);
+  }
+
   const invokeCrucible = async (folder, payload) => {
     const results = await window.nexus.pluginsInvokeSlot(folder, 'project-actions', { projectRoot: folder, ...payload });
     const result = Array.isArray(results) ? results.find((item) => item.pluginId === 'the-crucible') : null;
