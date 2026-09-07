@@ -9,16 +9,31 @@ function sanitizeProjectFolderName(name) {
   return cleaned || 'new-project';
 }
 
+function isSafeGeneratedProjectPath(relPath) {
+  const raw = String(relPath || '').trim();
+  if (!raw || raw.includes('\0')) return false;
+  const normalized = raw.replace(/\\/g, '/');
+  if (normalized.startsWith('/') || normalized.startsWith('//') || /^[a-zA-Z]:/.test(normalized)) return false;
+  if (normalized.includes(':')) return false;
+  const parts = normalized.split('/');
+  return parts.every((part) => part && part !== '.' && part !== '..');
+}
+
 function parseGeneratedFiles(text) {
   const fileRegex = /===FILE:\s*(.+?)===\r?\n([\s\S]*?)===END FILE===/g;
   const files = [];
+  const seen = new Set();
   let match;
   while ((match = fileRegex.exec(text)) !== null) {
     const relPath = match[1].trim();
+    if (!isSafeGeneratedProjectPath(relPath)) return [];
+    const identity = relPath.replace(/\\/g, '/').toLowerCase();
+    if (seen.has(identity)) return [];
+    seen.add(identity);
     let content = match[2];
     // Strip a single leading/trailing newline that commonly wraps the block.
     content = content.replace(/^\r?\n/, '').replace(/\r?\n$/, '');
-    if (relPath) files.push({ relPath, content });
+    files.push({ relPath, content });
   }
   return files;
 }
@@ -88,6 +103,7 @@ function parseJestStyleResults(jsonText) {
 
 module.exports = {
   sanitizeProjectFolderName,
+  isSafeGeneratedProjectPath,
   parseGeneratedFiles,
   detectStartCommand,
   escapeRegex,
