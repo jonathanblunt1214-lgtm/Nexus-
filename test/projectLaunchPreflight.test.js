@@ -97,12 +97,13 @@ test('representative generated project builds, verifies its artifact, and starts
     assert.deepEqual(plan.missingBefore.map((item) => item.entry), ['dist/server.js']);
 
     const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    const built = spawnSync(npmBin, ['run', 'build'], { cwd:folder, encoding:'utf8', timeout:30_000, windowsHide:true });
-    assert.equal(built.status, 0, built.stderr || built.stdout);
+    const npmOptions = { cwd:folder, encoding:'utf8', timeout:30_000, windowsHide:true, shell:process.platform === 'win32' };
+    const built = spawnSync(npmBin, ['run', 'build'], npmOptions);
+    assert.equal(built.status, 0, built.stderr || built.stdout || built.error?.message);
     assert.deepEqual(verifyProjectLaunchPlan(plan), { ok:true });
 
-    const started = spawnSync(npmBin, ['start'], { cwd:folder, encoding:'utf8', timeout:30_000, windowsHide:true });
-    assert.equal(started.status, 0, started.stderr || started.stdout);
+    const started = spawnSync(npmBin, ['start'], npmOptions);
+    assert.equal(started.status, 0, started.stderr || started.stdout || started.error?.message);
     assert.match(started.stdout, /NEXUS_GENERATED_PROJECT_OK/);
   } finally {
     fs.rmSync(folder, { recursive:true, force:true });
