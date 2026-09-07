@@ -550,6 +550,11 @@
       "resolved": "crucibleLearningIdentity.js"
     },
     {
+      "source": "section8Ipc.js",
+      "reference": "./projectRegistry",
+      "resolved": "projectRegistry.js"
+    },
+    {
       "source": "semanticWorker.js",
       "reference": "./astEngine",
       "resolved": "astEngine.js"
@@ -1523,8 +1528,8 @@
     {
       "path": "pluginManifest.js",
       "type": ".js",
-      "size": 3202,
-      "sha256": "6c72200faa530bcbf8ffcc13c6edb70d3a8ef3cbd0338f917833b6dbacbb27bb"
+      "size": 3223,
+      "sha256": "6c93834c5e50776225739e539aa4a0916834cde6236e0e378ccef0364996f009"
     },
     {
       "path": "pluginMarketplaceClient.js",
@@ -1853,8 +1858,8 @@
     {
       "path": "section8Ipc.js",
       "type": ".js",
-      "size": 5932,
-      "sha256": "880ae28eff9407c726e7ca23c939ab447cbc45a3f1bbaa20a0f4b3dbdfbadc38"
+      "size": 13213,
+      "sha256": "bcb8fecc3ac62975db7ab5d434e7176b39041cc64cbe8f2f946d3addde430827"
     },
     {
       "path": "semanticContext.js",
@@ -2231,8 +2236,8 @@
     {
       "path": "test/section8Ipc.test.js",
       "type": ".js",
-      "size": 3075,
-      "sha256": "2fa645fefe3de40b523ebb49368efb0ac7eafdf2e899ab6d4c727cb89cc2e015"
+      "size": 6523,
+      "sha256": "db28cddd9312ab99fcebbc37eba7e1c1d7f330460320ecb1ef201a25f963675a"
     },
     {
       "path": "test/settingsAutomationRegression.test.js",
