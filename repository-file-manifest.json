@@ -2237,8 +2237,8 @@
     {
       "path": "test/settingsAutomationRegression.test.js",
       "type": ".js",
-      "size": 5647,
-      "sha256": "0e55a37f2d0e791f331a6265525cf47f89e217e6fe3b3d7d23218e986653f7d3"
+      "size": 5643,
+      "sha256": "40fc06d82bfb73aaff26f78f94f195e764aa554b6c9ed2fd2f310cb21384802b"
     },
     {
       "path": "test/settingsScroll.test.js",
