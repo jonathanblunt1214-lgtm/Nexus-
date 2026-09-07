@@ -6,6 +6,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const bootstrap = fs.readFileSync(path.join(root, 'bootstrap.js'), 'utf8');
 const bootstrapEntry = fs.readFileSync(path.join(root, 'bootstrapEntry.js'), 'utf8');
+const crucibleUi = fs.readFileSync(path.join(root, 'cruciblePluginUi.js'), 'utf8');
 const renderer = fs.readFileSync(path.join(root, 'renderer.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const languageServices = fs.readFileSync(path.join(root, 'officialLanguageServers.js'), 'utf8');
@@ -61,43 +62,43 @@ test('Nexus starts with no active project until the user explicitly chooses one'
 });
 
 test('Live Preview receives a one-time dominant default while user resizing remains persistent', () => {
-  assert.match(bootstrapEntry, /nexus_workspace_layout_version/);
-  assert.match(bootstrapEntry, /nexus_workspace_col_fraction', '0\.68'/);
-  assert.match(bootstrapEntry, /nexus_workspace_row_fraction', '0\.68'/);
-  assert.match(bootstrapEntry, /gridTemplateColumns = '0\.68fr 6px 0\.32fr'/);
-  assert.match(bootstrapEntry, /gridTemplateRows = '0\.68fr 6px 0\.32fr'/);
+  assert.match(crucibleUi, /nexus_workspace_layout_version/);
+  assert.match(crucibleUi, /nexus_workspace_col_fraction', '0\.68'/);
+  assert.match(crucibleUi, /nexus_workspace_row_fraction', '0\.68'/);
+  assert.match(crucibleUi, /gridTemplateColumns = '0\.68fr 6px 0\.32fr'/);
+  assert.match(crucibleUi, /gridTemplateRows = '0\.68fr 6px 0\.32fr'/);
   assert.match(renderer, /localStorage\.setItem\('nexus_workspace_col_fraction'/);
   assert.match(renderer, /localStorage\.setItem\('nexus_workspace_row_fraction'/);
 });
 
 test('AI Code Assist is prompt-first and reuses the guarded Feature Builder planning path', () => {
-  assert.match(bootstrapEntry, /id=\\"nexus-ai-build-prompt\\"/);
-  assert.match(bootstrapEntry, /Plan & Build/);
-  assert.match(bootstrapEntry, /featureDescription\.value = prompt/);
-  assert.match(bootstrapEntry, /planFeature\(\)/);
-  assert.match(bootstrapEntry, /Targeted file repair \(advanced\)/);
+  assert.match(crucibleUi, /id=\\"nexus-ai-build-prompt\\"/);
+  assert.match(crucibleUi, /Plan & Build/);
+  assert.match(crucibleUi, /featureDescription\.value = prompt/);
+  assert.match(crucibleUi, /planFeature\(\)/);
+  assert.match(crucibleUi, /Targeted file repair \(advanced\)/);
   assert.match(renderer, /async function planFeature\(\)/);
   assert.match(renderer, /window\.nexus\.aiPlanFeature/);
 });
 
 test('obsolete manual build approval UI is removed at launch because build assignment is automatic', () => {
   assert.match(indexHtml, /id="approve-build-number-btn"/);
-  assert.match(bootstrapEntry, /approve-build-number-btn/);
-  assert.match(bootstrapEntry, /manualBuildCard\.remove\(\)/);
+  assert.match(crucibleUi, /approve-build-number-btn/);
+  assert.match(crucibleUi, /manualBuildCard\.remove\(\)/);
 });
 
 test('Settings launch cleanup exposes only supported hosted coding providers', () => {
-  assert.match(bootstrapEntry, /new Set\(\['nim', 'kimi', 'deepseek'\]\)/);
-  assert.match(bootstrapEntry, /text === 'Get Z\.ai key'/);
-  assert.match(bootstrapEntry, /Safe Provider Discovery/);
-  assert.match(bootstrapEntry, /Ollama/);
-  assert.match(bootstrapEntry, /LM Studio/);
+  assert.match(crucibleUi, /new Set\(\['nim', 'kimi', 'deepseek'\]\)/);
+  assert.match(crucibleUi, /Get Z\.ai key/);
+  assert.match(crucibleUi, /Safe Provider Discovery/);
+  assert.match(crucibleUi, /Ollama/);
+  assert.match(crucibleUi, /LM Studio/);
 });
 
 test('Check for updates control is present, wired, and protected from markup drift', () => {
   assert.match(indexHtml, /id="update-check-btn"[^>]*onclick="checkForReleaseUpdate\(\)"/);
   assert.match(renderer, /async function checkForReleaseUpdate\(\)/);
   assert.match(renderer, /window\.nexus\.checkForUpdates\(\)/);
-  assert.match(bootstrapEntry, /if \(!document\.getElementById\('update-check-btn'\)\)/);
-  assert.match(bootstrapEntry, /checkForReleaseUpdate\(\)/);
+  assert.match(crucibleUi, /if \(!document\.getElementById\('update-check-btn'\)\)/);
+  assert.match(crucibleUi, /checkForReleaseUpdate\(\)/);
 });
