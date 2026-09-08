@@ -21,17 +21,17 @@ function crucibleRendererUi() {
 
     const providerSelect = document.getElementById('coding-model-provider');
     if (providerSelect) {
-      const supported = new Set(['nim', 'kimi', 'deepseek']);
+      const supported = new Set(['nim']);
       Array.from(providerSelect.options).forEach((option) => {
         if (!supported.has(option.value)) option.remove();
       });
     }
     document.querySelectorAll('button').forEach((button) => {
-      if ((button.textContent || '').trim() === 'Get Z.ai key') button.remove();
+      if (['Get Z.ai key', 'Get Kimi key', 'Get DeepSeek key'].includes((button.textContent || '').trim())) button.remove();
     });
     Array.from(document.querySelectorAll('.card')).forEach((card) => {
       const text = card.textContent || '';
-      if (text.includes('Safe Provider Discovery') && (text.includes('Ollama') || text.includes('LM Studio'))) card.remove();
+      if (text.includes('Safe Provider Discovery')) card.remove();
     });
 
     const assistBody = document.querySelector('#wp-assist .workspace-panel-body');

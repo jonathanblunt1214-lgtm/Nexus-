@@ -146,7 +146,7 @@ function installCodingModelProviderIpcUpgrade() {
       return securedHandle(channel, async (event, ...args) => {
         const result = await listener(event, ...args);
         if (!result?.ok || !Array.isArray(result.providers)) return result;
-        const hostedProviders = new Set(['nim', 'kimi', 'deepseek']);
+        const hostedProviders = new Set(['nim']);
         result.providers = result.providers.filter((item) => hostedProviders.has(item.id));
         if (!result.providers.some((item) => item.id === result.selected)) {
           result.selected = result.providers.find((item) => item.configured)?.id || 'nim';
@@ -228,9 +228,9 @@ function installCodingModelProviderUiUpgrade() {
 
         const syncProviderCardFromState = async () => {
           if (!select || !key) return false;
-          select.querySelector('option[value="glm"]')?.remove();
-          select.querySelector('option[value="ollama"]')?.remove();
-          select.querySelector('option[value="lmstudio"]')?.remove();
+          Array.from(select.options).forEach((option) => {
+            if (option.value !== 'nim') option.remove();
+          });
           try {
             const response = await window.nexus.codingModelsStatus();
             if (!response?.ok) return false;
@@ -472,221 +472,9 @@ function installCodingModelProviderUiUpgrade() {
           }
         }
 
-        const discovery = cardByLabelPrefix('Safe Provider Discovery');
-        if (!discovery || discovery.dataset.hostedKeysReady === 'true') return;
-        discovery.dataset.hostedKeysReady = 'true';
-
-        discovery.querySelectorAll('button').forEach((button) => {
-          const text = (button.textContent || '').trim();
-          if (text.includes('Z.ai') || text.includes('Detect local models')) button.remove();
-        });
-        const description = discovery.querySelector('p.muted');
-        if (description) description.textContent = 'Nexus shows whether your supported hosted provider keys are already configured without ever displaying the saved secret. You can also detect supported environment-variable names and import them explicitly.';
-
-        const results = document.getElementById('provider-discovery-results');
-        const hosted = document.createElement('div');
-        hosted.id = 'safe-provider-hosted-keys';
-        hosted.style.display = 'grid';
-        hosted.style.gap = '8px';
-        hosted.style.marginTop = '10px';
-
-        const refreshButton = document.createElement('button');
-        refreshButton.className = 'btn';
-        refreshButton.textContent = 'Refresh provider status';
-        refreshButton.style.marginTop = '8px';
-        if (results) discovery.insertBefore(refreshButton, results);
-        else discovery.appendChild(refreshButton);
-
-        const providers = [
-          { id:'nim', label:'NVIDIA NIM', placeholder:'NVIDIA NIM API key' },
-          { id:'kimi', label:'Kimi', placeholder:'Kimi API key' },
-          { id:'deepseek', label:'DeepSeek', placeholder:'DeepSeek API key' },
-        ];
-        const providerRows = new Map();
-
-        const renderProviderState = (provider, state, configured, selected) => {
-          const rowState = providerRows.get(provider.id);
-          if (!rowState) return;
-          rowState.input.value = '';
-          rowState.entry.style.display = configured ? 'none' : '';
-          rowState.replace.style.display = configured ? '' : 'none';
-          rowState.clear.style.display = configured ? '' : 'none';
-          rowState.state.textContent = configured
-            ? 'Configured · key hidden' + (selected ? ' · ACTIVE' : '')
-            : 'Not configured';
-          if (state) rowState.state.dataset.providerState = state;
-        };
-
-        const refreshHostedKeyRows = async () => {
-          try {
-            const response = await window.nexus.codingModelsStatus();
-            if (!response?.ok) throw new Error(response?.error || 'Could not read provider status.');
-            for (const provider of providers) {
-              const current = response.providers.find((item) => item.id === provider.id);
-              renderProviderState(provider, 'ready', Boolean(current?.configured), response.selected === provider.id);
-            }
-          } catch (error) {
-            for (const provider of providers) {
-              const rowState = providerRows.get(provider.id);
-              if (rowState) rowState.state.textContent = error.message;
-            }
-          }
-        };
-
-        for (const provider of providers) {
-          const row = document.createElement('div');
-          row.className = 'suggestion-item';
-          const title = document.createElement('strong');
-          title.textContent = provider.label;
-
-          const entry = document.createElement('div');
-          entry.className = 'form-row';
-          entry.style.marginTop = '6px';
-          const input = document.createElement('input');
-          input.type = 'password';
-          input.autocomplete = 'new-password';
-          input.placeholder = provider.placeholder;
-          input.id = 'safe-provider-key-' + provider.id;
-          const save = document.createElement('button');
-          save.className = 'btn';
-          save.textContent = 'Save & Activate';
-          entry.append(input, save);
-
-          const actions = document.createElement('div');
-          actions.className = 'form-row';
-          actions.style.marginTop = '6px';
-          const replace = document.createElement('button');
-          replace.className = 'btn btn-secondary';
-          replace.textContent = 'Replace key';
-          replace.style.display = 'none';
-          const clear = document.createElement('button');
-          clear.className = 'btn btn-secondary';
-          clear.textContent = 'Clear key';
-          clear.style.display = 'none';
-          actions.append(replace, clear);
-
-          const state = document.createElement('span');
-          state.className = 'muted small';
-          state.id = 'safe-provider-status-' + provider.id;
-          state.textContent = 'Checking…';
-
-          providerRows.set(provider.id, { row, entry, input, save, actions, replace, clear, state });
-
-          save.addEventListener('click', async () => {
-            const value = input.value.trim();
-            if (!value) { state.textContent = 'Enter a key first.'; return; }
-            save.disabled = true;
-            state.textContent = 'Saving…';
-            try {
-              const result = await window.nexus.saveCodingModelKey(provider.id, value);
-              input.value = '';
-              if (!result?.ok) {
-                state.textContent = result?.error || 'Could not save key.';
-                return;
-              }
-              await refreshHostedKeyRows();
-              if (typeof window.refreshCodingModels === 'function') await window.refreshCodingModels();
-              await syncProviderCardFromState();
-            } catch (error) {
-              input.value = '';
-              state.textContent = error.message;
-            } finally {
-              save.disabled = false;
-            }
-          });
-
-          replace.addEventListener('click', () => {
-            entry.style.display = '';
-            input.value = '';
-            input.focus();
-            state.textContent = 'Existing key remains stored until you save a replacement.';
-          });
-
-          clear.addEventListener('click', async () => {
-            clear.disabled = true;
-            state.textContent = 'Clearing…';
-            try {
-              const result = await window.nexus.clearCodingModelKey(provider.id);
-              if (!result?.ok) {
-                state.textContent = result?.error || 'Could not clear key.';
-                return;
-              }
-              await refreshHostedKeyRows();
-              if (typeof window.refreshCodingModels === 'function') await window.refreshCodingModels();
-              await syncProviderCardFromState();
-            } catch (error) {
-              state.textContent = error.message;
-            } finally {
-              clear.disabled = false;
-            }
-          });
-
-          row.append(title, entry, actions, state);
-          hosted.appendChild(row);
-        }
-
-        if (results) discovery.insertBefore(hosted, results);
-        else discovery.appendChild(hosted);
-
-        const renderEnvironmentDiscovery = async () => {
-          if (!results) return;
-          results.innerHTML = '<p class="muted small">Checking supported environment-variable names…</p>';
-          try {
-            const discovered = await window.nexus.discoverProviders();
-            if (!discovered?.ok) throw new Error(discovered?.error || 'Provider discovery failed.');
-            const environmentKeys = Array.isArray(discovered.environmentKeys) ? discovered.environmentKeys : [];
-            if (!environmentKeys.length) {
-              results.innerHTML = '<p class="muted small">No additional supported provider environment variables were detected. Saved Nexus keys are shown above.</p>';
-              return;
-            }
-            results.innerHTML = '<p class="label">Available environment imports</p>';
-            for (const item of environmentKeys) {
-              const row = document.createElement('div');
-              row.className = 'suggestion-item';
-              const title = document.createElement('strong');
-              title.textContent = item.name;
-              const detail = document.createElement('span');
-              detail.className = 'muted small';
-              detail.textContent = 'Found ' + item.env + '; value remains hidden.';
-              const importButton = document.createElement('button');
-              importButton.className = 'btn tiny';
-              importButton.textContent = 'Import detected key';
-              importButton.addEventListener('click', async () => {
-                importButton.disabled = true;
-                try {
-                  const imported = await window.nexus.importEnvironmentProviderKey(item.env);
-                  if (!imported?.ok) throw new Error(imported?.error || 'Import failed.');
-                  await refreshHostedKeyRows();
-                  await renderEnvironmentDiscovery();
-                  await syncProviderCardFromState();
-                } catch (error) {
-                  detail.textContent = error.message;
-                } finally {
-                  importButton.disabled = false;
-                }
-              });
-              row.append(title, detail, importButton);
-              results.appendChild(row);
-            }
-          } catch (error) {
-            results.innerHTML = '<p class="muted small">' + String(error.message || error) + '</p>';
-          }
-        };
-
-        refreshButton.addEventListener('click', async () => {
-          await refreshHostedKeyRows();
-          await renderEnvironmentDiscovery();
-          await syncProviderCardFromState();
-        });
-
-        window.discoverSafeProviders = async () => {
-          await refreshHostedKeyRows();
-          await renderEnvironmentDiscovery();
-          await syncProviderCardFromState();
-        };
-
-        refreshHostedKeyRows();
-        renderEnvironmentDiscovery();
+        // Legacy provider-discovery cards duplicated AI Collaboration. Remove
+        // them defensively for upgraded markup; Nexus keeps only its NIM fallback.
+        removeCard('Safe Provider Discovery');
       })();`).catch((error) => console.error('[Nexus] Settings/provider UI upgrade failed:', error.message));
     });
   });

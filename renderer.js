@@ -2418,8 +2418,8 @@ function renderCodingModelProvider() {
   const id = document.getElementById('coding-model-provider').value;
   const item = codingModelProviderState.providers.find((provider) => provider.id === id);
   const selected = codingModelProviderState.selected === id ? 'Active' : 'Available';
-  document.getElementById('coding-model-key').disabled = id === 'nim' || item?.keyless;
-  document.getElementById('coding-model-key').placeholder = item?.keyless ? 'No API key required' : id === 'nim' ? 'Use NVIDIA key setting above' : `API key for ${item?.name || id}`;
+  document.getElementById('coding-model-key').disabled = Boolean(item?.keyless);
+  document.getElementById('coding-model-key').placeholder = item?.keyless ? 'No API key required' : `API key for ${item?.name || id}`;
   document.getElementById('coding-model-status').innerText = `${selected} · ${item?.model || ''} · ${item?.configured ? 'key saved' : 'no key saved'}`;
 }
 

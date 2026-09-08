@@ -1144,8 +1144,8 @@
     {
       "path": "bootstrap.js",
       "type": ".js",
-      "size": 37106,
-      "sha256": "1223161afe597d66014bc10d35bb379cea905ee0b2881d1f3f85fcdca1732d78"
+      "size": 27389,
+      "sha256": "7e6397d9993b376db89bcc7ceef40b8428c112e80e8c70ff710e95f1742a67d9"
     },
     {
       "path": "bootstrapEntry.js",
@@ -1210,8 +1210,8 @@
     {
       "path": "cruciblePluginUi.js",
       "type": ".js",
-      "size": 15878,
-      "sha256": "ce062668c66d674d144f9b4a591a37702469d7c9d48be7d0ec1e6c06218e83f8"
+      "size": 15843,
+      "sha256": "f44ee2b0ce569c2c6880e4377eeeea987a1f47c653c2f534a04f2b02c1982042"
     },
     {
       "path": "debugAdapter.js",
@@ -1390,8 +1390,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 132477,
-      "sha256": "974610d30a554a56038a4380d5119fe2008f1355ce063543bb598abbfba69ed0"
+      "size": 131160,
+      "sha256": "e233839ac996a5c4b26c0e87680e913a31646c0c673eddb9904d3416cce45ebd"
     },
     {
       "path": "inventoryWorker.js",
@@ -1684,8 +1684,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 274453,
-      "sha256": "a8f5d5980ce426c14192d822d8c9fae3e9847fa7dfdedd4bb333dd2854832652"
+      "size": 274398,
+      "sha256": "bc1f9e7bbb3388ba008fd8544590bdd11fead6185f058c164bdaea8d56f86eed"
     },
     {
       "path": "runtimeDebugger.js",
@@ -1960,8 +1960,8 @@
     {
       "path": "test/codingModelProviders.test.js",
       "type": ".js",
-      "size": 2628,
-      "sha256": "406ac38ca2e432debb006fffaec604868186d9dea0044f330964a628c2935030"
+      "size": 2567,
+      "sha256": "45079f86d81e1a73814984c14a5a791d6a724f4409029866431f4a8b006cceee"
     },
     {
       "path": "test/crucibleIntegration.test.js",
@@ -2206,8 +2206,8 @@
     {
       "path": "test/safeProviderDiscoveryUi.test.js",
       "type": ".js",
-      "size": 1348,
-      "sha256": "905393cec68adb2f2622de7dea58498118295549eae42190a67a0ce9d3637f4e"
+      "size": 1234,
+      "sha256": "eaab169f624096ed1c9d4305a7928a75af6e982010e952515142f4896b770fc7"
     },
     {
       "path": "test/secretScanner.test.js",
@@ -2242,8 +2242,8 @@
     {
       "path": "test/settingsAutomationRegression.test.js",
       "type": ".js",
-      "size": 5643,
-      "sha256": "40fc06d82bfb73aaff26f78f94f195e764aa554b6c9ed2fd2f310cb21384802b"
+      "size": 6154,
+      "sha256": "197d6a188df9920f656295133f55ff90cc4116ab573641266aec5f0846277586"
     },
     {
       "path": "test/settingsScroll.test.js",

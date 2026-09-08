@@ -87,12 +87,17 @@ test('obsolete manual build approval UI is removed at launch because build assig
   assert.match(crucibleUi, /manualBuildCard\.remove\(\)/);
 });
 
-test('Settings launch cleanup exposes only supported hosted coding providers', () => {
-  assert.match(crucibleUi, /new Set\(\['nim', 'kimi', 'deepseek'\]\)/);
-  assert.match(crucibleUi, /Get Z\.ai key/);
+test('Settings presents AI Collaboration with one Nexus-only provider fallback', () => {
+  assert.match(indexHtml, /id="ai-collaboration-provider-card"/);
+  assert.match(indexHtml, /plugin_asdk_app_6a9b823d41088191a58d97f6d3a632f8\?open_in_app/);
+  assert.match(indexHtml, /id="nexus-provider-fallback-card"/);
+  assert.match(indexHtml, /AI Collaboration · Multi-provider coding/);
+  assert.match(indexHtml, /Nexus-only provider fallback/);
+  assert.match(indexHtml, /<select id="coding-model-provider"[^>]*><option value="nim"[^>]*>[^<]*<\/option><\/select>/);
+  assert.doesNotMatch(indexHtml, /Get Kimi key|Get DeepSeek key|Safe Provider Discovery/);
+  assert.match(crucibleUi, /new Set\(\['nim'\]\)/);
   assert.match(crucibleUi, /Safe Provider Discovery/);
-  assert.match(crucibleUi, /Ollama/);
-  assert.match(crucibleUi, /LM Studio/);
+  assert.match(renderer, /coding-model-key'\)\.disabled = Boolean\(item\?\.keyless\)/);
 });
 
 test('Check for updates control is present, wired, and protected from markup drift', () => {

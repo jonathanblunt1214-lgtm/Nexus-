@@ -1618,31 +1618,19 @@ Type "help" for tips.
         <p class="muted small" style="margin-top:8px;">Numbers are assigned only after this confirmation. Approval records the current source commit and time; opening Nexus or editing code does not increment it.</p>
       </div>
 
-      <div class="card">
-        <label class="label">NVIDIA NIM API Key — powers Bug Fix Assist, Feature Builder, Feature Suggestions, Changelog, New Project generation, and Code Editor prompts</label>
-        <p class="muted small" style="margin-top:6px;">This is NVIDIA's hosted API (build.nvidia.com), not a self-hosted deployment — get a free key there, no local GPU needed. Currently calling <code>qwen/qwen3-coder-next</code>.</p>
-        <div class="form-row" style="margin-top:8px;">
-          <input type="password" id="nim-api-key" placeholder="Paste your NVIDIA NIM API key">
-          <button class="btn" onclick="saveNimKey()">Save</button>
-          <button class="btn btn-secondary" onclick="clearNimKey()">Clear</button>
-        </div>
-        <p class="muted small" id="nim-status" style="margin-top:8px;">No key saved yet.</p>
+      <div class="card" id="ai-collaboration-provider-card">
+        <label class="label">AI Collaboration · Multi-provider coding</label>
+        <p class="muted small" style="margin-top:6px;">Use AI Collaboration for managed multi-provider coding, reasoning, and review. When its Nexus coding-provider plug-in is enabled, Nexus sends coding work through that plug-in instead of the standalone fallback below.</p>
+        <div class="form-row" style="margin-top:8px;"><button class="btn" id="open-ai-collaboration-btn" onclick="window.nexus.openExternal('https://chatgpt.com/plugins/plugin_asdk_app_6a9b823d41088191a58d97f6d3a632f8?open_in_app')">Open AI Collaboration</button></div>
       </div>
 
-      <div class="card">
-        <label class="label">Coding Model Provider</label>
-        <p class="muted small" style="margin-top:6px;">Choose which model powers project generation, Code Editor prompts, bug fixes, feature planning, suggestions, and changelogs. API keys are Windows-encrypted.</p>
-        <div class="form-row" style="margin-top:8px;"><select id="coding-model-provider" onchange="renderCodingModelProvider()"><option value="nim">NVIDIA NIM · Qwen3 Coder Next</option><option value="kimi">Kimi K3</option><option value="glm">GLM 5.2</option><option value="deepseek">DeepSeek V4 Pro</option><option value="ollama">Ollama · Local</option><option value="lmstudio">LM Studio · Local</option></select><input type="password" id="coding-model-key" placeholder="API key for selected provider"><button class="btn" onclick="saveCodingModelProviderKey()">Save key</button><button class="btn btn-secondary" onclick="activateCodingModelProvider()">Use this model</button><button class="btn btn-secondary" onclick="clearCodingModelProviderKey()">Clear key</button></div>
+      <div class="card" id="nexus-provider-fallback-card">
+        <label class="label">Nexus-only provider fallback</label>
+        <p class="muted small" style="margin-top:6px;">Used only when the AI Collaboration coding-provider plug-in is unavailable. The fallback calls NVIDIA NIM with a key stored through Nexus's Windows-encrypted provider storage; the key is never shown again.</p>
+        <div class="form-row" style="margin-top:8px;"><select id="coding-model-provider" onchange="renderCodingModelProvider()"><option value="nim">NVIDIA NIM · Qwen3 Coder Next</option></select><input type="password" id="coding-model-key" autocomplete="new-password" placeholder="NVIDIA NIM API key"><button class="btn" onclick="saveCodingModelProviderKey()">Save &amp; Activate</button><button class="btn btn-secondary" onclick="activateCodingModelProvider()">Use fallback</button><button class="btn btn-secondary" onclick="clearCodingModelProviderKey()">Clear key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://build.nvidia.com/models?api-key=true&amp;label=Chat')">Get NVIDIA key</button></div>
         <p id="coding-model-status" class="muted small" style="margin-top:8px;">Loading model providers…</p>
         <div class="form-row" style="margin-top:8px;"><input id="coding-model-prompt" placeholder="Ask the selected coding model…"><button class="btn" onclick="askCodingModel()">Send</button></div>
         <pre id="coding-model-response" class="response-box"></pre>
-      </div>
-
-      <div class="card">
-        <label class="label">Safe Provider Discovery</label>
-        <p class="muted small" style="margin-top:6px;">Checks only Ollama and LM Studio on this computer and the names of supported environment variables. Key values stay in the main process and are imported only after you approve each one. Nexus never scans projects, websites, or public datasets for credentials.</p>
-        <div class="form-row" style="margin-top:8px;"><button class="btn" onclick="discoverSafeProviders()">Detect local models and my keys</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://platform.kimi.ai')">Get Kimi key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://startup.z.ai/apiportal')">Get Z.ai key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://www.deepseek.com/platform/')">Get DeepSeek key</button><button class="btn btn-secondary" onclick="window.nexus.openExternal('https://build.nvidia.com/models?api-key=true&label=Chat')">Get NVIDIA key</button></div>
-        <div id="provider-discovery-results" class="suggestions-list" style="margin-top:8px;"></div>
       </div>
 
                   <div class="card">
