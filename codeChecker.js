@@ -4,6 +4,7 @@ const yaml = require('js-yaml');
 const { queryLanguageIntelligence } = require('./languageIntelligence');
 const webServices = require('./webLanguageServices');
 const officialServers = require('./officialLanguageServers');
+const { languages: GAME_LANGUAGES } = require('./gameLanguageSupport');
 
 const registry = new Map();
 const extensionIndex = new Map();
@@ -143,6 +144,17 @@ registerChecker({ id:'markup', language:'HTML / XML / Vue / Svelte', extensions:
 registerChecker({ id:'styles', language:'CSS / Sass / Less', extensions:['.css','.scss','.sass','.less'], fix:webServices.cssFix, check:webServices.cssCheck });
 registerChecker({ id:'text-structure', language:'Structured text', extensions:['.md','.mdx','.sql','.graphql','.toml'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Structure') }; } });
 registerChecker({ id:'dockerfile', language:'Dockerfile', extensions:['dockerfile'], async check({ content }) { return { diagnostics:structuralDiagnostics(content, 'Dockerfile') }; } });
+for (const checkerId of ['gamemaker', 'gdscript', 'game-shader']) {
+  const definitions = GAME_LANGUAGES.filter((language) => language.checker === checkerId);
+  registerChecker({
+    id:checkerId,
+    language:definitions.map((language) => language.name).join(' / '),
+    extensions:definitions.flatMap((language) => language.extensions),
+    async check({ content, filePath }) {
+      return { diagnostics:structuralDiagnostics(content, GAME_LANGUAGES.find((language) => language.extensions.includes(path.extname(filePath).toLowerCase()))?.name || 'Game source') };
+    },
+  });
+}
 officialServerAdapter({ id:'python', language:'Python', extensions:['.py'], install:'Microsoft Pyright is bundled with Nexus.' });
 externalAdapter({ id:'ruby', language:'Ruby', extensions:['.rb'], command:'ruby', args:['-c','-'], install:'Install Ruby and ensure ruby is on PATH.' });
 externalAdapter({ id:'go', language:'Go', extensions:['.go'], command:'gofmt', args:[], install:'Install Go; Nexus uses gofmt syntax validation.' });

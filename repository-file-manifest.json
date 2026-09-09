@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Nexus only: every Git-tracked Nexus file except this self-referential manifest",
   "generatedBy": "npm run inventory:update",
-  "fileCount": 244,
+  "fileCount": 246,
   "types": {
     ".json": 12,
     ".md": 18,
@@ -10,7 +10,7 @@
     "[no extension]": 3,
     ".yml": 11,
     ".bat": 2,
-    ".js": 184,
+    ".js": 186,
     ".html": 2,
     ".rules": 2,
     ".txt": 5,
@@ -125,6 +125,11 @@
       "resolved": "officialLanguageServers.js"
     },
     {
+      "source": "codeChecker.js",
+      "reference": "./gameLanguageSupport",
+      "resolved": "gameLanguageSupport.js"
+    },
+    {
       "source": "complianceMonitor.js",
       "reference": "./aiGuardrailTester",
       "resolved": "aiGuardrailTester.js"
@@ -143,6 +148,11 @@
       "source": "fullStackSupport.js",
       "reference": "./officialDevelopmentPlatforms",
       "resolved": "officialDevelopmentPlatforms.js"
+    },
+    {
+      "source": "languageBreakdown.js",
+      "reference": "./gameLanguageSupport",
+      "resolved": "gameLanguageSupport.js"
     },
     {
       "source": "main.js",
@@ -638,6 +648,21 @@
       "source": "test/firebaseAccountClient.test.js",
       "reference": "../appCheckBroker",
       "resolved": "appCheckBroker.js"
+    },
+    {
+      "source": "test/gameLanguageSupport.test.js",
+      "reference": "../gameLanguageSupport",
+      "resolved": "gameLanguageSupport.js"
+    },
+    {
+      "source": "test/gameLanguageSupport.test.js",
+      "reference": "../languageBreakdown",
+      "resolved": "languageBreakdown.js"
+    },
+    {
+      "source": "test/gameLanguageSupport.test.js",
+      "reference": "../codeChecker",
+      "resolved": "codeChecker.js"
     },
     {
       "source": "test/gameProjectDetector.test.js",
@@ -1174,8 +1199,8 @@
     {
       "path": "codeChecker.js",
       "type": ".js",
-      "size": 17626,
-      "sha256": "2f8a49b3f26ed4be119b57b8996acdd1291d59e160f0210b75cf4f52d76fa193"
+      "size": 18280,
+      "sha256": "4338b9642eb0d003a9135a9eacb8572f8b754fa0c034218e5e687835b1519fba"
     },
     {
       "path": "codeLibrary.js",
@@ -1286,6 +1311,12 @@
       "sha256": "0195c5d261002efb2177dc509b7266e85a005688c331f284d3a0cb90b8466e74"
     },
     {
+      "path": "gameLanguageSupport.js",
+      "type": ".js",
+      "size": 1741,
+      "sha256": "baea769eb90e7754564676a85396f9312916659ccc9bc11cb96ef6c80e8b24df"
+    },
+    {
       "path": "gameProjectDetector.js",
       "type": ".js",
       "size": 4800,
@@ -1390,8 +1421,8 @@
     {
       "path": "index.html",
       "type": ".html",
-      "size": 131160,
-      "sha256": "e233839ac996a5c4b26c0e87680e913a31646c0c673eddb9904d3416cce45ebd"
+      "size": 131209,
+      "sha256": "8e0dc46df92a3ffa9fdc37f314ce66fb78d4b591a9911a6690db135f327ababf"
     },
     {
       "path": "inventoryWorker.js",
@@ -1414,8 +1445,8 @@
     {
       "path": "languageBreakdown.js",
       "type": ".js",
-      "size": 9242,
-      "sha256": "2f75e1756c118baa85b0e191e9d184db38fe1510e5a3b8ee082cab94f5c1af4a"
+      "size": 9469,
+      "sha256": "4312ffb565b3bb07bb364142a1c7f024e9d930298999407e03171e392f53d805"
     },
     {
       "path": "languageIntelligence.js",
@@ -1493,13 +1524,13 @@
       "path": "package-lock.json",
       "type": ".json",
       "size": 158463,
-      "sha256": "505fac930394818b3629755de84731f301425ffa35e4bc39ba57675d63202dd5"
+      "sha256": "30a7bbc696030f0f03ce4d2089784e718a7963d9ddfe699cc76983963f7ea309"
     },
     {
       "path": "package.json",
       "type": ".json",
-      "size": 5726,
-      "sha256": "61cde77945d87110fdb4af477f143a475cb10acca548785ad6aec23d7a1ec596"
+      "size": 5758,
+      "sha256": "0b33f2b0cefcc2cd08f9d4adfef866f7c4d4fd89d24d87a466d41e499d57c1b4"
     },
     {
       "path": "pipelineEngine.js",
@@ -1684,8 +1715,8 @@
     {
       "path": "renderer.js",
       "type": ".js",
-      "size": 274398,
-      "sha256": "bc1f9e7bbb3388ba008fd8544590bdd11fead6185f058c164bdaea8d56f86eed"
+      "size": 274584,
+      "sha256": "4e22e71f99687bcecf4ec2339921dec37b0228fa9b1268e7384769d3f84874bd"
     },
     {
       "path": "runtimeDebugger.js",
@@ -2004,6 +2035,12 @@
       "type": ".js",
       "size": 1194,
       "sha256": "a87f63b04770c5f2e783ac6fa007dd4779e9d319459bf090a01fea3deadc2e7e"
+    },
+    {
+      "path": "test/gameLanguageSupport.test.js",
+      "type": ".js",
+      "size": 2592,
+      "sha256": "d6185475c4029d0bccb9679586656b4bcd4a5808195b751e55aee57f28fae739"
     },
     {
       "path": "test/gameProjectDetector.test.js",

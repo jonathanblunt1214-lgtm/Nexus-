@@ -966,6 +966,8 @@ function editorAbsPath(folder, relPath) {
 }
 
 function codeEditorModeFor(filename) {
+  const gameMode = window.nexusGameLanguageSupport?.editorModeFor(filename);
+  if (gameMode) return gameMode;
   const ext = (filename.split('.').pop() || '').toLowerCase();
   const map = {
     js: { name: 'javascript' }, jsx: { name: 'javascript', jsx: true },
@@ -975,7 +977,8 @@ function codeEditorModeFor(filename) {
     css: 'css', scss: 'css', less: 'css',
     md: 'markdown', markdown: 'markdown',
     py: 'python',
-    java: 'text/x-java', c: 'text/x-csrc', cpp: 'text/x-c++src', cs: 'text/x-csharp',
+    java: 'text/x-java', c: 'text/x-csrc', h: 'text/x-csrc', cpp: 'text/x-c++src', cc: 'text/x-c++src', hpp: 'text/x-c++src', cs: 'text/x-csharp',
+    lua: null,
     sh: 'shell', bash: 'shell',
     yml: 'yaml', yaml: 'yaml',
     xml: 'xml',
