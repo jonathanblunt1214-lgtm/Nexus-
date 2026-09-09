@@ -97,6 +97,7 @@
       "operationalDiagnostics.js",
       "secretScanner.js",
       "advancedTesting.js",
+      "gameLanguageSupport.js",
       "gameProjectDetector.js",
       "codeLibrary.js",
       "projectTemplates.js",

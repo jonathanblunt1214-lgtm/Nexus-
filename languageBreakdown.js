@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { byExtension: GAME_LANGUAGE_MAP } = require('./gameLanguageSupport');
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', '.next', 'out', 'coverage',
@@ -38,6 +39,7 @@ const MINOR_LANGUAGE_THRESHOLD_PERCENT = 1.0; // languages below this get folded
 // realistically going to encounter, so the bar/legend match a real GitHub
 // repo page rather than an arbitrary palette.
 const LANGUAGE_MAP = {
+  ...Object.fromEntries(Object.entries(GAME_LANGUAGE_MAP).map(([extension, language]) => [extension, { name:language.name, color:language.color }])),
   '.ts': { name: 'TypeScript', color: '#3178c6' },
   '.tsx': { name: 'TypeScript', color: '#3178c6' },
   '.mts': { name: 'TypeScript', color: '#3178c6' },
