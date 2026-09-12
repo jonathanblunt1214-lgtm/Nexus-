@@ -977,8 +977,8 @@
     {
       "path": ".github/workflows/release.yml",
       "type": ".yml",
-      "size": 1511,
-      "sha256": "3d61a5d95ba68b66ad073d1e0f430afed2dc80c6b194b325279af0c853a7de10"
+      "size": 2016,
+      "sha256": "ef118f970577ce1defed0d237e75bd508083a2ec0ec921fb45812850f5f5331e"
     },
     {
       "path": ".github/workflows/repository-maintenance.yml",
