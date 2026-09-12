@@ -32,13 +32,23 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Verify release
-        shell: pwsh
-        run: |
-          npm test
-          npm run audit:release
-          npm run audit:architecture
-          npm run inventory:verify
+      # Separate steps on purpose. GitHub's pwsh wrapper appends
+      # `exit $LASTEXITCODE`, and $ErrorActionPreference='stop' does not halt on
+      # a NATIVE command's non-zero exit, only on PowerShell cmdlet errors. In a
+      # single multi-line block only the last command's status reached the step,
+      # so a failing test, release audit or architecture audit was swallowed and
+      # the release published anyway.
+      - name: Run tests
+        run: npm test
+
+      - name: Audit release
+        run: npm run audit:release
+
+      - name: Audit architecture
+        run: npm run audit:architecture
+
+      - name: Verify repository inventory
+        run: npm run inventory:verify
 
       - name: The Crucible
         run: npm run release:crucible
