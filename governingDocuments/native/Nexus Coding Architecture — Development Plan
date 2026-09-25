@@ -1,0 +1,454 @@
+# Nexus Coding Architecture — Development Plan
+
+## 1. Purpose
+
+Nexus is the host system for an integrated, prompt-based coding architecture.
+
+The architecture consists of separate GitHub repositories that remain independently governed and versioned while working together as one coding system.
+
+This is **not a chatbot architecture**. The primary interaction is a coding prompt → analysis/collaboration → implementation → verification → evidence-backed result workflow.
+
+## 2. Integrated System
+
+```text
+NEXUS
+│
+└── Integrated Prompt-Based Coding Architecture
+    │
+    ├── NVIDIA-NIM-CONSOLE
+    │   └── Prompt-based coding console
+    │
+    ├── AI-collaboration-
+    │   └── AI collaboration, council, routing and orchestration
+    │
+    └── The-Crucible
+        ├── Coding checks
+        ├── Validation
+        ├── Verification
+        ├── Repair / recovery
+        │
+        └── Crucible Learning System
+            ├── Learning-Worker
+            │   └── Candidate learning extraction
+            │
+            ├── Crucible-Vetted-Learning-State
+            │   └── Vetted encrypted learning custody
+            │
+            └── Vetting-and-Governance-oversite.
+                └── Independent governance and oversight
+```
+
+## 3. Development Responsibilities
+
+### Nexus
+
+Nexus is responsible for the integration architecture.
+
+Nexus must provide the system-level structure that allows the independent repositories to operate together without removing their independent governance.
+
+Nexus does not replace the governance of any participating repository.
+
+### NVIDIA-NIM-CONSOLE
+
+The NVIDIA NIM Console provides the prompt-based coding interface.
+
+It must allow the user to submit coding requests and receive the resulting execution state and evidence.
+
+The console must distinguish between:
+
+- Requested
+- Processing
+- Waiting
+- Blocked
+- Failed
+- Unverified
+- Verified
+
+The console must not represent an operation as verified merely because an AI model reports success.
+
+### AI-collaboration-
+
+AI Collaboration provides the intelligence and orchestration layer.
+
+Its responsibilities include:
+
+- AI provider routing
+- Model selection
+- Council/collaboration
+- Prompt distribution
+- Result comparison
+- Evidence collection
+- Context and handoff
+- Coding-task orchestration
+
+AI Collaboration may assist with reasoning and implementation, but it cannot independently declare Crucible verification successful.
+
+AI agreement is not equivalent to deterministic verification.
+
+AI Collaboration cannot:
+
+- Override Crucible checks
+- Promote learning into trusted state
+- Bypass independent governance
+- Declare scientific proof
+- Authorize a release solely because models agree
+
+### The-Crucible
+
+The Crucible is the verification and enforcement layer.
+
+It is responsible for:
+
+- Coding checks
+- Security checks
+- Validation
+- Testing
+- Verification
+- Repair/recovery controls
+- Evidence generation
+- Learning-system enforcement
+
+The Crucible determines whether required technical verification has actually occurred.
+
+### Learning-Worker
+
+Learning-Worker extracts candidate learning from approved inputs.
+
+It must not independently promote information into trusted learning.
+
+Its role is:
+
+```text
+Source
+  ↓
+Extraction
+  ↓
+Candidate Learning
+  ↓
+Governance/Vetting
+```
+
+The worker must not:
+
+- Bypass governance
+- Write directly to trusted learning state without the required gates
+- Declare knowledge verified
+- Treat model agreement as proof
+
+### Crucible-Vetted-Learning-State
+
+Crucible-Vetted-Learning-State provides controlled custody for vetted learning information.
+
+It is not itself the scientific verifier and is not a replacement for active verification.
+
+Custody does not equal proof.
+
+### Vetting-and-Governance-oversite.
+
+The independent oversight repository provides governance and vetting controls for the learning system.
+
+It retains independent authority to stop or clear learning transitions according to its governing rules.
+
+Oversight approval must not be represented as scientific or technical proof when additional verification is required.
+
+## 4. Development Flow
+
+The primary coding-development path is:
+
+```text
+User Coding Prompt
+        ↓
+NVIDIA-NIM-CONSOLE
+        ↓
+AI-collaboration-
+        ↓
+Coding Analysis / Proposed Action
+        ↓
+Implementation
+        ↓
+The-Crucible
+        ↓
+Checks / Tests / Verification
+        ↓
+Evidence
+        ↓
+NVIDIA-NIM-CONSOLE
+        ↓
+User
+```
+
+A successful AI response is therefore not the final state.
+
+The final state requires the appropriate verification evidence.
+
+## 5. Learning Development Flow
+
+The learning architecture follows:
+
+```text
+Source / Evidence
+        ↓
+Learning-Worker
+        ↓
+Candidate Learning
+        ↓
+Independent Governance / Vetting
+        ↓
+Crucible-Vetted-Learning-State
+        ↓
+Crucible Learning Pipeline
+        ↓
+Controlled Testing
+        ↓
+Scientific / Technical Verification
+        ↓
+Verified Knowledge Version
+        ↓
+Approved Active Use
+```
+
+Every transition is a controlled gate.
+
+The following distinctions must remain explicit:
+
+```text
+Extraction ≠ Promotion
+Promotion ≠ Verification
+Custody ≠ Active Knowledge
+AI Agreement ≠ Proof
+Oversight Approval ≠ Scientific Proof
+```
+
+## 6. Cross-Repository Integration
+
+Nexus development must establish explicit interfaces between the participating systems.
+
+Required integration relationships:
+
+1. NVIDIA-NIM-CONSOLE ↔ AI-collaboration-
+2. NVIDIA-NIM-CONSOLE ↔ The-Crucible
+3. AI-collaboration- ↔ The-Crucible
+4. The-Crucible ↔ Learning-Worker
+5. The-Crucible ↔ Crucible-Vetted-Learning-State
+6. The-Crucible ↔ Vetting-and-Governance-oversite.
+
+Each integration must define:
+
+- Inputs
+- Outputs
+- Authentication/authorization
+- Error states
+- Verification states
+- Evidence
+- Version compatibility
+- Failure behavior
+- Security boundaries
+
+## 7. Development Phases
+
+### Phase 1 — Architecture
+
+Establish the repository responsibilities and system boundaries.
+
+Verify that no repository assumes authority belonging to another repository.
+
+### Phase 2 — Integration Contracts
+
+Implement explicit communication contracts between the console, AI Collaboration, Crucible, and learning components.
+
+### Phase 3 — Coding Workflow
+
+Implement:
+
+```text
+Prompt
+→ AI Collaboration
+→ Coding Action
+→ Crucible
+→ Verification
+→ Evidence
+→ Console
+```
+
+The workflow must function using real implementations rather than simulated success states.
+
+### Phase 4 — Learning Workflow
+
+Connect Learning-Worker, governance, vetted learning custody, and Crucible verification.
+
+Learning must be demonstrated through actual ingestion, processing, vetting, storage, retrieval, and verification.
+
+### Phase 5 — Failure Testing
+
+Test failures including:
+
+- AI provider failure
+- Invalid AI response
+- Missing evidence
+- Failed tests
+- Security failure
+- Stale information
+- Learning-vetting failure
+- Governance rejection
+- Repository communication failure
+- Authentication failure
+- Incomplete verification
+
+The system must fail closed where verification is required.
+
+### Phase 6 — End-to-End Verification
+
+Verify the complete architecture using a real coding task.
+
+The test must demonstrate:
+
+1. A user submits a coding prompt.
+2. Nexus routes the request through the coding architecture.
+3. AI Collaboration performs its assigned orchestration.
+4. The requested coding action is performed.
+5. Crucible checks the resulting change.
+6. Failures are reported accurately.
+7. Successful checks produce evidence.
+8. The console reports the actual final state.
+9. No component falsely reports verification.
+10. Learning operations follow the independent learning governance path.
+
+## 8. Authority Boundaries
+
+The following boundaries are mandatory:
+
+1. Nexus governs system integration.
+2. Each repository retains its own identity and local governance.
+3. NVIDIA-NIM-CONSOLE owns the prompt-based coding interface.
+4. AI-collaboration- owns AI orchestration.
+5. The-Crucible owns coding verification and Crucible learning enforcement.
+6. Learning-Worker cannot independently promote trusted learning.
+7. Crucible-Vetted-Learning-State provides controlled learning custody.
+8. Vetting-and-Governance-oversite. retains independent oversight.
+9. AI Collaboration cannot override Crucible verification.
+10. Nexus cannot bypass independent Crucible governance.
+11. No integration may silently weaken another repository's governing requirements.
+
+## 9. Fail-Closed Requirements
+
+The architecture must not convert an incomplete state into a successful state.
+
+The following cannot be treated as verification:
+
+- AI confidence
+- AI consensus
+- A generated code response
+- Successful code generation without testing
+- Partial test results
+- Missing evidence
+- Stale evidence
+- Unverified learning
+- Governance approval where technical proof is still required
+
+When required evidence is missing, the system must report the appropriate incomplete, blocked, failed, or unverified state.
+
+## 10. Development Security
+
+Nexus integration must preserve repository security boundaries.
+
+Development must not introduce mechanisms that allow one component to:
+
+- Bypass another component's authorization
+- Disable Crucible checks
+- Modify trusted learning without authorization
+- Circumvent governance
+- Falsify verification
+- Suppress failed checks
+- Convert an error into a success state
+
+Secrets and credentials must remain outside source-controlled code.
+
+## 11. Release Requirements
+
+A Nexus release involving this architecture must use verified versions of participating repositories.
+
+Release readiness must not bypass:
+
+- Crucible verification
+- Repository security checks
+- Independent governance
+- Learning custody controls
+- Required tests
+- Required release checks
+
+A component being available does not automatically make the integrated system release-ready.
+
+## 12. Non-Goals
+
+This architecture does not intend to:
+
+- Merge the three primary repositories into one repository
+- Make Nexus the owner of The-Crucible
+- Replace Crucible governance
+- Turn the system into a chatbot
+- Replace deterministic verification with AI consensus
+- Allow Learning-Worker to promote knowledge without governance
+- Treat vetted custody as scientific proof
+- Allow Nexus to bypass independent oversight
+
+## 13. Definition of Done
+
+The Nexus coding architecture is considered implemented only when the integrated system can demonstrate, with real execution and evidence:
+
+```text
+Prompt
+  ↓
+NVIDIA-NIM-CONSOLE
+  ↓
+AI-collaboration-
+  ↓
+Implementation
+  ↓
+The-Crucible
+  ↓
+Checks
+  ↓
+Verification
+  ↓
+Evidence
+  ↓
+Console Result
+```
+
+and, independently:
+
+```text
+Source
+  ↓
+Learning-Worker
+  ↓
+Candidate Learning
+  ↓
+Governance
+  ↓
+Vetted Learning State
+  ↓
+Crucible Verification
+  ↓
+Verified Knowledge
+  ↓
+Controlled Use
+```
+
+No placeholder implementation, simulated verification, or fabricated success state satisfies this definition of done.
+
+## 14. Governing Principle
+
+Nexus coordinates the architecture.
+
+AI Collaboration assists with reasoning and coding.
+
+The NVIDIA NIM Console provides the prompt-based coding interface.
+
+The Crucible verifies the work.
+
+The learning system governs how knowledge moves from evidence toward controlled use.
+
+Independent oversight remains independent.
+
+Each system performs its assigned function, and no component is permitted to claim a level of verification or authority that it has not actually earned through the required process.
